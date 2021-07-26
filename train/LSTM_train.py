@@ -49,14 +49,14 @@ param_len = 0
 time_tag = 1
 param_list = ['anis','G0','Rmax']
 input_len = 2*G + param_len + time_tag
-hidden_dim = 30
+hidden_dim = 20
 output_len = G
 LSTM_layer = 1
 valid_ratio = 0.1
 
 num_train = int((1-valid_ratio)*num_runs)
 num_test = num_runs-num_train
-window = 10
+window = 5
 seed = 1
 
 # global information that apply for every run
@@ -86,7 +86,7 @@ param_all = np.zeros((num_runs,G+param_len))
 
 
 for run in range(num_runs):
-    filename = filebase+str(1)+ '_rank0.h5'
+    filename = filebase+str(run)+ '_rank0.h5'
     f = h5py.File(filename, 'r')
     aseq = np.asarray(f['sequence'])  # 1 to 10
     Color = (aseq-5.5)/4.5        # normalize C to [-1,1]
@@ -188,7 +188,7 @@ def LSTM_train(model, num_epochs, I_train, I_test, O_train, O_test):
 model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer)
 model = model.double()
 
-num_epochs = 200
+num_epochs = 500
 LSTM_train(model, num_epochs, input_dat, input_test_pt, output_dat, output_test_pt)
 
 
