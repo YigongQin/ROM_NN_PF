@@ -17,7 +17,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_recon import plot_reconst,plot_real
+from plot_funcs import plot_reconst,plot_real
 #rnn = nn.GRU(10, 20, 2)
 #inputs = torch.randn(5, 3, 10)
 #h0 = torch.randn(2, 3, 20)
@@ -60,7 +60,7 @@ window = 10
 seed = 1
 
 # global information that apply for every run
-filebase = 'ML_Mt47024_grains8_anis0.130_seed'
+filebase = '../../ML_Mt47024_grains8_anis0.130_seed'
 filename = filebase+str(1)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
