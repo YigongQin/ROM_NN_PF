@@ -11,8 +11,13 @@ import torch.nn.functional as F
 import torch.optim as optim
 import h5py
 import numpy as np
+import scipy.io as sio
 import matplotlib.pyplot as plt
-
+from scipy.interpolate import interp1d
+import matplotlib.pyplot as plt
+import matplotlib.mathtext as mathtext
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from plot_recon import plot_reconst,plot_real
 #rnn = nn.GRU(10, 20, 2)
 #inputs = torch.randn(5, 3, 10)
 #h0 = torch.randn(2, 3, 20)
@@ -41,9 +46,10 @@ total_size = frames*num_runs
 seq = 1
 G = 8     # G is the number of grains
 param_len = 0
+time_tag = 1
 param_list = ['anis','G0','Rmax']
-input_len = 2*G + param_len
-hidden_dim = 30 #G
+input_len = 2*G + param_len + time_tag
+hidden_dim = 30
 output_len = G
 LSTM_layer = 1
 valid_ratio = 0.1
@@ -80,7 +86,7 @@ param_all = np.zeros((num_runs,G+param_len))
 
 
 for run in range(num_runs):
-    filename = filebase+str(run)+ '_rank0.h5'
+    filename = filebase+str(1)+ '_rank0.h5'
     f = h5py.File(filename, 'r')
     aseq = np.asarray(f['sequence'])  # 1 to 10
     Color = (aseq-5.5)/4.5        # normalize C to [-1,1]
@@ -112,7 +118,8 @@ for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
     for t in range(window,frames):
         input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
-        input_seq[sample,:,output_len:] = param_train[run,:]
+        input_seq[sample,:,output_len:-1] = param_train[run,:]
+        input_seq[sample,:,-1] = t/(frames-1) 
         output_seq[sample,:] = lstm_snapshot[t,:]
         sample = sample + 1
 sample = 0
@@ -120,7 +127,8 @@ for run in range(num_test):
     lstm_snapshot = frac_test[run,:,:]
     for t in range(window,frames):
         input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
-        input_test[sample,:,output_len:] = param_test[run,:]
+        input_test[sample,:,output_len:-1] = param_test[run,:]
+        input_test[sample,:,-1] = t/(frames-1) 
         output_test[sample,:] = lstm_snapshot[t,:]
         sample = sample + 1
         
@@ -171,7 +179,7 @@ def LSTM_train(model, num_epochs, I_train, I_test, O_train, O_test):
         pred = model(I_test)
         test_loss = criterion(pred, O_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
-        print('Epoch:{}, Train loss:{:.4f}, Test loss:{:.4f}'.format(epoch+1, float(loss), float(test_loss)))
+        print('Epoch:{}, Train loss:{:.6f}, Test loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
        # outputs.append((epoch, data, recon),)
         
     return  
@@ -185,8 +193,20 @@ LSTM_train(model, num_epochs, input_dat, input_test_pt, output_dat, output_test_
 
 
 
+## plot to check if the construction is reasonable
+# pick a random 
+plot_idx = 5  # in test dataset
+frame_id = idx[plot_idx+num_train]
 
+filename = filebase+str(frame_id)+ '_rank0.h5'
+ft = h5py.File(filename, 'r')
+alpha_true = np.asarray(ft['x_coordinates'])
+aseq_test = np.asarray(ft['a_seq'])
+tip_y = np.asarray(ft['y_t'])
 
+frac_out = output_test_pt[plot_idx,:]
+plot_real(x,y,alpha_true)
+plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out)
 
 
 

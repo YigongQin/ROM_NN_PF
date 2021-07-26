@@ -41,10 +41,9 @@ total_size = frames*num_runs
 seq = 1
 G = 8     # G is the number of grains
 param_len = 0
-time_tag = 1
 param_list = ['anis','G0','Rmax']
-input_len = 2*G + param_len + time_tag
-hidden_dim = 30
+input_len = 2*G + param_len
+hidden_dim = 30 #G
 output_len = G
 LSTM_layer = 1
 valid_ratio = 0.1
@@ -81,7 +80,7 @@ param_all = np.zeros((num_runs,G+param_len))
 
 
 for run in range(num_runs):
-    filename = filebase+str(1)+ '_rank0.h5'
+    filename = filebase+str(run)+ '_rank0.h5'
     f = h5py.File(filename, 'r')
     aseq = np.asarray(f['sequence'])  # 1 to 10
     Color = (aseq-5.5)/4.5        # normalize C to [-1,1]
@@ -113,8 +112,7 @@ for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
     for t in range(window,frames):
         input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
-        input_seq[sample,:,output_len:-1] = param_train[run,:]
-        input_seq[sample,:,-1] = t/(frames-1) 
+        input_seq[sample,:,output_len:] = param_train[run,:]
         output_seq[sample,:] = lstm_snapshot[t,:]
         sample = sample + 1
 sample = 0
@@ -122,8 +120,7 @@ for run in range(num_test):
     lstm_snapshot = frac_test[run,:,:]
     for t in range(window,frames):
         input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
-        input_test[sample,:,output_len:-1] = param_test[run,:]
-        input_test[sample,:,-1] = t/(frames-1) 
+        input_test[sample,:,output_len:] = param_test[run,:]
         output_test[sample,:] = lstm_snapshot[t,:]
         sample = sample + 1
         
@@ -174,7 +171,7 @@ def LSTM_train(model, num_epochs, I_train, I_test, O_train, O_test):
         pred = model(I_test)
         test_loss = criterion(pred, O_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
-        print('Epoch:{}, Train loss:{:.6f}, Test loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
+        print('Epoch:{}, Train loss:{:.4f}, Test loss:{:.4f}'.format(epoch+1, float(loss), float(test_loss)))
        # outputs.append((epoch, data, recon),)
         
     return  
