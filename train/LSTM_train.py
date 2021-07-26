@@ -201,7 +201,7 @@ frame_id = idx[plot_idx+num_train]
 filename = filebase+str(frame_id)+ '_rank0.h5'
 ft = h5py.File(filename, 'r')
 alpha_true = np.asarray(ft['x_coordinates'])
-aseq_test = np.asarray(ft['a_seq'])
+aseq_test = np.asarray(ft['sequence'])
 tip_y = np.asarray(ft['y_t'])
 
 frac_out = output_test_pt[plot_idx,:]
