@@ -41,7 +41,7 @@ from plot_funcs import plot_reconst,plot_real
 # global parameters
 
 frames = 101
-num_runs = 100
+num_runs = 900
 total_size = frames*num_runs
 seq = 1
 G = 8     # G is the number of grains
@@ -49,14 +49,14 @@ param_len = 0
 time_tag = 1
 param_list = ['anis','G0','Rmax']
 input_len = 2*G + param_len + time_tag
-hidden_dim = 20
+hidden_dim = 40
 output_len = G
 LSTM_layer = 1
 valid_ratio = 0.1
 
 num_train = int((1-valid_ratio)*num_runs)
 num_test = num_runs-num_train
-window = 5
+window = 10
 seed = 1
 
 # global information that apply for every run
@@ -155,12 +155,14 @@ class LSTM_soft(nn.Module):
         
         lstm_out, _ = self.lstm(input_frac)
         target = self.project(lstm_out[-1,:,:])
-        frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
+       # frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
+        target = F.relu(target)
+        frac = F.normalize(target,p=1,dim=1) # dim0 is the batch, dim1 is the vector
         return frac
 
 def LSTM_train(model, num_epochs, I_train, I_test, O_train, O_test):
     
-    learning_rate=5e-3
+    learning_rate=1e-2
     #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),
@@ -179,34 +181,60 @@ def LSTM_train(model, num_epochs, I_train, I_test, O_train, O_test):
         pred = model(I_test)
         test_loss = criterion(pred, O_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
-        print('Epoch:{}, Train loss:{:.6f}, Test loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
+        print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
        # outputs.append((epoch, data, recon),)
         
-    return  
+    return model 
 
 
 model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer)
 model = model.double()
 
-num_epochs = 500
-LSTM_train(model, num_epochs, input_dat, input_test_pt, output_dat, output_test_pt)
-
-
+pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print('total number of trained parameters ', pytorch_total_params)
+num_epochs = 200
+model=LSTM_train(model, num_epochs, input_dat, input_test_pt, output_dat, output_test_pt)
 
 ## plot to check if the construction is reasonable
 # pick a random 
-plot_idx = 5  # in test dataset
+plot_idx = 4  # in test dataset
 frame_id = idx[plot_idx+num_train]
 
 filename = filebase+str(frame_id)+ '_rank0.h5'
 ft = h5py.File(filename, 'r')
-alpha_true = np.asarray(ft['x_coordinates'])
+alpha_true = np.asarray(ft['alpha'])
 aseq_test = np.asarray(ft['sequence'])
 tip_y = np.asarray(ft['y_t'])
 
-frac_out = output_test_pt[plot_idx,:]
+pred_frames= frames-window
+
+# evole physics based on trained network
+evolve_runs = 1
+frac_out_info = frac_test[plot_idx,:window,:]
+frac_out = np.zeros((frames,G))
+frac_out[:window,:] = frac_out_info[:,:]
+train_dat = np.zeros((evolve_runs,window,input_len))
+train_dat[0,:,output_len:-1] = param_test[plot_idx,:]
+print('seq', param_test[plot_idx,:])
+frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
+for i in range(pred_frames):
+    train_dat[0,:,:output_len] = frac_out_info
+    train_dat[0,:,-1] = (i+window)/(frames-1) 
+   # train_dat = torch.from_numpy(np.vstack(frac_out_info,))
+    frac_new_vec = model(torch.from_numpy(train_dat).permute(1,0,2)).detach().numpy() 
+    print('timestep ',i)
+    print('predict',frac_new_vec)
+    print('true',frac_out_true[i,:])
+    frac_out[window+i] = frac_new_vec
+    #print(frac_new_vec)
+    frac_out_info[:,:] = np.vstack((frac_out_info[1:,:],frac_new_vec))
+#frac_out_trained = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
+#frac_out = np.vstack((frac_out_info, frac_out_trained))
+#print(frac_out)
+print('plot_id,run_id', plot_idx,frame_id)
+#print(frac_out_trained)
 plot_real(x,y,alpha_true)
-plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out)
+plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out.T)
 
 
 

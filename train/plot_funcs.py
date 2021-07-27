@@ -19,9 +19,9 @@ def plot_real(x,y,alpha_true):
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')
     var_list = ['Uc','phi','alpha']
-    range_l = [0,-5,0]
-    range_h = [5,5,10]
-    fid=1
+    range_l = [0,-1,0]
+    range_h = [5,1,10]
+    fid=2
     var = var_list[fid]
     vmin = np.float64(range_l[fid])
     vmax = np.float64(range_h[fid])
@@ -73,7 +73,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
     print('ntip',ntip_y)
     
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.reshape(piece_len,(G,len_seq), order='F')
+    #piece_len = np.reshape(piece_len,(G,len_seq), order='F')
     piece_len = np.cumsum(piece_len,axis=0)
     piece0 = piece_len[:,0]
     print('len_piece', piece_len)
@@ -99,13 +99,17 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
            # print(loc)
             field[i,j] = aseq[g]
             if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+        elif g==G-1:
+          for i in range(temp_piece[g-1], nx):
+            field[i,j] = aseq[g]
+            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
         else:
           for i in range(temp_piece[g-1], temp_piece[g]):
            # print(loc)
             field[i,j] = aseq[g]
             if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
          #   loc+=1
-          #  if (loc==nx): break
+          #  if (i>nx-1): break
     
     print(field)
     print('miss rate', miss/(nx*ntip_y[-1]))
@@ -113,7 +117,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
     var_list = ['Uc','phi','alpha']
     range_l = [0,-5,0]
     range_h = [5,5,10]
-    fid=1
+    fid=2
     var = var_list[fid]
     vmin = np.float64(range_l[fid])
     vmax = np.float64(range_h[fid])
