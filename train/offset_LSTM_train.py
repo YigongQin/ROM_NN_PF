@@ -42,7 +42,7 @@ from torch.utils.data import Dataset, DataLoader
 # global parameters
 
 frames = 101
-num_runs = 100
+num_runs = 900
 total_size = frames*num_runs
 seq = 1
 G = 8     # G is the number of grains
@@ -125,7 +125,7 @@ class PrepareData(Dataset):
           if not torch.is_tensor(init):
               self.init = torch.from_numpy(init)
      def __len__(self):
-         print('len of the dataset',len(self.output_[:,0]))
+         #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
          return self.input_[:,idx,:], self.output_[idx,:], self.init[idx,:]
@@ -167,7 +167,7 @@ output_test_pt = torch.from_numpy(output_test)
 
 train_loader = PrepareData(input_seq, output_seq, ini_train)
 test_loader = PrepareData(input_test, output_test, ini_test)
-train_loader = DataLoader(train_loader, batch_size = 128, shuffle=True)
+train_loader = DataLoader(train_loader, batch_size = 256, shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shuffle=True)
 
 #input_dat = input_dat.permute(1,0,2)
@@ -181,13 +181,13 @@ class LSTM_soft(nn.Module):
         self.output_len = output_len  
         self.hidden_dim = hidden_dim
         self.num_layer = num_layer
-        self.lstm = nn.GRU(input_len,hidden_dim,num_layer)
+        self.lstm = nn.GRU(input_len,hidden_dim,num_layer,batch_first=True)
         self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
         #self.frac_ini = frac_ini
     def forward(self, input_frac, frac_ini):
         
         lstm_out, _ = self.lstm(input_frac)
-        target = self.project(lstm_out[-1,:,:])
+        target = self.project(lstm_out[:,-1,:])
        # frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
         target = F.relu(target+frac_ini)
         frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
@@ -205,6 +205,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     for epoch in range(num_epochs):
 
       for  ix, (I_train, O_train, ini_train) in enumerate(train_loader):   
+
+         #print(I_train.shape)
          recon = model(I_train,ini_train)
          loss = criterion(recon, O_train)
          optimizer.zero_grad()
@@ -259,8 +261,9 @@ frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1
 for i in range(pred_frames):
     train_dat[:,0,:output_len] = frac_out_info
     train_dat[:,0,-1] = (i+window)/(frames-1) 
+    #print(train_dat.shape)
    # train_dat = torch.from_numpy(np.vstack(frac_out_info,))
-    frac_new_vec = model(torch.from_numpy(train_dat), torch.from_numpy(frac_test_ini[[plot_idx],:])).detach().numpy() 
+    frac_new_vec = model(torch.from_numpy(train_dat).permute(1,0,2), torch.from_numpy(frac_test_ini[[plot_idx],:])).detach().numpy() 
     print('timestep ',i)
     print('predict',frac_new_vec)
     print('true',frac_out_true[i,:])
