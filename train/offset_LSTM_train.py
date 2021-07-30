@@ -42,7 +42,7 @@ from torch.utils.data import Dataset, DataLoader
 # global parameters
 
 frames = 101
-num_runs = 900
+num_runs = 100
 total_size = frames*num_runs
 seq = 1
 G = 8     # G is the number of grains
@@ -61,7 +61,7 @@ window = 10
 seed = 1
 
 # global information that apply for every run
-filebase = '../../ML_Mt47024_grains8_anis0.130_seed'
+filebase = '../../ML_PF5_Mt47024_grains8_anis0.130_seed'
 filename = filebase+str(1)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
@@ -90,7 +90,8 @@ for run in range(num_runs):
     filename = filebase+str(run)+ '_rank0.h5'
     f = h5py.File(filename, 'r')
     aseq = np.asarray(f['sequence'])  # 1 to 10
-    Color = (aseq-5.5)/4.5        # normalize C to [-1,1]
+#    Color = (aseq-5.5)/4.5        # normalize C to [-1,1]
+    Color = (aseq-3)/2
     #print('angle sequence', Color)
     frac = (np.asarray(f['fractions'])).reshape((G,frames), order='F')  # grains coalese, include frames
     frac = frac.T
@@ -128,12 +129,12 @@ class PrepareData(Dataset):
          #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
-         return self.input_[:,idx,:], self.output_[idx,:], self.init[idx,:]
+         return self.input_[idx,:,:], self.output_[idx,:], self.init[idx,:]
 
 # Shape the inputs and outputs
-input_seq = np.zeros(shape=(window,num_train*(frames-window),input_len))
+input_seq = np.zeros(shape=(num_train*(frames-window),window,input_len))
 output_seq = np.zeros(shape=(num_train*(frames-window),output_len))
-input_test = np.zeros(shape=(window,num_test*(frames-window),input_len))
+input_test = np.zeros(shape=(num_test*(frames-window),window,input_len))
 output_test = np.zeros(shape=(num_test*(frames-window),output_len))
 ini_train = np.zeros(shape=(num_train*(frames-window),output_len))
 ini_test = np.zeros(shape=(num_test*(frames-window),output_len))
@@ -142,9 +143,9 @@ sample = 0
 for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
     for t in range(window,frames):
-        input_seq[:,sample,:output_len] = lstm_snapshot[t-window:t,:]
-        input_seq[:,sample,output_len:-1] = param_train[run,:]
-        input_seq[:,sample,-1] = t/(frames-1) 
+        input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
+        input_seq[sample,:,output_len:-1] = param_train[run,:]
+        input_seq[sample,:,-1] = t/(frames-1) 
         output_seq[sample,:] = lstm_snapshot[t,:]
         ini_train[sample,:] = frac_train_ini[run,:]
         sample = sample + 1
@@ -153,9 +154,9 @@ sample = 0
 for run in range(num_test):
     lstm_snapshot = frac_test[run,:,:]
     for t in range(window,frames):
-        input_test[:,sample,:output_len] = lstm_snapshot[t-window:t,:]
-        input_test[:,sample,output_len:-1] = param_test[run,:]
-        input_test[:,sample,-1] = t/(frames-1) 
+        input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
+        input_test[sample,:,output_len:-1] = param_test[run,:]
+        input_test[sample,:,-1] = t/(frames-1) 
         output_test[sample,:] = lstm_snapshot[t,:]
         ini_test[sample,:] = frac_test_ini[run,:]
         sample = sample + 1
@@ -167,7 +168,7 @@ output_test_pt = torch.from_numpy(output_test)
 
 train_loader = PrepareData(input_seq, output_seq, ini_train)
 test_loader = PrepareData(input_test, output_test, ini_test)
-train_loader = DataLoader(train_loader, batch_size = 256, shuffle=True)
+train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shuffle=True)
 
 #input_dat = input_dat.permute(1,0,2)
@@ -188,6 +189,7 @@ class LSTM_soft(nn.Module):
         
         lstm_out, _ = self.lstm(input_frac)
         target = self.project(lstm_out[:,-1,:])
+       # target = F.dropout(target, p=0.1)
        # frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
         target = F.relu(target+frac_ini)
         frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
@@ -254,16 +256,16 @@ evolve_runs = 1
 frac_out_info = frac_test[plot_idx,:window,:]
 frac_out = np.zeros((frames,G))
 frac_out[:window,:] = frac_out_info[:,:]
-train_dat = np.zeros((window,evolve_runs,input_len))
-train_dat[:,0,output_len:-1] = param_test[plot_idx,:]
+train_dat = np.zeros((evolve_runs,window,input_len))
+train_dat[0,:,output_len:-1] = param_test[plot_idx,:]
 print('seq', param_test[plot_idx,:])
 frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
 for i in range(pred_frames):
-    train_dat[:,0,:output_len] = frac_out_info
-    train_dat[:,0,-1] = (i+window)/(frames-1) 
+    train_dat[0,:,:output_len] = frac_out_info
+    train_dat[0,:,-1] = (i+window)/(frames-1) 
     #print(train_dat.shape)
    # train_dat = torch.from_numpy(np.vstack(frac_out_info,))
-    frac_new_vec = model(torch.from_numpy(train_dat).permute(1,0,2), torch.from_numpy(frac_test_ini[[plot_idx],:])).detach().numpy() 
+    frac_new_vec = model(torch.from_numpy(train_dat), torch.from_numpy(frac_test_ini[[plot_idx],:])).detach().numpy() 
     print('timestep ',i)
     print('predict',frac_new_vec)
     print('true',frac_out_true[i,:])
