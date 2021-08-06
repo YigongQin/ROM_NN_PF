@@ -58,7 +58,7 @@ param_list = ['anis','G0','Rmax']
 input_len = 2*G + param_len + time_tag
 hidden_dim = 50
 output_len = G
-LSTM_layer = 2
+LSTM_layer = 3
 valid_ratio = 1/11
 
 num_train = int((1-valid_ratio)*num_runs)
@@ -69,7 +69,7 @@ pred_frames= frames-window
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-num_epochs = 100
+num_epochs = 80
 learning_rate=5e-4
 expand = 10 #9
 
