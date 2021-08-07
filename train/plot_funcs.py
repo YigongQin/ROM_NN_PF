@@ -138,7 +138,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
       ax3 = fig.add_subplot(133)
       cs3 = ax3.imshow(field.T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
       subplot_rountine(fig, ax3, cs3, 3)
-      ax3.set_title('final:NN_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
+      ax3.set_title('final:NN_predict_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
       
       plt.savefig(var + '_input_frac' + str("%d"%input_frac) + '_case' + str(plot_idx)+ '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()

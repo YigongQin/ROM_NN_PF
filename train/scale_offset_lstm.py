@@ -273,7 +273,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
         print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
         # outputs.append((epoch, data, recon),)
-        
+      train_list.append(loss)
+      test_list.append(test_loss)        
     return model 
 
 
@@ -297,13 +298,19 @@ if model_exist:
   model.load_state_dict(torch.load('./lstmmodel'))
   model.eval()   
 else: 
+  train_list=[]
+  test_list=[]
   start = time.time()
   model=LSTM_train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
   torch.save(model.state_dict(), './lstmmodel')
-
-
+  fig, ax = plt.subplots() 
+  ax.plot(train_list)
+  ax.plot(test_list)
+  ax.xlabel('epoch')
+  ax.ylabel('loss')
+  plt.legend(['training loss','validation loss'])
 
 ## plot to check if the construction is reasonable
 evolve_runs = 10 #num_test
@@ -349,8 +356,10 @@ for plot_idx in range( evolve_runs ):  # in test dataset
    tip_y = tip_y_asse[(num_train+frame_idx)*frames:(num_train+frame_idx+1)*frames]
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
-
-   plot_IO(0.13,5,1,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,window,plot_idx)
+   G0 = 5
+   Rmax = 1 
+   anis = 0.13
+   plot_IO(anis,G0,anis,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,window,plot_idx)
 
 
 
