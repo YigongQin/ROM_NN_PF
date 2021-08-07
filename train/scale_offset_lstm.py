@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_funcs import plot_reconst,plot_real
+from plot_funcs import plot_reconst,plot_real, plot_IO
 from adabound import *
 from torch.utils.data import Dataset, DataLoader
 #rnn = nn.GRU(10, 20, 2)
@@ -347,10 +347,10 @@ for plot_idx in range( evolve_runs ):  # in test dataset
    alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
    aseq_test = aseq_asse[(num_train+frame_idx)*G:(num_train+frame_idx+1)*G]
    tip_y = tip_y_asse[(num_train+frame_idx)*frames:(num_train+frame_idx+1)*frames]
-   plot_real(x,y,alpha_true,plot_idx)
-   plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
+   #plot_real(x,y,alpha_true,plot_idx)
+   #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
 
-
+   plot_IO(0.13,5,1,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,window,plot_idx)
 
 
 

@@ -12,7 +12,6 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-
 var_list = ['Uc','phi','alpha']
 range_l = [0,-5,0]
 range_h = [5,5,10]
@@ -21,28 +20,29 @@ var = var_list[fid]
 vmin = np.float64(range_l[fid])
 vmax = np.float64(range_h[fid])
 plt.rcParams.update({'font.size': 10})
-plt.style.use("dark_background")
+#plt.style.use("dark_background")
 mathtext.FontConstantsBase.sub1 = 0.2  
 fg_color='white'; bg_color='black'
 
-def subplot_rountine(fig, ax, cs):
+def subplot_rountine(fig, ax, cs, idx):
     
-      ax.set_xlabel('$x\ (\mu m)$'); ax.set_ylabel('$y\ (\mu m)$');
+      ax.set_xlabel('$x\ (\mu m)$'); 
+      if idx ==1: ax.set_ylabel('$y\ (\mu m)$');
       ax.spines['bottom'].set_color(bg_color);ax.spines['left'].set_color(bg_color)
       ax.yaxis.label.set_color(bg_color); ax.xaxis.label.set_color(bg_color)
       ax.tick_params(axis='x', colors=bg_color); ax.tick_params(axis='y', colors=bg_color);
-      
-      axins = inset_axes(ax,width="3%",height="50%",loc='lower left')
-      cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
-      cbar.set_label(r'$\alpha$', color=fg_color)
-      cbar.ax.yaxis.set_tick_params(color=fg_color)
-      cbar.outline.set_edgecolor(fg_color)
-      plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
+      if idx==1:
+        axins = inset_axes(ax,width="3%",height="50%",loc='lower left')
+        cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
+        cbar.set_label(r'$\alpha$', color=fg_color)
+        cbar.ax.yaxis.set_tick_params(color=fg_color)
+        cbar.outline.set_edgecolor(fg_color)
+        plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
       cs.set_clim(vmin, vmax)
     
       return
 
-def plot_IO(G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
 
     print('angle sequence', aseq)
     
@@ -51,6 +51,7 @@ def plot_IO(G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
     nt=len(tip_y)
+    input_frac = int((window-1)/(nt-1)*100)
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
@@ -122,19 +123,24 @@ def plot_IO(G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
     plot_flag=True
     if plot_flag==True:
       fig = plt.figure()
+      txt = r'$\epsilon_k$'+str(anis)+'_G'+str(G0)+r'_$R_{max}$'+str(Rmax)
+      fig.text(.5, .2, txt, ha='center')
       ax1 = fig.add_subplot(131)
       cs1 = ax1.imshow(ini_field.T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
-      subplot_rountine(fig, ax1, cs1)
-      
+      subplot_rountine(fig, ax1, cs1, 1)
+      ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
+ 
       ax2 = fig.add_subplot(132)
       cs2 = ax2.imshow(alpha_true[1:-1,1:-1].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
-      subplot_rountine(fig, ax2, cs2)
+      subplot_rountine(fig, ax2, cs2, 2)
+      ax2.set_title('final:PDE_solver', color=bg_color,fontsize=8)
       
       ax3 = fig.add_subplot(133)
       cs3 = ax3.imshow(field.T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
-      subplot_rountine(fig, ax3, cs3)
+      subplot_rountine(fig, ax3, cs3, 3)
+      ax3.set_title('final:NN_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
       
-      plt.savefig(var + '_input_frac' + str("%d"%int((window-1)/(nt-1)*100)) + '_case' + str(plot_idx)+ '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_input_frac' + str("%d"%input_frac) + '_case' + str(plot_idx)+ '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
