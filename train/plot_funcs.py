@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-def plot_real(x,y,alpha_true):
+def plot_real(x,y,alpha_true,plot_idx):
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ymax = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -25,7 +25,7 @@ def plot_real(x,y,alpha_true):
     var = var_list[fid]
     vmin = np.float64(range_l[fid])
     vmax = np.float64(range_h[fid])
-    print('the field variable: ',var,', range (limits):', vmin, vmax)
+    #print('the field variable: ',var,', range (limits):', vmin, vmax)
     fg_color='white'; bg_color='black'
    # error=field-alpha_true[1:-1,1:-1]
     plot_flag=True
@@ -47,13 +47,13 @@ def plot_real(x,y,alpha_true):
       plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
       cs.set_clim(vmin, vmax)
       #plt.show()
-      plt.savefig('true'+'_'+ var + '.png',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.savefig('true'+'_'+ var +str(plot_idx) + '.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
  
     
 
 
-def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
+def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac,plot_idx):
     plt.rcParams.update({'font.size': 10})
     plt.style.use("dark_background")
     #plt.rcParams['text.usetex']=True
@@ -61,22 +61,22 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
     mathtext.FontConstantsBase.sub1 = 0.2    
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ymax = y[-2]
-    print('xmin',xmin,'xmax',xmax,'ymin',ymin,'ymax',ymax)
+    #print('xmin',xmin,'xmax',xmax,'ymin',ymin,'ymax',ymax)
     dx = x[1]-x[0]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     nt=len(tip_y); len_seq=nt
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')
-    print('nx,ny,nt', nx,ny,nt)
+    #print('nx,ny,nt', nx,ny,nt)
     print('angle sequence', aseq)
     
     ntip_y = np.asarray(tip_y/dx,dtype=int)
-    print('ntip',ntip_y)
+    #print('ntip',ntip_y)
     
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
     #piece_len = np.reshape(piece_len,(G,len_seq), order='F')
     piece_len = np.cumsum(piece_len,axis=0)
     piece0 = piece_len[:,0]
-    print('len_piece', piece_len)
+    #print('len_piece', piece_len)
     
     field = np.zeros((nx,ny),dtype=int)
     
@@ -99,20 +99,17 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
            # print(loc)
             field[i,j] = aseq[g]
             if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
-        elif g==G-1:
-          for i in range(temp_piece[g-1], nx):
-            field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
         else:
           for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1): break
            # print(loc)
             field[i,j] = aseq[g]
             if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
          #   loc+=1
-          #  if (i>nx-1): break
     
-    print(field)
-    print('miss rate', miss/(nx*ntip_y[-1]))
+    #print(field)
+    miss_rate = miss/(nx*ntip_y[-1]);
+    print('miss rate', miss_rate)
     
     var_list = ['Uc','phi','alpha']
     range_l = [0,-5,0]
@@ -121,7 +118,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
     var = var_list[fid]
     vmin = np.float64(range_l[fid])
     vmax = np.float64(range_h[fid])
-    print('the field variable: ',var,', range (limits):', vmin, vmax)
+   # print('the field variable: ',var,', range (limits):', vmin, vmax)
     fg_color='white'; bg_color='black'
    # error=field-alpha_true[1:-1,1:-1]
     plot_flag=True
@@ -143,7 +140,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac):
       plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
       cs.set_clim(vmin, vmax)
       #plt.show()
-      plt.savefig('recons'+'_'+ var + '.png',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.savefig('recons'+'_'+ var + str(plot_idx)+ 'error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
