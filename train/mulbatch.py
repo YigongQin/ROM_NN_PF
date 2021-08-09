@@ -102,7 +102,7 @@ print('nx,ny', nx,ny)
 
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,G+param_len))
-datasets = glob.glob('../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_seed2_rank0.h5')
+datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_seed*_rank0.h5')
 print('dataset list',datasets,' and size',len(datasets))
 
 for batch_id in range(num_batch):
@@ -270,7 +270,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
-      if epoch==num_epochs/2: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      if epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       for  ix, (I_train, O_train, ini_train, scaler_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
@@ -327,7 +327,8 @@ else:
   plt.xlabel('epoch')
   plt.ylabel('loss')
   plt.legend(['training loss','validation loss'])
-
+  plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
+  plt.savefig('mul_batch_loss.png')
 ## plot to check if the construction is reasonable
 evolve_runs = 10 #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
@@ -369,7 +370,8 @@ for batch_id in range(num_batch):
  tip_y_asse = np.asarray(f['y_t'])
  for plot_idx in range( int(evolve_runs/num_batch) ):  # in test dataset
    print('plot_id,batch_id', plot_idx, batch_id)
-   print('seq', param_test[plot_idx*num_batch+batch_id,:])
+   data_id = plot_idx*num_batch+batch_id
+   print('seq', param_test[data_id,:])
    #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
    frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
    
@@ -381,8 +383,8 @@ for batch_id in range(num_batch):
    # get the parameters from dataset name
    G0 = 5
    Rmax = 1 
-   anis = param_test[plot_idx*num_batch+batch_id,G]
-   plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,plot_idx)
+   anis = param_test[data_id,G]
+   plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
 
 
 

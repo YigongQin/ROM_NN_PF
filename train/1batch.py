@@ -308,10 +308,11 @@ else:
   fig, ax = plt.subplots() 
   ax.plot(train_list)
   ax.plot(test_list)
-  ax.xlabel('epoch')
-  ax.ylabel('loss')
+  plt.xlabel('epoch')
+  plt.ylabel('loss')
   plt.legend(['training loss','validation loss'])
-
+  plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
+  plt.savefig('single_batch_loss.png')
 ## plot to check if the construction is reasonable
 evolve_runs = 10 #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
