@@ -75,8 +75,8 @@ pred_frames= frames-window
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-num_epochs = 30
-learning_rate=2e-4
+num_epochs = 120
+learning_rate=0.5e-4
 expand = 10 #9
 
 # global information that apply for every run
@@ -237,7 +237,7 @@ class LSTM_soft(nn.Module):
         self.num_layer = num_layer
         self.lstm = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
         self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
-        self.linear = nn.Linear(output_len,output_len)
+     #   self.linear = nn.Linear(output_len,output_len)
         #self.frac_ini = frac_ini
     def forward(self, input_frac, frac_ini, scaler):
         
@@ -247,9 +247,9 @@ class LSTM_soft(nn.Module):
        # frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
         target = F.relu(target+frac_ini)  # frac_ini here is necessary to keep 
         frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
-        frac = scaler.view(-1,1)*frac
+      #  frac = scaler.view(-1,1)*frac
      #   print(scaler.shape,frac.shape)
-      #  frac = scaler.unsqueeze(dim=1)*frac
+        frac = scaler.unsqueeze(dim=1)*frac
         return frac
 
 def scaled_loss(output, target, runs, pred, scaler):
@@ -274,8 +274,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       for  ix, (I_train, O_train, ini_train, scaler_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
-         recon = model(I_train,ini_train,scaler_train)
-         loss = criterion(recon, O_train)
+         #recon = model(I_train,ini_train,scaler_train)
+         loss = criterion(model(I_train,ini_train,scaler_train), O_train)
         # print(recon,O_train)
          #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
          optimizer.zero_grad()
@@ -283,14 +283,14 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
          optimizer.step()
         # optimizer.zero_grad() 
       for  ix, (I_test, O_test, ini_test, scaler_test) in enumerate(test_loader):
-        pred = model(I_test,ini_test,scaler_test)
-        test_loss = criterion(pred, O_test)
+        #pred = model(I_test,ini_test,scaler_test)
+        test_loss = criterion(model(I_test,ini_test,scaler_test), O_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
-        print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
+      print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
         # outputs.append((epoch, data, recon),)
-      train_list.append(loss)
-      test_list.append(test_loss)        
+      train_list.append(float(loss))
+      test_list.append(float(test_loss))        
     return model 
 
 
