@@ -38,7 +38,8 @@ param_len = 0
 time_tag = 1
 param_list = ['anis','G0','Rmax']
 input_len = 2*G + param_len + time_tag
-hidden_dim = 50
+hidden_dim = 32
+embed_dim = 32
 output_len = G
 encode_layer = 3
 nheads = 8
@@ -52,7 +53,7 @@ pred_frames= frames-window
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-num_epochs = 80
+num_epochs = 250
 learning_rate=5e-4
 expand = 10 #9
 
@@ -222,13 +223,13 @@ class LSTM_soft(nn.Module):
 
 class PositionalEncoding(nn.Module):
 
-    def __init__(self, input_len: int, dropout: float , max_len: int = 100):
+    def __init__(self, embed_len: int, dropout: float , max_len: int = 100):
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
-
+        
         position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, input_len, 2) * (-math.log(10000.0) / input_len))
-        pe = torch.zeros(max_len,  input_len)  # shape [batch_size, seq_len, input_len]
+        div_term = torch.exp(torch.arange(0, embed_len, 2) * (-math.log(10000.0) / embed_len))
+        pe = torch.zeros(max_len,  embed_len)  # shape [batch_size, seq_len, input_len]
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
@@ -238,21 +239,27 @@ class PositionalEncoding(nn.Module):
         Args:
             x: Tensor, shape [batch_size, seq_len, input_len]
         """
-        x = x + self.pe[:x.size(0),:].unsqueeze(0)
+        x = x + self.pe[:x.size(1),:].unsqueeze(0)
         return self.dropout(x)
 
 
 class TransformerModel(nn.Module):
 
-    def __init__(self, input_len: int, output_len: int, nhead: int, d_hid: int,
+    def __init__(self, input_len: int, embed_len: int, output_len: int, nhead: int, d_hid: int,
                  nlayers: int, dropout: float ):
         super().__init__()
         self.model_type = 'Transformer'
-        self.pos_encoder = PositionalEncoding(input_len, dropout)
-        encoder_layers = TransformerEncoderLayer(input_len, nhead, d_hid, dropout, batch_first=True)
+        self.pos_encoder = PositionalEncoding(embed_len, dropout)
+        encoder_layers = TransformerEncoderLayer(embed_len, nhead, d_hid, dropout)
         self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
         # after transformer layer, the dim goes back to input_len
-        self.project = nn.Linear(input_len, output_len)
+        self.embedding = nn.Linear(input_len, embed_len)
+        self.project = nn.Linear(embed_len, output_len)
+
+    def _generate_square_subsequent_mask(self, sz):
+        mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+        mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
+        return mask
 
     def forward(self, input_frac, frac_ini, scaler) :
         """
@@ -263,9 +270,11 @@ class TransformerModel(nn.Module):
         Returns:
             output Tensor of shape [batch_size, seq_len_out, output_len]
         """
+        input_frac = self.embedding(input_frac)
         input_frac = self.pos_encoder(input_frac)
-        encode_out = self.transformer_encoder(input_frac)
-        target = self.project(encode_out[:,-1,:]) # project to the desired shape
+        mask = self._generate_square_subsequent_mask(input_frac.shape[1]).to(device)
+        encode_out = self.transformer_encoder(input_frac.permute(1,0,2),mask)
+        target = self.project(encode_out[-1,:,:]) # project to the desired shape
         target = F.relu(target+frac_ini)  # frac_ini here is necessary to keep 
         frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
         frac = scaler.view(-1,1)*frac
@@ -288,6 +297,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.2, last_epoch=-1)
                                  #weight_decay=1e-5) # <--
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
@@ -295,7 +305,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
-      if epoch==num_epochs-20: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      if epoch==num_epochs-20: optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
       for  ix, (I_train, O_train, ini_train, scaler_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
@@ -306,7 +316,6 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
          optimizer.zero_grad()
          loss.backward()
          optimizer.step()
-        # optimizer.zero_grad() 
       for  ix, (I_test, O_test, ini_test, scaler_test) in enumerate(test_loader):
         #pred = model(I_test,ini_test,scaler_test)
          test_loss = criterion(model(I_test,ini_test,scaler_test), O_test)
@@ -316,11 +325,12 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
         # outputs.append((epoch, data, recon),)
       train_list.append(float(loss))
       test_list.append(float(test_loss))        
+      scheduler.step()
     return model 
 
 
 #model = LSTM_soft(input_len, output_len, hidden_dim, encode_layer)
-model = TransformerModel(input_len, output_len, nheads, hidden_dim, encode_layer, 0)
+model = TransformerModel(input_len, embed_dim, output_len, nheads, hidden_dim, encode_layer, 0.1)
 
 model = model.double()
 if device=='cuda':
