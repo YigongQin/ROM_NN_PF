@@ -203,8 +203,11 @@ output_test_pt = torch.from_numpy(output_test)
 scaler_train = np.tile(scaler_lstm[window:],num_train)
 scaler_test = np.tile(scaler_lstm[window:],num_test)
 
-mask_train = (input_seq[:,-1,:output_len]/scaler_train[:,np.newaxis]+ini_train>1e-3)*np.ones(shape=(num_train*(frames-window),output_len))
-mask_test = (input_test[:,-1,:output_len]/scaler_test[:,np.newaxis]+ini_test>1e-3)*np.ones(shape=(num_test*(frames-window),output_len))
+scaler_train_p = np.tile(scaler_lstm[window-1:-1],num_train)
+scaler_test_p = np.tile(scaler_lstm[window-1:-1],num_test)
+
+mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones(shape=(num_train*(frames-window),output_len))
+mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones(shape=(num_test*(frames-window),output_len))
 print(mask_train)
 train_loader = PrepareData(input_seq, output_seq, ini_train, scaler_train, mask_train)
 test_loader = PrepareData(input_test, output_test, ini_test, scaler_test, mask_test)
@@ -252,7 +255,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
                                  #weight_decay=1e-5) # <--
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.2, last_epoch=-1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5, last_epoch=-1)
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
     for epoch in range(num_epochs):
@@ -335,7 +338,8 @@ for i in range(pred_frames):
     train_dat[:evolve_runs,:,-1] = (i+window)/(frames-1) 
     #print(train_dat.shape)
    # train_dat = torch.from_numpy(np.vstack(frac_out_info,))
-    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_lstm[[window+i]])) ) 
+    mask_before = (train_dat[:,-1,:output_len]/scaler_lstm[[window+i-1]]+frac_test_ini[:evolve_runs,:]>1e-3)*np.ones((evolve_runs,output_len)) 
+    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_lstm[[window+i]]), todevice(mask_before)) ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
