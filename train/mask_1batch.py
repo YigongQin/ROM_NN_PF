@@ -74,7 +74,7 @@ learning_rate=5e-4
 expand = 10 #9
 
 # global information that apply for every run
-filebase = '../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_seed'
+filebase = '../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_G05.000_Rmax1.000_seed'
 filename = filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
