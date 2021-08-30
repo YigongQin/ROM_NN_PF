@@ -11,7 +11,7 @@ import scipy.io as sio
 import h5py
 import glob,os,re
 from scipy.interpolate import interp1d
-
+from math import pi
 
 def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 
@@ -59,19 +59,19 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 # (1) the number of grains active on the S-L interface: total/num_simulations
 # (2) the average and standard deviation of the grain area: total/num_grains
 
-batch = 2#2500
+batch = 25#2500
 num_batch = 4
 num_runs = batch*num_batch
 
 frames = 27 +1
 G = 20
-bars = 10
-
+bars = 9
+pfs=11
 # targets
 Ni0 = np.zeros(bars,dtype=int) 
 Nif = np.zeros(bars,dtype=int)    
-di0 = np.zeros(bars,dtype=int)
-dif = np.zeros(bars,dtype=int)   
+di0 = np.zeros(bars)
+dif = np.zeros(bars)   
 
 # create list of lists, both of them should have the same size 
 # size of each interval is Ni0, for each sublist, do mean and std
@@ -81,7 +81,7 @@ areaf = [[] for _ in range(bars)]
 
 ## start with loading data
 
-datasets = glob.glob('../../*test3_Mt70536*.h5')
+datasets = glob.glob('../../*test25_Mt70536*.h5')
 #datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
 #                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
 print(datasets)
@@ -102,6 +102,7 @@ for batch_id in range(num_batch):
   aseq_asse = np.asarray(f['sequence'])
   frac_asse = np.asarray(f['fractions'])
   tip_y_asse = np.asarray(f['y_t'])
+  angles_asse = np.asarray(f['angles'])
   #number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
   #print(number_list[6])
   # compile all the datasets interleave
@@ -110,19 +111,24 @@ for batch_id in range(num_batch):
     aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
     frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
     tip_y = tip_y_asse[run*frames:(run+1)*frames]
-    print(frac[:,0]) 
-    Color = (aseq-1)  # in the range of 0-9
-    #print('angle sequence', Color)
-    ROM_qois(nx,ny,dx,G,Color,tip_y,frac,Ni0,Nif,area0,areaf)
+    angles = angles_asse[run*pfs:(run+1)*pfs]
+    #print(frac[:,0]) 
+    Color = angles[aseq]*180/pi+90  # in the range of 0-90 degree
+    interval = np.asarray(Color/10,dtype=int)
+    print('angle sequence', interval)
+    ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf)
     print(Ni0,Nif)
 Ni0=Ni0/num_runs
 Nif=Nif/num_runs
 print('initial distribution of average number of grains',Ni0)
 print('final istribution of average number of grains',Nif)
 #print(area0)
+
 for i in range(bars):
-    print('Initial # grains:',len(area0[i]),' average:',dx**2*np.mean(np.asarray(area0[i])))
-    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
-
-
+#    print('Initial # grains:',len(area0[i]),' average:',dx**2*np.mean(np.asarray(area0[i])))
+#    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
+   di0[i] = np.mean( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx
+   dif[i] = np.mean( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx
+print('initial distribution of average grain diameter',di0)
+print('final istribution of average grain diameter',dif)
 
