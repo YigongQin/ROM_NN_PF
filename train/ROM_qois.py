@@ -21,7 +21,7 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
     piece0 = piece_len[:,0]
-    
+    #print(piece0) 
     for g in range(G):
         
         if piece_len[g,0]>0: Ni0[angle_id[g]] +=1
@@ -48,19 +48,22 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
    # step 3: attach every grain to the size list
     for g in range(G):
          
-        if piece_len[g,0]>0: 
-            area0[angle_id[g]].append(ar0[g])
-            areaf[angle_id[g]].append(arf[g])
-
+        if piece_len[g,0]>0:
+            list0g = area0[angle_id[g]]
+            listfg = areaf[angle_id[g]]
+            list0g.extend([ar0[g]])
+            listfg.extend([arf[g]])
+        #print(area0[angle_id[g]])
+        #print(areaf[angle_id[g]])
 # plot a bar graph with initial and final grain information:
 # (1) the number of grains active on the S-L interface: total/num_simulations
 # (2) the average and standard deviation of the grain area: total/num_grains
 
-batch = 2500
+batch = 2#2500
 num_batch = 4
 num_runs = batch*num_batch
 
-frames = 27
+frames = 27 +1
 G = 20
 bars = 10
 
@@ -72,16 +75,17 @@ dif = np.zeros(bars,dtype=int)
 
 # create list of lists, both of them should have the same size 
 # size of each interval is Ni0, for each sublist, do mean and std
-area0 = [[]] * bars
-areaf = [[]] * bars
+area0 = [[] for _ in range(bars)]
+areaf = [[] for _ in range(bars)]
 
 
 ## start with loading data
 
-datasets = glob.glob('../ML_PF10_train1000_test100_Mt47024_grains8_\
-                     frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
-
-f0 = datasets[0]
+datasets = glob.glob('../../*test3_Mt70536*.h5')
+#datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
+#                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
+print(datasets)
+f0 = h5py.File(str(datasets[0]), 'r')
 x = np.asarray(f0['x_coordinates'])
 y = np.asarray(f0['y_coordinates'])
 xmin = x[1]; xmax = x[-2]
@@ -102,22 +106,23 @@ for batch_id in range(num_batch):
   #print(number_list[6])
   # compile all the datasets interleave
   for run in range(batch):
+ # for run in range(1):
     aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
     frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
     tip_y = tip_y_asse[run*frames:(run+1)*frames]
-    
+    print(frac[:,0]) 
     Color = (aseq-1)  # in the range of 0-9
     #print('angle sequence', Color)
     ROM_qois(nx,ny,dx,G,Color,tip_y,frac,Ni0,Nif,area0,areaf)
-
-Ni0/=num_runs
-Nif/=num_runs
+    print(Ni0,Nif)
+Ni0=Ni0/num_runs
+Nif=Nif/num_runs
 print('initial distribution of average number of grains',Ni0)
 print('final istribution of average number of grains',Nif)
-
+#print(area0)
 for i in range(bars):
-    print('Initial # grains:',len(area0[i]),' average:',np.mean(np.asarray(area0[i])))
-    print('IFinal # grains:',len(areaf[i]),' average:',np.mean(np.asarray(areaf[i])))
+    print('Initial # grains:',len(area0[i]),' average:',dx**2*np.mean(np.asarray(area0[i])))
+    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
 
 
 
