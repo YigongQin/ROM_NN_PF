@@ -12,6 +12,7 @@ import h5py
 import glob,os,re
 from scipy.interpolate import interp1d
 from math import pi
+import matplotlib.pyplot as plt 
 
 def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 
@@ -131,4 +132,37 @@ for i in range(bars):
    dif[i] = np.mean( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx
 print('initial distribution of average grain diameter',di0)
 print('final istribution of average grain diameter',dif)
+
+
+labels = ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90']
+
+x = np.arange(len(labels))
+width = 0.35
+
+fig1, ax1 = plt.subplots()
+
+
+rects1 = ax1.bar(x - width/2, Ni0, width, label='Men')
+rects2 = ax1.bar(x + width/2, Nif, width, label='Women')
+
+
+ax1.set_ylabel('# grains')
+ax1.set_title('average # grains on the S-L interface')
+ax1.set_xticks(x)
+ax1.set_xticklabels(labels)
+ax1.legend()
+
+ax1.bar_label(rects1, padding=3)
+ax1.bar_label(rects2, padding=3)
+
+fig1.tight_layout()
+
+plt.show()
+
+
+
+
+
+
+
 
