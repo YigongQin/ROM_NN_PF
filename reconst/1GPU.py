@@ -15,55 +15,41 @@ import h5py
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import colors
+import glob, os, re
 plt.rcParams.update({'font.size': 10})
-plt.style.use("dark_background")
-#plt.rcParams['text.usetex']=True
-#plt.rcParams['text.latex.preamble']=r'\makeatletter \newcommand*{\rom}[1]{\expandafter\@slowromancap\romannumeral #1@} \makeatother'
-mathtext.FontConstantsBase.sub1 = 0.2
+mathtext.FontConstantsBase.sub1 = 0.
+
 num_gpu = 1
 npx  = 1
 npy = npx
-
-#f = h5py.File('data.h5', 'r')
-
-#filebase = sys.argv[1];
-#nx = int(sys.argv[2])
-#ratio = float(sys.argv[3])
-#ny = int(nx*ratio)
 ratio=1
 hd=1
 filebase = sys.argv[1]
 filename = filebase + str(num_gpu-1)+'.h5'
+
+
+number_list=re.findall(r"[-+]?\d*\.\d+|\d+", filename)
+
+
+pfs = int(number_list[0])+1; print('PFs',pfs)
+train = int(number_list[1]); print('train',train)
+test = int(number_list[2]); print('test',test)
+G = int(number_list[4]); print('grains',G)
+frames = int(number_list[5])+1; print('grains',frames)
+
 f = h5py.File(filename, 'r')
-    #data = sio.loadmat(filename,squeeze_me = True)
-   # print(ny)
-   # field = data[var];nx = data['nx'];ny=data['nz']
 x = f['x_coordinates']
 y = f['y_coordinates']
-fnx = len(x); fny = len(y); nx = fnx-2*hd; ny = fny-2*hd;
-print(nx,ny)
+fnx = len(x); fny = len(y);
+length = fnx*fny
 lx = 60
 ly = lx*ratio
 print('the limits for geometry lx, ly: ',lx,ly)
-
-u = np.zeros((nx*npx+1,ny*npy+1))
-
 
 idx = np.array([0]) #,10,15,20])
 var_list = ['Uc','phi','alpha']
 range_l = [0,-1,0]
 range_h = [5,1,90]
-
-
-DNSmode = 'nb'   # nb or hg
-
-#macrodata = sio.loadmat('WD_shallow.mat', squeeze_me=True)
-t0 = 1.83e-5 #macrodata['t_macro'][-1]
-
-
-
-
-#colors = [(0.2, 0.4, 1, 1),(1, 0., 0., 1),(0.3, 1, 0.3, 1),(0.3, 0.3, 0.3, 1)]
 
 fid=2
 var = var_list[fid]
@@ -71,29 +57,28 @@ vmin = np.float64(range_l[fid])
 vmax = np.float64(range_h[fid])
 print('the field variable: ',var,', range (limits):', vmin, vmax)
 fg_color='white'; bg_color='black'
-for j in range(len(idx)):
-  for i in range(num_gpu):
-    
-    px = i - npx*int(i/npx)
-    py = int(i/npx)
-    filename = filebase + str(i)+'.h5'
-    f = h5py.File(filename, 'r')
-    #data = sio.loadmat(filename,squeeze_me = True)
-   # print(ny)
-   # field = data[var];nx = data['nx'];ny=data['nz']
-    x = f['x_coordinates']
-    y = f['y_coordinates']
-    
-    field = f[var]; fnx = len(x); fny = len(y); nx = fnx-2*hd; ny = fny-2*hd;
-    field = np.reshape(field,(fnx,fny),order='F');print('shape of the rank',i,':',field.shape)
-    print(i, field[hd:fnx-hd,hd:fny-hd])
-    if fid==2: u[px*nx:(px+1)*nx,py*ny:(py+1)*ny] = field[hd:fnx-hd,hd:fny-hd]#*180/pi
-    else: u[px*nx:(px+1)*nx,py*ny:(py+1)*ny] = field[hd:fnx-hd,hd:fny-hd]    
-    
+
+
+
+
+
+for tid in range(test):
+
+  alpha_id = (f[var])[tid*length:(tid+1)*length]
+
+#  aseq = np.asarray(f['sequence'])[tid*G:(tid+1)*G]
+  aid = tid + train
+  angles = np.asarray(f['angles'])[aid*pfs:(aid+1)*pfs]
+  print('tid, angle',tid,angles)
+
+  alpha_id = np.asarray(alpha_id).reshape((fnx,fny),order='F')
+  u = angles[alpha_id]/pi*180+90
+
+
   fig, ax = plt.subplots()
-  time = t0 #idx[j]/20*t0
-  if time == 0.0: plt.title('t = 0' + ' s',color=bg_color)
-  else: plt.title('t = '+str('%4.2e'%time) + ' s',color=bg_color)
+  #time = t0 #idx[j]/20*t0
+  #if time == 0.0: plt.title('t = 0' + ' s',color=bg_color)
+  #else: plt.title('t = '+str('%4.2e'%time) + ' s',color=bg_color)
   axins = inset_axes(ax,width="3%",height="50%",loc='lower left')#,bbox_to_anchor=(1.05, 0., 1, 1),bbox_transform=ax.transAxes,borderpad=0,)
   #cs = ax.imshow(u.T,cmap=plt.get_cmap('jet'),norm=colors.PowerNorm(gamma=0.3,vmin=vmin, vmax=vmax),origin='lower',extent= (-lx, 0, -ly, 0))
   if fid==2: cs = ax.imshow(u.T,cmap=plt.get_cmap('jet'),origin='lower',extent= (0, lx, 0, ly))
@@ -112,7 +97,7 @@ for j in range(len(idx)):
   plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
   cs.set_clim(vmin, vmax)
   plt.show()
-  plt.savefig(filebase+'_'+ var + str(idx[j])+ '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
+  plt.savefig(var + 'test_' +str(idx[tid])+ '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
   plt.close()
   print(u.shape)
   print(u.T)
