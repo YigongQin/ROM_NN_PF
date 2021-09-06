@@ -102,7 +102,7 @@ print('nx,ny', nx,ny)
 
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,G+param_len))
-datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_seed*_rank0.h5')
+datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
 print('dataset list',datasets,' and size',len(datasets))
 
 for batch_id in range(num_batch):

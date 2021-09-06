@@ -13,6 +13,7 @@ import glob,os,re
 from scipy.interpolate import interp1d
 from math import pi
 import matplotlib.pyplot as plt 
+from scipy import io as sio 
 
 def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 
@@ -60,7 +61,7 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
 # (1) the number of grains active on the S-L interface: total/num_simulations
 # (2) the average and standard deviation of the grain area: total/num_grains
 
-batch = 25#2500
+batch = 900#2500
 num_batch = 4
 num_runs = batch*num_batch
 
@@ -73,7 +74,8 @@ Ni0 = np.zeros(bars,dtype=int)
 Nif = np.zeros(bars,dtype=int)    
 di0 = np.zeros(bars)
 dif = np.zeros(bars)   
-
+di0_std = np.zeros(bars)
+dif_std = np.zeros(bars)
 # create list of lists, both of them should have the same size 
 # size of each interval is Ni0, for each sublist, do mean and std
 area0 = [[] for _ in range(bars)]
@@ -82,7 +84,7 @@ areaf = [[] for _ in range(bars)]
 
 ## start with loading data
 
-datasets = glob.glob('../../*test25_Mt70536*.h5')
+datasets = glob.glob('../../*test250_Mt70536*.h5')
 #datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
 #                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
 print(datasets)
@@ -116,9 +118,9 @@ for batch_id in range(num_batch):
     #print(frac[:,0]) 
     Color = angles[aseq]*180/pi+90  # in the range of 0-90 degree
     interval = np.asarray(Color/10,dtype=int)
-    print('angle sequence', interval)
+    #print('angle sequence', interval)
     ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf)
-    print(Ni0,Nif)
+    #print(Ni0,Nif)
 Ni0=Ni0/num_runs
 Nif=Nif/num_runs
 print('initial distribution of average number of grains',Ni0)
@@ -130,8 +132,11 @@ for i in range(bars):
 #    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
    di0[i] = np.mean( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx
    dif[i] = np.mean( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx
+   di0_std[i] = np.std( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx/np.sqrt(len(area0[i]))
+   dif_std[i] = np.std( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx/np.sqrt(len(areaf[i]))
 print('initial distribution of average grain diameter',di0)
 print('final istribution of average grain diameter',dif)
+print(di0_std,dif_std)
 
 
 labels = ['0-10','10-20','20-30','30-40','40-50','50-60','60-70','70-80','80-90']
@@ -142,27 +147,48 @@ width = 0.35
 fig1, ax1 = plt.subplots()
 
 
-rects1 = ax1.bar(x - width/2, Ni0, width, label='Men')
-rects2 = ax1.bar(x + width/2, Nif, width, label='Women')
+rects1 = ax1.bar(x - width/2, Ni0, width, label=r'$t=0$')
+rects2 = ax1.bar(x + width/2, Nif, width, label=r'$t=T_f$')
 
 
 ax1.set_ylabel('# grains')
+ax1.set_xlabel(r'$\theta_0^{\circ}$')
 ax1.set_title('average # grains on the S-L interface')
 ax1.set_xticks(x)
 ax1.set_xticklabels(labels)
 ax1.legend()
 
-ax1.bar_label(rects1, padding=3)
-ax1.bar_label(rects2, padding=3)
+#ax1.bar_label(rects1, padding=3)
+#ax1.bar_label(rects2, padding=3)
 
 fig1.tight_layout()
 
 plt.show()
+plt.savefig('num_grains'+str(num_runs)+'.png')
 
 
+fig2, ax2 = plt.subplots()
+
+rects3 = ax2.bar(x - width/2, di0, width, label=r'$t=0$', yerr=di0_std)
+rects4 = ax2.bar(x + width/2, dif, width, label=r'$t=T_f$', yerr=dif_std)
 
 
+ax2.set_ylabel(r'grain diameter ($\mu m$)')
+ax2.set_xlabel(r'$\theta_0^{\circ}$')
+ax2.set_title('average grain diameter')
+ax2.set_xticks(x)
+ax2.set_xticklabels(labels)
+ax2.legend()
 
+#ax1.bar_label(rects1, padding=3)
+#ax1.bar_label(rects2, padding=3)
+
+fig2.tight_layout()
+
+plt.show()
+plt.savefig('grain_dia'+str(num_runs)+'.png')
+
+sio.savemat('qois_'+str(num_runs)+'.mat',{'di0':di0,'dif':dif,'Ni0':Ni0,'Nif':Nif})
 
 
 

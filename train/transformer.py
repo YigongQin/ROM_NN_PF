@@ -39,9 +39,9 @@ time_tag = 1
 param_list = ['anis','G0','Rmax']
 input_len = 2*G + param_len + time_tag
 hidden_dim = 32
-embed_dim = 32
+embed_dim = 64
 output_len = G
-encode_layer = 3
+encode_layer = 1
 nheads = 8
 
 valid_ratio = 1/11
@@ -53,8 +53,8 @@ pred_frames= frames-window
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-num_epochs = 250
-learning_rate=5e-4
+num_epochs = 100
+learning_rate=1e-3
 expand = 10 #9
 
 # global information that apply for every run
@@ -296,8 +296,9 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     
     #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
-    optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.2, last_epoch=-1)
+   # optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.2, last_epoch=-1)
                                  #weight_decay=1e-5) # <--
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
@@ -305,7 +306,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
-      if epoch==num_epochs-20: optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+      #if epoch==num_epochs-20: optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
       for  ix, (I_train, O_train, ini_train, scaler_train) in enumerate(train_loader):   
 
          #print(I_train.shape)

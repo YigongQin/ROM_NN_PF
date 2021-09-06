@@ -16,10 +16,11 @@ plt.style.use("dark_background")
 mathtext.FontConstantsBase.sub1 = 0.2
 # parameters
 
-len_seq = 101
-var_dim = 8
+runs = 101
+len_seq = 26
+G = 8
 
-filebase = 'ML_Mt47024_grains8_anis0.130_seed1_rank0.h5'
+filebase = '../../ML_PF5_train0_test1_Mt47024_grains8_frames25_anis0.130_seed2_rank0.h5'
 filename = filebase
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
@@ -32,16 +33,16 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')
 print('nx,ny', nx,ny)
-tip_y = np.asarray(f['y_t'])
-aseq = np.asarray(f['sequence'])  # 1 to 10
+tip_y = np.asarray(f['y_t'])[-len_seq:]
+aseq = np.asarray(f['sequence'])[-G:]  # 1 to 10
 print('angle sequence', aseq)
-frac = np.asarray(f['fractions']) # grains coalese
+frac = np.asarray(f['fractions'])[-G*len_seq:] # grains coalese
 
 ntip_y = np.asarray(tip_y/dx,dtype=int) 
 print('ntip',ntip_y)
 
 piece_len = np.asarray(np.round(frac*nx),dtype=int)
-piece_len = np.reshape(piece_len,(var_dim,len_seq), order='F')
+piece_len = np.reshape(piece_len,(G,len_seq), order='F')
 piece_len = np.cumsum(piece_len,axis=0) 
 piece0 = piece_len[:,0]
 print('len_piece', piece_len)
@@ -49,32 +50,33 @@ print('len_piece', piece_len)
 field = np.zeros((nx,ny),dtype=int)
 
 
-temp_piece = np.zeros(var_dim, dtype=int)
+temp_piece = np.zeros(G, dtype=int)
 miss=0
-for j in range(ntip_y[-1]):
-   loc = 0
-   for g in range(var_dim):
-      if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-      else:
-        fint = interp1d(ntip_y, piece_len[g,:])
-        new_f = fint(j)
-        temp_piece[g] = np.asarray(np.round(new_f),dtype=int)
-   #print(temp_piece)    
-   #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)          
-   for g in range(var_dim):   
-    if g==0:
-      for i in range( temp_piece[g]):
-       # print(loc)
-        field[i,j] = aseq[g]
-        if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
-    else:
-      for i in range(temp_piece[g-1], temp_piece[g]):
-       # print(loc)
-        field[i,j] = aseq[g]
-        if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
-     #   loc+=1
-      #  if (loc==nx): break
-              
+if True:
+    for j in range(ntip_y[-1]):
+     #  loc = 0
+       for g in range(G):
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          else:
+            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            new_f = fint(j)
+            temp_piece[g] = np.asarray(new_f,dtype=int)
+       #print(temp_piece)
+       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+       for g in range(G):
+        if g==0:
+          for i in range( temp_piece[g]):
+           # print(loc)
+            field[i,j] = aseq[g]
+            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1): break
+           # print(loc)
+            field[i,j] = aseq[g]
+            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+         #   loc+=1
+
 print(field)
 print('miss rate', miss/(nx*ntip_y[-1]))
 
@@ -107,5 +109,5 @@ if plot_flag==True:
   plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
   cs.set_clim(vmin, vmax)
   plt.show()
-  plt.savefig('recons'+filebase+'_'+ var + '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
+  plt.savefig('recons'+'_'+ var + '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
   plt.close()
