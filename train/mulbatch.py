@@ -49,7 +49,7 @@ print('device',device)
 model_exist = False
 frames = 26
 batch = 1100
-num_batch = 5
+num_batch = 1
 num_runs = batch*num_batch
 total_size = frames*num_runs
 seq = 1
@@ -63,10 +63,11 @@ output_len = G
 LSTM_layer = 3
 valid_ratio = 1/11
 
-num_train = int((1-valid_ratio)*num_runs)
-num_test = num_runs-num_train
+num_train_all = int((1-valid_ratio)*num_runs)
+num_test = num_runs-num_train_all
+num_train = num_batch*200 #num_train_all
 
-num_train_b = int(num_train/num_batch)
+num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
 window = 5
@@ -80,8 +81,8 @@ learning_rate=0.5e-4
 expand = 10 #9
 
 # global information that apply for every run
-filebase = '../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_seed'
-filename = filebase+str(2)+ '_rank0.h5'
+filename = '../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5'
+#filename = filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
 y = np.asarray(f['y_coordinates'])
@@ -131,11 +132,11 @@ np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
 print(idx)
 frac_train = frac_all[idx[:num_train],:,:]
-frac_test = frac_all[idx[num_train:],:,:]
+frac_test = frac_all[idx[num_train_all:],:,:]
 param_train = param_all[idx[:num_train],:]
-param_test = param_all[idx[num_train:],:]
+param_test = param_all[idx[num_train_all:],:]
 
-print(param_test[0,:])
+print(param_test[:10,:])
 
 frac_train_ini = frac_train[:,0,:]
 frac_test_ini = frac_test[:,0,:]
