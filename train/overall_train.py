@@ -90,18 +90,63 @@ param_test = param_all[idx[num_train_all:],:]
 
 print('min and max of training data', np.min(frac_train), np.max(frac_train))
 ## min and max should be in a reasonable range 
-thre = 0.1 ## any change bigger than threshold is suspecious
 
-diff_arr = np.absolute(np.diff(frac_train,axis=1))
-print(diff_arr.shape)
-print('maximum abs change',np.max(diff_arr))
-print('no. points are weird',np.sum((diff_arr>thre)*1))
-print('where the points are',np.where(diff_arr>thre))
-print('weird values',diff_arr[np.where(diff_arr>thre)])
-diff_arr[diff_arr==0.0]=np.nan
-print('the average of the difference',np.nanmean(diff_arr))
+def find_weird(frac_train, thre):
+
+    
+    diff_arr = np.absolute(np.diff(frac_train,axis=1))
+    print(diff_arr.shape)
+    print('maximum abs change',np.max(diff_arr))
+    weird_p = np.where(diff_arr>thre)
+    print('where the points are',weird_p)
+    weird_sim = weid_p[:,0,0]
+    
+    print('weird values',diff_arr[np.where(diff_arr>thre)])
+    diff_arr[diff_arr==0.0]=np.nan
+    print('the average of the difference',np.nanmean(diff_arr))
+    
+    return weird_sim
+
+def redo_divide(frac_train, weird_sim, param_train):
+    # frac_train shape [frames,G]
+    
+    for sid in weird_sim:
+        ## redo the process of the 
+      frac = frac_train[weird_sim,:,:]
+      aseq = param_train[weird_sim,:G]
+      print('weird sim ',sid ,'before',frac)
+      left_coor = np.cumsum(frac[0,:])-frac[0,:]
+      print('left_coor',left_coor)
+      for kt in range(1,frames):
+        for j in range(1,G):
+          if frac[kt,j]<1e-4 and frac[kt-1,j]>1e-4:
+            left_nozero = j-1;
+            while left_nozero>=0: 
+                if frac[kt,left_nozero]>1e-4: break
+                else: left_nozero-=1
+            if left_nozero>=0 and aseq[left_nozero]==aseq[j]:
+               print("find sudden merging\n");
+               all_piece = frac[kt,left_nozero]
+               pre_piece = left_coor[j] - left_coor[left_nozero] 
+               if pre_piece<0: pre_piece=0
+               if pre_piece>all_piece: pre_piece=all_piece
+               cur_piece = all_piece - pre_piece
+               frac[kt,left_nozero] = pre_piece
+               frac[kt,j] = cur_piece
+               print("correction happens, %d grain frac %f, %d grain frac %f\n", left_nozero, frac[kt,left_nozero],j,frac[kt,j])
+                      
+          else:
+            if j>0: left_coor[j] = (np.cumsum(frac[kt,:])-frac[kt,:])[j]
+            
+          
+            
+          
 
 
+weird_sim = find_weird(frac_train, 0.1)
+while len(weird_sim)>0:
+    redo_divide(frac_train, weird_sim, param_train)
+    weird_sim = find_weird(frac_train, 0.1)
 
 ## subtract the initial part of the sequence, so we can focus on the change
 
