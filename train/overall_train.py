@@ -88,14 +88,26 @@ frac_test = frac_all[idx[num_train_all:],:,:]
 param_train = param_all[idx[:num_train],:]
 param_test = param_all[idx[num_train_all:],:]
 
-print(param_test[:10,:])
+print('min and max of training data', np.min(frac_train), np.max(frac_train))
+## min and max should be in a reasonable range 
+thre = 0.1 ## any change bigger than threshold is suspecious
+
+diff_arr = np.absolute(np.diff(frac_train,axis=1))
+print(diff_arr.shape)
+print('maximum abs change',np.max(diff_arr))
+print('no. points are weird',np.sum((diff_arr>thre)*1))
+print('where the points are',np.where(diff_arr>thre))
+print('weird values',diff_arr[np.where(diff_arr>thre)])
+diff_arr[diff_arr==0.0]=np.nan
+print('the average of the difference',np.nanmean(diff_arr))
+
+
+
+## subtract the initial part of the sequence, so we can focus on the change
 
 frac_train_ini = frac_train[:,0,:]
 frac_test_ini = frac_test[:,0,:]
 
-#print(frac_train_ini)
-print('min and max of training data', np.min(frac_train), np.max(frac_train))
-## subtract the initial part of the sequence, so we can focus on the change
 frac_train = frac_train - frac_train_ini[:,np.newaxis,:]
 frac_test = frac_test - frac_test_ini[:,np.newaxis,:]
 
@@ -177,7 +189,7 @@ scaler_test_p = np.tile(scaler_lstm[window-1:-1],num_test)
 
 mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones(shape=(num_train*(frames-window),output_len))
 mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones(shape=(num_test*(frames-window),output_len))
-print(mask_train)
+#print(mask_train)
 train_loader = PrepareData(input_seq, output_seq, ini_train, scaler_train, mask_train)
 test_loader = PrepareData(input_test, output_test, ini_test, scaler_test, mask_test)
 #train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=False)
