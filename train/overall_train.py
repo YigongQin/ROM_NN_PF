@@ -21,6 +21,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_reconst,plot_real, plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re
+from hyper import *
 
 # global parameters
 host='cpu'
@@ -28,40 +29,17 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
 model_exist = False
-frames = 26
-batch = 1100
-num_batch = 1
-num_runs = batch*num_batch
-total_size = frames*num_runs
-G = 8     # G is the number of grains
-param_len = 1
-time_tag = 1
+
 param_list = ['anis','G0','Rmax']
-input_len = 2*G + param_len + time_tag
-hidden_dim = 50
-output_len = G
-LSTM_layer = 3
-valid_ratio = 1/11
 
-num_train_all = int((1-valid_ratio)*num_runs)
-num_test = num_runs-num_train_all
-num_train = num_batch*200 #num_train_all
-
-num_train_b = int(num_train_all/num_batch)
-num_test_b = int(num_test/num_batch)
-
-window = 5
-seed = 1
-pred_frames= frames-window
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-num_epochs = 120
-learning_rate=0.5e-4
-expand = 10 #9
 
 # global information that apply for every run
-filename = '../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5'
+datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
+print('dataset list',datasets,' and size',len(datasets))
+filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
@@ -78,8 +56,7 @@ print('nx,ny', nx,ny)
 
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,G+param_len))
-datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
-print('dataset list',datasets,' and size',len(datasets))
+
 
 for batch_id in range(num_batch):
   fname =datasets[batch_id]; print(fname)
@@ -226,12 +203,10 @@ class LSTM_soft(nn.Module):
         
         lstm_out, _ = self.lstm(input_frac)  # output range [-1,1]
         target = self.project(lstm_out[:,-1,:]) # project to the desired shape
-        #target = F.dropout(target, p=0.1)
-       # frac = F.softmax(target,dim=1) # dim0 is the batch, dim1 is the vector
         target = F.relu(target+frac_ini)  # frac_ini here is necessary to keep 
-        frac = F.normalize(target*mask,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
+        #frac = F.normalize(target*mask,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
+        frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
       #  frac = scaler.view(-1,1)*frac
-     #   print(scaler.shape,frac.shape)
         frac = scaler.unsqueeze(dim=1)*frac
         return frac
 
