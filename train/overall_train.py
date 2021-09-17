@@ -38,6 +38,7 @@ print('frames, window', frames, window)
 
 # global information that apply for every run
 datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
+datasets = glob.glob('../../ML_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5')
 print('dataset list',datasets,' and size',len(datasets))
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
@@ -79,17 +80,7 @@ for batch_id in range(num_batch):
     param_all[run*num_batch+batch_id,G] = float(number_list[6]) 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
-idx =  np.arange(num_runs)
-np.random.seed(seed)
-#np.random.shuffle(idx[:-1])
-print(idx)
-frac_train = frac_all[idx[:num_train],:,:]
-frac_test = frac_all[idx[num_train_all:],:,:]
-param_train = param_all[idx[:num_train],:]
-param_test = param_all[idx[num_train_all:],:]
 
-print('min and max of training data', np.min(frac_train), np.max(frac_train))
-## min and max should be in a reasonable range 
 
 def find_weird(frac_train, thre):
 
@@ -99,8 +90,8 @@ def find_weird(frac_train, thre):
     print('maximum abs change',np.max(diff_arr))
     weird_p = np.where(diff_arr>thre)
     print('where the points are',weird_p)
-    weird_sim = weid_p[:,0,0]
-    
+    weird_sim = weird_p[0]
+    weird_sim = list(set(list(weird_sim))) 
     print('weird values',diff_arr[np.where(diff_arr>thre)])
     diff_arr[diff_arr==0.0]=np.nan
     print('the average of the difference',np.nanmean(diff_arr))
@@ -112,11 +103,12 @@ def redo_divide(frac_train, weird_sim, param_train):
     
     for sid in weird_sim:
         ## redo the process of the 
-      frac = frac_train[weird_sim,:,:]
-      aseq = param_train[weird_sim,:G]
-      print('weird sim ',sid ,'before',frac)
+      frac = frac_train[sid,:,:].squeeze()
+      aseq = param_train[sid,:G].squeeze()
+      #print('weird sim ',sid ,'before',frac)
+      #print(aseq)
       left_coor = np.cumsum(frac[0,:])-frac[0,:]
-      print('left_coor',left_coor)
+      #print('left_coor',left_coor)
       for kt in range(1,frames):
         for j in range(1,G):
           if frac[kt,j]<1e-4 and frac[kt-1,j]>1e-4:
@@ -125,28 +117,47 @@ def redo_divide(frac_train, weird_sim, param_train):
                 if frac[kt,left_nozero]>1e-4: break
                 else: left_nozero-=1
             if left_nozero>=0 and aseq[left_nozero]==aseq[j]:
-               print("find sudden merging\n");
+               #print("find sudden merging\n");
                all_piece = frac[kt,left_nozero]
                pre_piece = left_coor[j] - left_coor[left_nozero] 
                if pre_piece<0: pre_piece=0
                if pre_piece>all_piece: pre_piece=all_piece
                cur_piece = all_piece - pre_piece
-               frac[kt,left_nozero] = pre_piece
-               frac[kt,j] = cur_piece
-               print("correction happens, %d grain frac %f, %d grain frac %f\n", left_nozero, frac[kt,left_nozero],j,frac[kt,j])
+               frac_train[sid,kt,left_nozero] = pre_piece
+               frac_train[sid,kt,j] = cur_piece
+               #print("correction happens, %d grain frac %f, %d grain frac %f\n" %(left_nozero,frac_train[sid,kt,left_nozero],j,frac_train[sid,kt,j]))
                       
           else:
             if j>0: left_coor[j] = (np.cumsum(frac[kt,:])-frac[kt,:])[j]
             
-          
-            
-          
 
-
-weird_sim = find_weird(frac_train, 0.1)
+weird_sim = find_weird(frac_all, 0.1)
 while len(weird_sim)>0:
-    redo_divide(frac_train, weird_sim, param_train)
-    weird_sim = find_weird(frac_train, 0.1)
+    redo_divide(frac_all, weird_sim, param_all)
+    weird_sim = find_weird(frac_all, 0.1)
+    break
+
+print('min and max of training data', np.min(frac_all), np.max(frac_all))
+
+diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
+print(np.where(diff_to_1>1e-4))
+
+print('all the summation of grain fractions are 1', np.sum(diff_to_1))
+frac_all /= np.sum(frac_all,axis=2)[:,:,np.newaxis] 
+diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
+print(np.where(diff_to_1>1e-4))
+
+print('all the summation of grain fractions are 1', np.sum(diff_to_1))
+
+
+idx =  np.arange(num_runs)
+np.random.seed(seed)
+#np.random.shuffle(idx[:-1])
+print(idx)
+frac_train = frac_all[idx[:num_train],:,:]
+frac_test = frac_all[idx[num_train_all:],:,:]
+param_train = param_all[idx[:num_train],:]
+param_test = param_all[idx[num_train_all:],:]
 
 ## subtract the initial part of the sequence, so we can focus on the change
 
