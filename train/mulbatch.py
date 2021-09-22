@@ -49,7 +49,7 @@ print('device',device)
 model_exist = False
 frames = 26
 batch = 1100
-num_batch = 1
+num_batch = 5
 num_runs = batch*num_batch
 total_size = frames*num_runs
 seq = 1
@@ -65,7 +65,7 @@ valid_ratio = 1/11
 
 num_train_all = int((1-valid_ratio)*num_runs)
 num_test = num_runs-num_train_all
-num_train = num_batch*200 #num_train_all
+num_train = num_batch*100 #num_train_all
 
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
@@ -77,7 +77,7 @@ print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
 num_epochs = 120
-learning_rate=0.5e-4
+learning_rate=5e-4
 expand = 10 #9
 
 # global information that apply for every run

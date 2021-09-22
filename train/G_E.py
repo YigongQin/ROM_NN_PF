@@ -7,8 +7,8 @@ Created on Wed Sep 15 22:12:11 2021
 """
 
 
-batch = 1100
-num_batch = 1
+batch = 220
+num_batch = 20
 num_runs = batch*num_batch
 valid_ratio = 1/11
 num_train_all = int((1-valid_ratio)*num_runs)
@@ -23,15 +23,18 @@ pred_frames= frames-window
 total_size = frames*num_runs
 
 G = 8     # G is the number of grains
-param_len = 1   # how many parameters
+param_len = 2   # how many parameters
 time_tag = 1
 input_len = 2*G + param_len + time_tag
-hidden_dim = 50
 output_len = G
+
+## architecture
+hidden_dim = 50
 LSTM_layer = 4
 
-num_epochs = 80
+num_epochs = 60
 learning_rate=5e-4
 expand = 10 
 
 seed = 1   
+data_dir = '../../G_E/*'

@@ -21,6 +21,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_reconst,plot_real, plot_IO
 from adabound import *
 from torch.utils.data import Dataset, DataLoader
+import sys
 #rnn = nn.GRU(10, 20, 2)
 #inputs = torch.randn(5, 3, 10)
 #h0 = torch.randn(2, 3, 20)
@@ -47,11 +48,11 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
 model_exist = False
-frames = 26
-num_runs = 1100
+frames = 28
+num_runs = 550
 total_size = frames*num_runs
 seq = 1
-G = 8     # G is the number of grains
+G = 20     # G is the number of grains
 param_len = 0
 time_tag = 1
 param_list = ['anis','G0','Rmax']
@@ -72,10 +73,9 @@ print('frames, window', frames, window)
 num_epochs = 80
 learning_rate=5e-4
 expand = 10 #9
-
 # global information that apply for every run
-filebase = '../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_G05.000_Rmax1.000_seed'
-filename = filebase+str(2)+ '_rank0.h5'
+#filebase = '../../ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis0.130_G05.000_Rmax1.000_seed'
+filename = sys.argv[1];#filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
 y = np.asarray(f['y_coordinates'])
@@ -120,6 +120,9 @@ frac_train = frac_all[idx[:num_train],:,:]
 frac_test = frac_all[idx[num_train:],:,:]
 param_train = param_all[idx[:num_train],:]
 param_test = param_all[idx[num_train:],:]
+
+print(np.max(np.diff(frac_all,axis=1)))
+
 
 frac_train_ini = frac_train[:,0,:]
 frac_test_ini = frac_test[:,0,:]

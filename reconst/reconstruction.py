@@ -17,10 +17,11 @@ mathtext.FontConstantsBase.sub1 = 0.2
 # parameters
 
 runs = 101
-len_seq = 26
-G = 8
+len_seq = 28
+G = 20
 
-filebase = '../../ML_PF5_train0_test1_Mt47024_grains8_frames25_anis0.130_seed2_rank0.h5'
+#filebase = '../../ML_PF5_train0_test1_Mt47024_grains8_frames25_anis0.130_seed2_rank0.h5'
+filebase = '../../ML_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5' 
 filename = filebase
 f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
@@ -31,7 +32,7 @@ ymin = y[1]; ymax = y[-2]
 print('xmin',xmin,'xmax',xmax,'ymin',ymin,'ymax',ymax)
 dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
-alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')
+alpha_true = np.reshape(alpha_true[-fnx*fny:],(fnx,fny),order='F')
 print('nx,ny', nx,ny)
 tip_y = np.asarray(f['y_t'])[-len_seq:]
 aseq = np.asarray(f['sequence'])[-G:]  # 1 to 10

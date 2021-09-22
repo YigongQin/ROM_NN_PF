@@ -20,9 +20,9 @@ import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_reconst,plot_real, plot_IO
 from torch.utils.data import Dataset, DataLoader
-import glob, os, re
-from hyper import *
-
+import glob, os, re, sys, importlib
+#from melt_pool import *
+from G_E import *
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -35,10 +35,11 @@ param_list = ['anis','G0','Rmax']
 print('train, test', num_train, num_test)
 print('frames, window', frames, window)
 
-
 # global information that apply for every run
-datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
-datasets = glob.glob('../../ML_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5')
+#datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
+#datasets = glob.glob('../../ML_mask_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5')
+#datasets = glob.glob('../../ML_PF10_train200_test20_Mt23274_grains8_frames25_anis0.050_G01.000_Rmax1.000_seed1_rank0.h5')
+datasets = glob.glob(data_dir)
 print('dataset list',datasets,' and size',len(datasets))
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
@@ -66,7 +67,7 @@ for batch_id in range(num_batch):
   frac_asse = np.asarray(f['fractions'])
   tip_y_asse = np.asarray(f['y_t'])
   number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
-  print(number_list[6])
+  print(number_list[6],number_list[7])
   # compile all the datasets interleave
   for run in range(batch):
     aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
@@ -77,7 +78,8 @@ for batch_id in range(num_batch):
     frac = frac.T
     frac_all[run*num_batch+batch_id,:,:] = frac
     param_all[run*num_batch+batch_id,:G] = Color
-    param_all[run*num_batch+batch_id,G] = float(number_list[6]) 
+    param_all[run*num_batch+batch_id,G] = float(number_list[6])
+    param_all[run*num_batch+batch_id,G+1] = float(number_list[7])/100 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 
@@ -94,19 +96,23 @@ def find_weird(frac_train, thre):
     weird_sim = list(set(list(weird_sim))) 
     print('weird values',diff_arr[np.where(diff_arr>thre)])
     diff_arr[diff_arr==0.0]=np.nan
-    print('the average of the difference',np.nanmean(diff_arr))
-    
+    print('the mean of the difference',np.nanmean(diff_arr))
+    print('number of weird sim',len(weird_sim)) 
+      
+
     return weird_sim
 
 def redo_divide(frac_train, weird_sim, param_train):
     # frac_train shape [frames,G]
     
+   # for sid in [54]:
     for sid in weird_sim:
         ## redo the process of the 
       frac = frac_train[sid,:,:].squeeze()
-      aseq = param_train[sid,:G].squeeze()
-      #print('weird sim ',sid ,'before',frac)
-      #print(aseq)
+      aseq = param_train[sid,:G].squeeze()*4.5+5.5
+      #if sid ==54:
+      #  print('weird sim ',sid ,'before',frac)
+      #  print(aseq)
       left_coor = np.cumsum(frac[0,:])-frac[0,:]
       #print('left_coor',left_coor)
       for kt in range(1,frames):
@@ -132,33 +138,50 @@ def redo_divide(frac_train, weird_sim, param_train):
             
 
 weird_sim = find_weird(frac_all, 0.1)
+refine_count=0
 while len(weird_sim)>0:
+    refine_count  +=1
     redo_divide(frac_all, weird_sim, param_all)
     weird_sim = find_weird(frac_all, 0.1)
-    break
+    if refine_count ==5: break
+print(weird_sim)
+print(param_all[weird_sim,-2:])
+print(param_all[2489,:G]*4.5+5.5)
+## C2 go to zero but emerge again 
 
+merge_arg = np.where( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) )
+print("renaissance", np.sum( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) ) )
+print("renaissance points", merge_arg)
+#print("how emerge", frac_all[:,:-1,:][merge_arg], frac_all[:,1:,:][merge_arg])
+#print(frac_all[2489,:,:])
+## C3 max and min
 print('min and max of training data', np.min(frac_all), np.max(frac_all))
 
 diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
-print(np.where(diff_to_1>1e-4))
-
+#print(np.where(diff_to_1>1e-4))
+print('max diff from 1',np.max(diff_to_1))
 print('all the summation of grain fractions are 1', np.sum(diff_to_1))
 frac_all /= np.sum(frac_all,axis=2)[:,:,np.newaxis] 
 diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
-print(np.where(diff_to_1>1e-4))
 
 print('all the summation of grain fractions are 1', np.sum(diff_to_1))
 
+
+### divide train and validation
 
 idx =  np.arange(num_runs)
 np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
-print(idx)
+#print(idx)
 frac_train = frac_all[idx[:num_train],:,:]
 frac_test = frac_all[idx[num_train_all:],:,:]
 param_train = param_all[idx[:num_train],:]
 param_test = param_all[idx[num_train_all:],:]
 
+weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
+frac_train = np.delete(frac_train,weird_sim,0)
+num_train -= len(weird_sim) 
+print('actual num_train',num_train)
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_train_ini = frac_train[:,0,:]
@@ -272,8 +295,8 @@ class LSTM_soft(nn.Module):
         lstm_out, _ = self.lstm(input_frac)  # output range [-1,1]
         target = self.project(lstm_out[:,-1,:]) # project to the desired shape
         target = F.relu(target+frac_ini)  # frac_ini here is necessary to keep 
-        #frac = F.normalize(target*mask,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
-        frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
+        frac = F.normalize(target*mask,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
+        #frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
       #  frac = scaler.view(-1,1)*frac
         frac = scaler.unsqueeze(dim=1)*frac
         return frac
@@ -345,15 +368,15 @@ else:
   print('training time',-start+end)
   torch.save(model.state_dict(), './lstmmodel')
   fig, ax = plt.subplots() 
-  ax.plot(train_list)
-  ax.plot(test_list)
+  ax.semilogy(train_list)
+  ax.semilogy(test_list)
   plt.xlabel('epoch')
   plt.ylabel('loss')
   plt.legend(['training loss','validation loss'])
   plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
   plt.savefig('mul_batch_loss.png')
 ## plot to check if the construction is reasonable
-evolve_runs = 10 #num_test
+evolve_runs = num_batch #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
 train_dat = np.zeros((evolve_runs,window,input_len))
 
@@ -399,7 +422,7 @@ for batch_id in range(num_batch):
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
-   G0 = 5
+   G0 = param_test[data_id,G+1]
    Rmax = 1 
    anis = param_test[data_id,G]
    plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
