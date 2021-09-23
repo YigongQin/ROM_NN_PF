@@ -58,7 +58,7 @@ print('nx,ny', nx,ny)
 
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,G+param_len))
-
+y_all = np.zeros((num_runs,frames))
 
 for batch_id in range(num_batch):
   fname =datasets[batch_id]; print(fname)
@@ -71,12 +71,14 @@ for batch_id in range(num_batch):
   # compile all the datasets interleave
   for run in range(batch):
     aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
+    tip_y = tip_y_asse[run*frames:(run+1)*frames]
 #    Color = (aseq-3)/2        # normalize C to [-1,1]
     Color = (aseq-5.5)/4.5
     #print('angle sequence', Color)
     frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
     frac = frac.T
     frac_all[run*num_batch+batch_id,:,:] = frac
+    y_all[run*num_batch+batch_id,:] = tip_y 
     param_all[run*num_batch+batch_id,:G] = Color
     param_all[run*num_batch+batch_id,G] = float(number_list[6])
     param_all[run*num_batch+batch_id,G+1] = float(number_list[7])/100 
@@ -154,19 +156,27 @@ print("renaissance", np.sum( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) 
 print("renaissance points", merge_arg)
 #print("how emerge", frac_all[:,:-1,:][merge_arg], frac_all[:,1:,:][merge_arg])
 #print(frac_all[2489,:,:])
+
 ## C3 max and min
 print('min and max of training data', np.min(frac_all), np.max(frac_all))
 
+## C4 normalization
 diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
 #print(np.where(diff_to_1>1e-4))
 print('max diff from 1',np.max(diff_to_1))
 print('all the summation of grain fractions are 1', np.sum(diff_to_1))
 frac_all /= np.sum(frac_all,axis=2)[:,:,np.newaxis] 
 diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
-
 print('all the summation of grain fractions are 1', np.sum(diff_to_1))
 
-
+## C5 check y_all for small values
+last_y = y_all[:,-1]
+print('mean and std of last y',np.mean(last_y),np.std(last_y))
+weird_y_loc = np.where(last_y<np.mean(last_y)-3*np.std(last_y))
+print('where they is small ', weird_y_loc)
+print('weird values ', last_y[weird_y_loc])
+print('weird y traj',y_all[weird_y_loc,:])
+weird_sim = weird_sim + list(weird_y_loc[0])
 ### divide train and validation
 
 idx =  np.arange(num_runs)
@@ -313,14 +323,14 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
                                  #weight_decay=1e-5) # <--
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5, last_epoch=-1)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
     for epoch in range(num_epochs):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
-      if epoch==num_epochs-20: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      if epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       for  ix, (I_train, O_train, ini_train, scaler_train, mask_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
