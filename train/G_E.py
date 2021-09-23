@@ -30,9 +30,9 @@ output_len = G
 
 ## architecture
 hidden_dim = 50
-LSTM_layer = 4
+LSTM_layer = 3
 
-num_epochs = 60
+num_epochs = 40
 learning_rate=5e-4
 expand = 10 
 
