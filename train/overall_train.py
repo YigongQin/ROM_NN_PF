@@ -227,7 +227,8 @@ class LSTM_soft(nn.Module):
         lstm_out, _ = self.lstm(input_frac)  # output range [-1,1]
         target = self.project(lstm_out[:,-out_win:,:]) # project to the desired shape
         target = F.relu(target+frac_ini.unsqueeze(dim=1))  # frac_ini here is necessary to keep 
-        frac = F.normalize(target*mask.unsqueeze(dim=1),p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
+      #  frac = F.normalize(target*mask.unsqueeze(dim=1),p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
+        frac = F.normalize(target,p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
         #frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
       #  frac = scaler.view(-1,1)*frac
         frac = scaler.unsqueeze(dim=-1)*frac
