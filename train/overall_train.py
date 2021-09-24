@@ -21,6 +21,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_reconst,plot_real, plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
+from check_data_quality import check_data_quality
 #from melt_pool import *
 from G_E import *
 # global parameters
@@ -85,101 +86,11 @@ for batch_id in range(num_batch):
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 
+weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
 
-def find_weird(frac_train, thre):
-
-    
-    diff_arr = np.absolute(np.diff(frac_train,axis=1))
-    print(diff_arr.shape)
-    print('maximum abs change',np.max(diff_arr))
-    weird_p = np.where(diff_arr>thre)
-    print('where the points are',weird_p)
-    weird_sim = weird_p[0]
-    weird_sim = list(set(list(weird_sim))) 
-    print('weird values',diff_arr[np.where(diff_arr>thre)])
-    diff_arr[diff_arr==0.0]=np.nan
-    print('the mean of the difference',np.nanmean(diff_arr))
-    print('number of weird sim',len(weird_sim)) 
-      
-
-    return weird_sim
-
-def redo_divide(frac_train, weird_sim, param_train):
-    # frac_train shape [frames,G]
-    
-   # for sid in [54]:
-    for sid in weird_sim:
-        ## redo the process of the 
-      frac = frac_train[sid,:,:].squeeze()
-      aseq = param_train[sid,:G].squeeze()*4.5+5.5
-      #if sid ==54:
-      #  print('weird sim ',sid ,'before',frac)
-      #  print(aseq)
-      left_coor = np.cumsum(frac[0,:])-frac[0,:]
-      #print('left_coor',left_coor)
-      for kt in range(1,frames):
-        for j in range(1,G):
-          if frac[kt,j]<1e-4 and frac[kt-1,j]>1e-4:
-            left_nozero = j-1;
-            while left_nozero>=0: 
-                if frac[kt,left_nozero]>1e-4: break
-                else: left_nozero-=1
-            if left_nozero>=0 and aseq[left_nozero]==aseq[j]:
-               #print("find sudden merging\n");
-               all_piece = frac[kt,left_nozero]
-               pre_piece = left_coor[j] - left_coor[left_nozero] 
-               if pre_piece<0: pre_piece=0
-               if pre_piece>all_piece: pre_piece=all_piece
-               cur_piece = all_piece - pre_piece
-               frac_train[sid,kt,left_nozero] = pre_piece
-               frac_train[sid,kt,j] = cur_piece
-               #print("correction happens, %d grain frac %f, %d grain frac %f\n" %(left_nozero,frac_train[sid,kt,left_nozero],j,frac_train[sid,kt,j]))
-                      
-          else:
-            if j>0: left_coor[j] = (np.cumsum(frac[kt,:])-frac[kt,:])[j]
-            
-
-weird_sim = find_weird(frac_all, 0.1)
-refine_count=0
-while len(weird_sim)>0:
-    refine_count  +=1
-    redo_divide(frac_all, weird_sim, param_all)
-    weird_sim = find_weird(frac_all, 0.1)
-    if refine_count ==5: break
-print(weird_sim)
-print(param_all[weird_sim,-2:])
-print(param_all[2489,:G]*4.5+5.5)
-## C2 go to zero but emerge again 
-
-merge_arg = np.where( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) )
-print("renaissance", np.sum( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) ) )
-print("renaissance points", merge_arg)
-#print("how emerge", frac_all[:,:-1,:][merge_arg], frac_all[:,1:,:][merge_arg])
-#print(frac_all[2489,:,:])
-
-## C3 max and min
-print('min and max of training data', np.min(frac_all), np.max(frac_all))
-
-## C4 normalization
-diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
-#print(np.where(diff_to_1>1e-4))
-print('max diff from 1',np.max(diff_to_1))
-print('all the summation of grain fractions are 1', np.sum(diff_to_1))
-frac_all /= np.sum(frac_all,axis=2)[:,:,np.newaxis] 
-diff_to_1 = np.absolute(np.sum(frac_all,axis=2)-1)
-print('all the summation of grain fractions are 1', np.sum(diff_to_1))
-
-## C5 check y_all for small values
-last_y = y_all[:,-1]
-print('mean and std of last y',np.mean(last_y),np.std(last_y))
-weird_y_loc = np.where(last_y<np.mean(last_y)-3*np.std(last_y))
-print('where they is small ', weird_y_loc)
-print('weird values ', last_y[weird_y_loc])
-print('weird y traj',y_all[weird_y_loc,:])
-weird_sim = weird_sim + list(weird_y_loc[0])
 ### divide train and validation
 
-idx =  np.arange(num_runs)
+idx =  np.arange(num_runs) # you can permute the order of train here
 np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
 #print(idx)
@@ -192,6 +103,10 @@ weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 frac_train = np.delete(frac_train,weird_sim,0)
 num_train -= len(weird_sim) 
 print('actual num_train',num_train)
+
+## calculate the mask first
+
+
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_train_ini = frac_train[:,0,:]
@@ -236,59 +151,65 @@ class PrepareData(Dataset):
          return self.input_[idx,:,:], self.output_[idx,:], self.init[idx,:], self.scaler[idx], self.mask[idx,:]
 
 # Shape the inputs and outputs
-input_seq = np.zeros(shape=(num_train*(frames-window),window,input_len))
-output_seq = np.zeros(shape=(num_train*(frames-window),output_len))
-input_test = np.zeros(shape=(num_test*(frames-window),window,input_len))
-output_test = np.zeros(shape=(num_test*(frames-window),output_len))
-ini_train = np.zeros(shape=(num_train*(frames-window),output_len))
-ini_test = np.zeros(shape=(num_test*(frames-window),output_len))
+input_seq = np.zeros(shape=(num_train*sam_per_run, window, input_len))
+output_seq = np.zeros(shape=(num_train*sam_per_run, out_win, output_len))
+input_test = np.zeros(shape=(num_test*sam_per_run, window, input_len))
+output_test = np.zeros(shape=(num_test*sam_per_run, out_win, output_len))
+
+ini_train = np.zeros(shape=(num_train*sam_per_run, output_len))
+ini_test = np.zeros(shape=(num_test*sam_per_run, output_len))
+
 # Setting up inputs and outputs
+# input t-window to t-1
+# output t+1 to t+win_out
 sample = 0
 for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
-    for t in range(window,frames):
+    for t in range(window,frames-(out_win-1)):
         input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
         input_seq[sample,:,output_len:-1] = param_train[run,:]
         input_seq[sample,:,-1] = t/(frames-1) 
-        output_seq[sample,:] = lstm_snapshot[t,:]
+        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
         ini_train[sample,:] = frac_train_ini[run,:]
         sample = sample + 1
 #print(np.max(output_seq))
 sample = 0
 for run in range(num_test):
     lstm_snapshot = frac_test[run,:,:]
-    for t in range(window,frames):
+    for t in range(window,frames-(out_win-1)):
         input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
         input_test[sample,:,output_len:-1] = param_test[run,:]
         input_test[sample,:,-1] = t/(frames-1) 
-        output_test[sample,:] = lstm_snapshot[t,:]
+        output_test[sample,:,:] = lstm_snapshot[t:t+out_win,:]
         ini_test[sample,:] = frac_test_ini[run,:]
         sample = sample + 1
         
-input_dat = torch.from_numpy(input_seq)
-input_test_pt = torch.from_numpy(input_test)
-output_dat = torch.from_numpy(output_seq)
-output_test_pt = torch.from_numpy(output_test)
 
-scaler_train = np.tile(scaler_lstm[window:],num_train)
-scaler_test = np.tile(scaler_lstm[window:],num_test)
+
+scaler_train = np.zeros((num_train*sam_per_run,out_win)) ## this is for the output scaling
+scaler_test = np.zeros((num_test*sam_per_run,out_win))
+for i in range(out_win):
+    scaler_train[:,i] = np.tile(scaler_lstm[window+i:frames-(out_win-1)+i],num_train)  
+    scaler_test[:,i] = np.tile(scaler_lstm[window+i:frames-(out_win-1)+i],num_test)
+
+## scaler 
 
 scaler_train_p = np.tile(scaler_lstm[window-1:-1],num_train)
 scaler_test_p = np.tile(scaler_lstm[window-1:-1],num_test)
 
-mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones(shape=(num_train*(frames-window),output_len))
-mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones(shape=(num_test*(frames-window),output_len))
+mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones((num_train*sam_per_run,output_len))
+mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones((num_test*sam_per_run,output_len))
 #print(mask_train)
 train_loader = PrepareData(input_seq, output_seq, ini_train, scaler_train, mask_train)
 test_loader = PrepareData(input_test, output_test, ini_test, scaler_test, mask_test)
+
 #train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=False)
 train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shuffle=False)
 
-#input_dat = input_dat.permute(1,0,2)
-#input_test_pt = input_test_pt.permute(1,0,2)
 
-# train
+
+# The model
 class LSTM_soft(nn.Module):
     def __init__(self,input_len,output_len,hidden_dim,num_layer):
         super(LSTM_soft, self).__init__()
@@ -299,23 +220,19 @@ class LSTM_soft(nn.Module):
         self.lstm = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
         self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
      #   self.linear = nn.Linear(output_len,output_len)
-        #self.frac_ini = frac_ini
+      
     def forward(self, input_frac, frac_ini, scaler, mask):
         
         lstm_out, _ = self.lstm(input_frac)  # output range [-1,1]
-        target = self.project(lstm_out[:,-1,:]) # project to the desired shape
-        target = F.relu(target+frac_ini)  # frac_ini here is necessary to keep 
-        frac = F.normalize(target*mask,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
+        target = self.project(lstm_out[:,-win_out:,:]) # project to the desired shape
+        target = F.relu(target+frac_ini.unsqueeze(dim=1))  # frac_ini here is necessary to keep 
+        frac = F.normalize(target*mask,p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
         #frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
       #  frac = scaler.view(-1,1)*frac
-        frac = scaler.unsqueeze(dim=1)*frac
+        frac = scaler.unsqueeze(dim=-1)*frac
         return frac
 
-def scaled_loss(output, target, runs, pred, scaler):
 
-    loss = torch.sum((scaler[:,np.newaxis]*(output-target))**2)/(runs*pred)
-
-    return loss
 
 def LSTM_train(model, num_epochs, train_loader, test_loader):
     
