@@ -18,9 +18,12 @@ num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
 window = 5
+out_win = 5
 frames = 26
 pred_frames= frames-window
+sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
+
 
 G = 8     # G is the number of grains
 param_len = 2   # how many parameters
