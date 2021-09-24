@@ -194,8 +194,8 @@ for i in range(out_win):
 
 ## scaler 
 
-scaler_train_p = np.tile(scaler_lstm[window-1:-1],num_train)
-scaler_test_p = np.tile(scaler_lstm[window-1:-1],num_test)
+scaler_train_p = np.tile(scaler_lstm[window-1:frames-out_win],num_train)
+scaler_test_p = np.tile(scaler_lstm[window-1:frames-out_win],num_test)
 
 mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones((num_train*sam_per_run,output_len))
 mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones((num_test*sam_per_run,output_len))
@@ -211,12 +211,13 @@ test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shu
 
 # The model
 class LSTM_soft(nn.Module):
-    def __init__(self,input_len,output_len,hidden_dim,num_layer):
+    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win):
         super(LSTM_soft, self).__init__()
         self.input_len = input_len
         self.output_len = output_len  
         self.hidden_dim = hidden_dim
         self.num_layer = num_layer
+        self.out_win = out_win
         self.lstm = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
         self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
      #   self.linear = nn.Linear(output_len,output_len)
@@ -224,9 +225,9 @@ class LSTM_soft(nn.Module):
     def forward(self, input_frac, frac_ini, scaler, mask):
         
         lstm_out, _ = self.lstm(input_frac)  # output range [-1,1]
-        target = self.project(lstm_out[:,-win_out:,:]) # project to the desired shape
+        target = self.project(lstm_out[:,-out_win:,:]) # project to the desired shape
         target = F.relu(target+frac_ini.unsqueeze(dim=1))  # frac_ini here is necessary to keep 
-        frac = F.normalize(target*mask,p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
+        frac = F.normalize(target*mask.unsqueeze(dim=1),p=1,dim=-1)-frac_ini.unsqueeze(dim=1) # dim0 is the batch, dim1 is the vector
         #frac = F.normalize(target,p=1,dim=1)-frac_ini # dim0 is the batch, dim1 is the vector
       #  frac = scaler.view(-1,1)*frac
         frac = scaler.unsqueeze(dim=-1)*frac
@@ -272,7 +273,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     return model 
 
 
-model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer)
+model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win)
 model = model.double()
 if device=='cuda':
   model.cuda()
