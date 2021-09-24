@@ -161,7 +161,7 @@ ini_test = np.zeros(shape=(num_test*sam_per_run, output_len))
 
 # Setting up inputs and outputs
 # input t-window to t-1
-# output t+1 to t+win_out
+# output t to t+win_out-1
 sample = 0
 for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
@@ -303,30 +303,33 @@ else:
   plt.legend(['training loss','validation loss'])
   plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
   plt.savefig('mul_batch_loss.png')
+  
 ## plot to check if the construction is reasonable
 evolve_runs = num_batch #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
 train_dat = np.zeros((evolve_runs,window,input_len))
 
-frac_out_true = output_test_pt.detach().numpy()[:pred_frames,:]
+#frac_out_true = output_test[:pred_frames,:]
 
 # evole physics based on trained network
 frac_out_info = frac_test[:evolve_runs,:window,:]
 frac_out[:,:window,:] = frac_out_info
 train_dat[:evolve_runs,:,output_len:-1] = param_test[:evolve_runs,np.newaxis,:]
-for i in range(pred_frames):
+alone = pred_frames%out_win
+pack = pred_frames-alone
+for i in range(0,pred_frames,out_win):
     train_dat[:evolve_runs,:,:output_len] = frac_out_info
-    train_dat[:evolve_runs,:,-1] = (i+window)/(frames-1) 
-    #print(train_dat.shape)
-   # train_dat = torch.from_numpy(np.vstack(frac_out_info,))
+    train_dat[:evolve_runs,:,-1] = (i+window)/(frames-1) ## the first output time
     mask_before = (train_dat[:,-1,:output_len]/scaler_lstm[[window+i-1]]+frac_test_ini[:evolve_runs,:]>1e-3)*np.ones((evolve_runs,output_len))
-    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_lstm[[window+i]]), todevice(mask_before) ) ) 
+    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_lstm[window+i:window+i+out_win]), todevice(mask_before) ) ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
-    frac_out[:evolve_runs,window+i,:] = frac_new_vec
+    if i>=pack:
+        frac_out[:evolve_runs,-alone:,:] = frac_new_vec[:alone,:,:]
+    else: frac_out[:evolve_runs,window+i:window+i+out_win,:] = frac_new_vec
     #print(frac_new_vec)
-    frac_out_info = np.concatenate((frac_out_info[:evolve_runs,1:,:],frac_new_vec[:evolve_runs,np.newaxis,:]),axis=1)
+    frac_out_info = np.concatenate((frac_out_info[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test_ini[:evolve_runs,np.newaxis,:]
 
