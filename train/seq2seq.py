@@ -210,7 +210,7 @@ test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shu
 
 class Decoder(nn.Module):
     def __init__(self,input_len,output_len,hidden_dim,num_layer):
-        super(LSTM_soft, self).__init__()
+        super(Decoder, self).__init__()
         self.input_len = input_len 
         self.output_len = output_len  
         self.hidden_dim = hidden_dim
