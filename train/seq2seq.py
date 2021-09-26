@@ -242,7 +242,7 @@ class LSTM_soft(nn.Module):
       
     def forward(self, input_frac, frac_ini, scaler, mask):
         
-        output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,device='cuda')
+        output_frac = input_frac[:,:self.out_win,:self.output_len]
         ## step 1 encode the input to hidden and cell state
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
