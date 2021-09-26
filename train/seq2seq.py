@@ -227,7 +227,7 @@ class Decoder(nn.Module):
         return frac, hidden, cell
 # The model
 class LSTM_soft(nn.Module):
-    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win,decoder):
+    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win):
         super(LSTM_soft, self).__init__()
         self.input_len = input_len
         self.output_len = output_len  
@@ -235,7 +235,8 @@ class LSTM_soft(nn.Module):
         self.num_layer = num_layer
         self.out_win = out_win
         self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.decoder = decoder
+        self.lstm_decoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)    
+        self.project = nn.Linear(hidden_dim, output_len)
         #self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
      #   self.linear = nn.Linear(output_len,output_len)
       
@@ -248,9 +249,15 @@ class LSTM_soft(nn.Module):
         input_1seq = input_frac[:,-1,:]  ## the ancipated output frame is t
         ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
-            output, hidden, cell = self.decoder(input_1seq, hidden, cell, frac_ini, scaler[:,i], mask)
-            output_frac[:,i,:] = output
-            input_1seq[:,:self.output_len] = output
+            #output, hidden, cell = self.decoder(input_1seq, hidden, cell, frac_ini, scaler[:,i], mask)
+            output, (hidden, cell) = self.lstm_decoder(input_1seq.unsqueeze(dim=1), (hidden,cell) )
+            target = self.project(output[:,-1,:])   # project last layer output to the desired shape
+            target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
+            frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
+            frac = scaler[:,i].unsqueeze(dim=-1)*frac     # scale the output based on the output frame
+            
+            output_frac[:,i,:] = frac
+            input_1seq[:,:self.output_len] = frac
             input_1seq[:,-1] += 1.0/(frames-1)  ## time tag 
             
         return output_frac
@@ -294,8 +301,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       scheduler.step()
     return model 
 
-decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
-model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder)
+#decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
+model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win)
 model = model.double()
 if device=='cuda':
   model.cuda()
