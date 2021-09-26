@@ -148,7 +148,7 @@ class PrepareData(Dataset):
          #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
-         return self.input_[idx,:,:], self.output_[idx,:], self.init[idx,:], self.scaler[idx], self.mask[idx,:]
+         return self.input_[idx,:,:], self.output_[idx,:,:], self.init[idx,:], self.scaler[idx,:], self.mask[idx,:]
 
 # Shape the inputs and outputs
 input_seq = np.zeros(shape=(num_train*sam_per_run, window, input_len))
