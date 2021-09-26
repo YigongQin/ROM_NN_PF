@@ -294,8 +294,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       scheduler.step()
     return model 
 
-
-model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win)
+decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
+model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder)
 model = model.double()
 if device=='cuda':
   model.cuda()
