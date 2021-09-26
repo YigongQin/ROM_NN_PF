@@ -245,13 +245,13 @@ class LSTM_soft(nn.Module):
         ## step 1 encode the input to hidden and cell state
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
-        input_1seq = input_frac[:,-1,:]  ## the ancipated output frame is t
+        input_1seq = input_frac[:,[-1],:]  ## the ancipated output frame is t
         ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
             output, hidden, cell = self.decoder(input_1seq, hidden, cell, frac_ini, scaler[:,i], mask)
             output_frac[:,i,:] = output
-            input_1seq[:,:self.output_len] = output
-            input_1seq[:,-1] += 1.0/(frames-1)  ## time tag 
+            input_1seq[:,:,:self.output_len] = output
+            input_1seq[:,:,-1] += 1.0/(frames-1)  ## time tag 
             
         return output_frac
 
