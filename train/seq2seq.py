@@ -322,6 +322,8 @@ else:
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
+  txt = 'final train loss '+str('%1.2e'%train_list[-1])+' validation loss '+ str('%1.2e'%test_list[-1]) 
+  fig.text(.5, .2, txt, ha='center')
   plt.xlabel('epoch')
   plt.ylabel('loss')
   plt.legend(['training loss','validation loss'])
@@ -388,6 +390,8 @@ for batch_id in range(num_batch):
    anis = param_test[data_id,G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
    sum_miss = sum_miss + miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
- miss_rate[batch_id] = sum_miss/run_per_param
+ miss_rate_param[batch_id] = sum_miss/run_per_param
 
-print(miss_rate_param)
+
+
+#print(miss_rate_param)
