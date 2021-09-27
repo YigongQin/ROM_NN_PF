@@ -24,6 +24,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 #from melt_pool import *
 from G_E import *
+from models import *
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -60,6 +61,10 @@ print('nx,ny', nx,ny)
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,G+param_len))
 y_all = np.zeros((num_runs,frames))
+G_list = []
+R_list = []
+e_list = []
+
 
 for batch_id in range(num_batch):
   fname =datasets[batch_id]; print(fname)
@@ -68,7 +73,11 @@ for batch_id in range(num_batch):
   frac_asse = np.asarray(f['fractions'])
   tip_y_asse = np.asarray(f['y_t'])
   number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
-  print(number_list[6],number_list[7])
+  print(number_list[6],number_list[7],number_list[8])
+  e_list.append(number_list[6])
+  G_list.append(number_list[7])
+  R_list.append(number_list[8])
+  
   # compile all the datasets interleave
   for run in range(batch):
     aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
@@ -208,58 +217,7 @@ train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = num_test*(frames-window), shuffle=False)
 
 
-class Decoder(nn.Module):
-    def __init__(self,input_len,output_len,hidden_dim,num_layer):
-        super(Decoder, self).__init__()
-        self.input_len = input_len 
-        self.output_len = output_len  
-        self.hidden_dim = hidden_dim
-        self.num_layer = num_layer
-        self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
-        self.project = nn.Linear(hidden_dim, output_len)
-    def forward(self,frac,hidden,cell,frac_ini,scaler,mask):
-        output, (hidden, cell) = self.lstm_decoder(frac.unsqueeze(dim=1), (hidden,cell) )
-        target = self.project(output[:,-1,:])   # project last layer output to the desired shape
-        target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
-        frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
-        frac = scaler.unsqueeze(dim=-1)*frac     # scale the output based on the output frame
-        
-        return frac, hidden, cell
-# The model
-class LSTM_soft(nn.Module):
-    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win,decoder):
-        super(LSTM_soft, self).__init__()
-        self.input_len = input_len
-        self.output_len = output_len  
-        self.hidden_dim = hidden_dim
-        self.num_layer = num_layer
-        self.out_win = out_win
-        self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.decoder = decoder
-
-      
-    def forward(self, input_frac, frac_ini, scaler, mask):
-        
-        output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(device)
-        ## step 1 encode the input to hidden and cell state
-        encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
-        ## step 2 start with "equal vector", the last 
-        frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is t
-       # param = input_1seq[:,self.output_len:] 
-       ## step 3 for loop decode the time series one-by-one
-        for i in range(self.out_win):
-            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler[:,i], mask)
-            
-            output_frac[:,i,:] = frac
-            #input_1seq[:,:self.output_len] = frac
-            #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
-                        
-
-        return output_frac
-
-
-
-def LSTM_train(model, num_epochs, train_loader, test_loader):
+def train(model, num_epochs, train_loader, test_loader):
     
     #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
@@ -297,7 +255,7 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
     return model 
 
 decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
-model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder)
+model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 model = model.double()
 if device=='cuda':
   model.cuda()
@@ -315,7 +273,7 @@ else:
   train_list=[]
   test_list=[]
   start = time.time()
-  model=LSTM_train(model, num_epochs, train_loader, test_loader)
+  model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
   torch.save(model.state_dict(), './lstmmodel')
@@ -331,7 +289,7 @@ else:
   plt.savefig('mul_batch_loss.png')
   
 ## plot to check if the construction is reasonable
-evolve_runs = num_batch*20 #num_test
+evolve_runs = num_batch*1 #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
 train_dat = np.zeros((evolve_runs,window,input_len))
 
@@ -373,7 +331,7 @@ for batch_id in range(num_batch):
  tip_y_asse = np.asarray(f['y_t'])
  sum_miss = 0
  for plot_idx in range( run_per_param ):  # in test dataset
-   print('plot_id,batch_id', plot_idx, batch_id)
+
    data_id = plot_idx*num_batch+batch_id
    #print('seq', param_test[data_id,:])
    #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
@@ -389,9 +347,21 @@ for batch_id in range(num_batch):
    Rmax = 1 
    anis = param_test[data_id,G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
-   sum_miss = sum_miss + miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+   sum_miss = sum_miss + miss
+   print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
  miss_rate_param[batch_id] = sum_miss/run_per_param
 
 
+fig, ax = plt.subplots() 
+cm = plt.cm.get_cmap('RdYlBu')
+cs = ax.scatter(e_list, G_list, c=miss_rate_param,vin=0,vmax=10, s=35,cmap=cm)
+ax.set_yscale('log')
+ax.set_xscale('log')
+plt.colobar(cs)
+plt.xlabel(r'$\epsilon_k$')
+plt.ylabel('G')
+plt.title('misclassification rate')
+plt.savefig('miss_rate_validation.png')
 
 #print(miss_rate_param)
