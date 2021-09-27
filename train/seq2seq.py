@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_funcs import plot_reconst,plot_real, plot_IO
+from plot_funcs import plot_reconst, plot_real, plot_IO, miss_rate
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
@@ -217,8 +217,8 @@ class Decoder(nn.Module):
         self.num_layer = num_layer
         self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
         self.project = nn.Linear(hidden_dim, output_len)
-    def forward(self,input_frac,hidden,cell,frac_ini,scaler,mask):
-        output, (hidden, cell) = self.lstm_decoder(input_frac.unsqueeze(dim=1), (hidden,cell) )
+    def forward(self,frac,hidden,cell,frac_ini,scaler,mask):
+        output, (hidden, cell) = self.lstm_decoder(frac.unsqueeze(dim=1), (hidden,cell) )
         target = self.project(output[:,-1,:])   # project last layer output to the desired shape
         target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
         frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
@@ -227,7 +227,7 @@ class Decoder(nn.Module):
         return frac, hidden, cell
 # The model
 class LSTM_soft(nn.Module):
-    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win):
+    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win,decoder):
         super(LSTM_soft, self).__init__()
         self.input_len = input_len
         self.output_len = output_len  
@@ -235,10 +235,8 @@ class LSTM_soft(nn.Module):
         self.num_layer = num_layer
         self.out_win = out_win
         self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
-        self.project = nn.Linear(hidden_dim, output_len)
-        #self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
-     #   self.linear = nn.Linear(output_len,output_len)
+        self.decoder = decoder
+
       
     def forward(self, input_frac, frac_ini, scaler, mask):
         
@@ -250,12 +248,7 @@ class LSTM_soft(nn.Module):
        # param = input_1seq[:,self.output_len:] 
        ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
-            #output, hidden, cell = self.decoder(input_1seq, hidden, cell, frac_ini, scaler[:,i], mask)
-            output, (hidden, cell) = self.lstm_decoder(frac.unsqueeze(dim=1), (hidden,cell) )
-            target = self.project(output[:,-1,:])   # project last layer output to the desired shape
-            target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
-            frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
-            frac = scaler[:,i].unsqueeze(dim=-1)*frac     # scale the output based on the output frame
+            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler[:,i], mask)
             
             output_frac[:,i,:] = frac
             #input_1seq[:,:self.output_len] = frac
@@ -303,8 +296,8 @@ def LSTM_train(model, num_epochs, train_loader, test_loader):
       scheduler.step()
     return model 
 
-#decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
-model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win)
+decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
+model = LSTM_soft(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder)
 model = model.double()
 if device=='cuda':
   model.cuda()
@@ -336,7 +329,7 @@ else:
   plt.savefig('mul_batch_loss.png')
   
 ## plot to check if the construction is reasonable
-evolve_runs = num_batch #num_test
+evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
 train_dat = np.zeros((evolve_runs,window,input_len))
 
@@ -367,16 +360,20 @@ for i in range(0,pred_frames,out_win):
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test_ini[:evolve_runs,np.newaxis,:]
 
 
+miss_rate_param = np.zeros(num_batch)
+run_per_param = int(evolve_runs/num_batch)
+
 for batch_id in range(num_batch): 
  fname = datasets[batch_id] 
  f = h5py.File(fname, 'r')
  aseq_asse = np.asarray(f['sequence'])
  frac_asse = np.asarray(f['fractions'])
  tip_y_asse = np.asarray(f['y_t'])
- for plot_idx in range( int(evolve_runs/num_batch) ):  # in test dataset
+ sum_miss = 0
+ for plot_idx in range( run_per_param ):  # in test dataset
    print('plot_id,batch_id', plot_idx, batch_id)
    data_id = plot_idx*num_batch+batch_id
-   print('seq', param_test[data_id,:])
+   #print('seq', param_test[data_id,:])
    #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
    frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
    
@@ -389,8 +386,8 @@ for batch_id in range(num_batch):
    G0 = param_test[data_id,G+1]
    Rmax = 1 
    anis = param_test[data_id,G]
-   plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
-
-
+   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+   sum_miss = sum_miss + miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+ miss_rate[batch_id] = sum_miss/run_per_param
 
 

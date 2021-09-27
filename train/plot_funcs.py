@@ -280,3 +280,49 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac,plot_idx):
     
     
     return
+
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
+    
+
+    fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
+    dx = x[1]-x[0]
+    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
+    ntip_y = np.asarray(tip_y/dx,dtype=int)   
+    piece_len = np.asarray(np.round(frac*nx),dtype=int)
+    piece_len = np.cumsum(piece_len,axis=0)
+    piece0 = piece_len[:,0]
+    field = np.zeros((nx,ny),dtype=int)
+
+
+#=========================start fill the final field=================
+    
+    temp_piece = np.zeros(G, dtype=int)
+    miss=0
+    for j in range(ntip_y[-1]):
+     #  loc = 0
+       for g in range(G):
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          else:
+            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            new_f = fint(j)
+            temp_piece[g] = np.asarray(new_f,dtype=int)
+       #print(temp_piece)
+       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+       for g in range(G):
+        if g==0:
+          for i in range( temp_piece[g]):
+           # print(loc)
+            field[i,j] = aseq[g]
+            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1): break
+           # print(loc)
+            field[i,j] = aseq[g]
+            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+            
+
+    miss_rate = miss/(nx*ntip_y[-1]);
+
+    return miss_rate
+
