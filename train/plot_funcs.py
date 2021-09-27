@@ -45,7 +45,7 @@ def subplot_rountine(fig, ax, cs, idx):
 def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
 
     print('angle sequence', aseq)
-    
+    #print(frac) 
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ymax = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -59,7 +59,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
     piece_len = np.cumsum(piece_len,axis=0)
     piece0 = piece_len[:,0]
-    
+    #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
     ini_field = np.zeros((nx,ny),dtype=int)
 

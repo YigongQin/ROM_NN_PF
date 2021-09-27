@@ -32,8 +32,8 @@ input_len = 2*G + param_len + time_tag
 output_len = G
 
 ## architecture
-hidden_dim = 50
-LSTM_layer = 3
+hidden_dim = 32
+LSTM_layer = 4
 
 num_epochs = 40
 learning_rate=5e-4

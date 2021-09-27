@@ -29,7 +29,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 
 param_list = ['anis','G0','Rmax']
 
@@ -215,7 +215,7 @@ class Decoder(nn.Module):
         self.output_len = output_len  
         self.hidden_dim = hidden_dim
         self.num_layer = num_layer
-        self.lstm_decoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)    
+        self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
         self.project = nn.Linear(hidden_dim, output_len)
     def forward(self,input_frac,hidden,cell,frac_ini,scaler,mask):
         output, (hidden, cell) = self.lstm_decoder(input_frac.unsqueeze(dim=1), (hidden,cell) )
@@ -235,31 +235,33 @@ class LSTM_soft(nn.Module):
         self.num_layer = num_layer
         self.out_win = out_win
         self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_decoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)    
+        self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
         self.project = nn.Linear(hidden_dim, output_len)
         #self.project = nn.Linear(hidden_dim, output_len) # input = [batch, dim] 
      #   self.linear = nn.Linear(output_len,output_len)
       
     def forward(self, input_frac, frac_ini, scaler, mask):
         
-        output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,device='cuda',dtype='double')
+        output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(device)
         ## step 1 encode the input to hidden and cell state
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
-        input_1seq = input_frac[:,-1,:]  ## the ancipated output frame is t
-        ## step 3 for loop decode the time series one-by-one
+        frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is t
+       # param = input_1seq[:,self.output_len:] 
+       ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
             #output, hidden, cell = self.decoder(input_1seq, hidden, cell, frac_ini, scaler[:,i], mask)
-            output, (hidden, cell) = self.lstm_decoder(input_1seq.unsqueeze(dim=1), (hidden,cell) )
+            output, (hidden, cell) = self.lstm_decoder(frac.unsqueeze(dim=1), (hidden,cell) )
             target = self.project(output[:,-1,:])   # project last layer output to the desired shape
             target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
             frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
             frac = scaler[:,i].unsqueeze(dim=-1)*frac     # scale the output based on the output frame
             
             output_frac[:,i,:] = frac
-            input_1seq[:,:self.output_len] = frac
-            input_1seq[:,-1] += 1.0/(frames-1)  ## time tag 
-            
+            #input_1seq[:,:self.output_len] = frac
+            #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
+                        
+
         return output_frac
 
 
@@ -346,16 +348,18 @@ frac_out[:,:window,:] = frac_out_info
 train_dat[:evolve_runs,:,output_len:-1] = param_test[:evolve_runs,np.newaxis,:]
 alone = pred_frames%out_win
 pack = pred_frames-alone
+scaler_evolve = np.zeros(out_win)
 for i in range(0,pred_frames,out_win):
     train_dat[:evolve_runs,:,:output_len] = frac_out_info
     train_dat[:evolve_runs,:,-1] = (i+window)/(frames-1) ## the first output time
     mask_before = (train_dat[:,-1,:output_len]/scaler_lstm[[window+i-1]]+frac_test_ini[:evolve_runs,:]>1e-3)*np.ones((evolve_runs,output_len))
-    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_lstm[window+i:window+i+out_win]), todevice(mask_before) ) ) 
+    scaler_evolve[:len(scaler_lstm[window+i:window+i+out_win])] = scaler_lstm[window+i:window+i+out_win]
+    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_evolve[np.newaxis,:]), todevice(mask_before) ) ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
     if i>=pack:
-        frac_out[:evolve_runs,-alone:,:] = frac_new_vec[:alone,:,:]
+        frac_out[:evolve_runs,-alone:,:] = frac_new_vec[:,:alone,:]
     else: frac_out[:evolve_runs,window+i:window+i+out_win,:] = frac_new_vec
     #print(frac_new_vec)
     frac_out_info = np.concatenate((frac_out_info[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
