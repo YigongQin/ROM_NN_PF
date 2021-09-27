@@ -390,4 +390,4 @@ for batch_id in range(num_batch):
    sum_miss = sum_miss + miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
  miss_rate[batch_id] = sum_miss/run_per_param
 
-
+print(miss_rate_param)
