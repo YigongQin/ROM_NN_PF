@@ -23,14 +23,15 @@ from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 #from melt_pool import *
-from G_E import *
+#from G_E_test import *
+from input1 import *
 from models import *
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 
 param_list = ['anis','G0','Rmax']
 
@@ -41,7 +42,7 @@ print('frames, window', frames, window)
 #datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
 #datasets = glob.glob('../../ML_mask_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5')
 #datasets = glob.glob('../../ML_PF10_train200_test20_Mt23274_grains8_frames25_anis0.050_G01.000_Rmax1.000_seed1_rank0.h5')
-datasets = glob.glob(data_dir)
+datasets = sorted(glob.glob(data_dir))
 print('dataset list',datasets,' and size',len(datasets))
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
@@ -94,9 +95,9 @@ for batch_id in range(num_batch):
     param_all[run*num_batch+batch_id,G+1] = float(number_list[7])/100 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
-
-weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
-
+if skip_check == False:
+ weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
+else: weird_sim=[]
 ### divide train and validation
 
 idx =  np.arange(num_runs) # you can permute the order of train here
@@ -289,7 +290,7 @@ else:
   plt.savefig('mul_batch_loss.png')
   
 ## plot to check if the construction is reasonable
-evolve_runs = num_batch*1 #num_test
+evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G))
 train_dat = np.zeros((evolve_runs,window,input_len))
 
@@ -355,13 +356,14 @@ for batch_id in range(num_batch):
 
 fig, ax = plt.subplots() 
 cm = plt.cm.get_cmap('RdYlBu')
-cs = ax.scatter(e_list, G_list, c=miss_rate_param,vin=0,vmax=10, s=35,cmap=cm)
-ax.set_yscale('log')
-ax.set_xscale('log')
-plt.colobar(cs)
+cs = ax.scatter(np.array(e_list,dtype=float), np.array(G_list,dtype=float), c=np.array(miss_rate_param,dtype=float),vmin=0,vmax=0.1, s=35,cmap=cm)
+print(e_list,G_list)
+#ax.set_yscale('log')
+#ax.set_xscale('log')
+plt.colorbar(cs)
 plt.xlabel(r'$\epsilon_k$')
-plt.ylabel('G')
+plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
-plt.savefig('miss_rate_validation.png')
+plt.savefig('miss_rate_validation.png',dpi=600)
 
 #print(miss_rate_param)
