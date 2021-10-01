@@ -29,6 +29,8 @@ class ConvLSTMCell(nn.Module):
             Size of the convolutional kernel.
         bias: bool
             Whether or not to add the bias.
+        input shape: N, (2+num_param), G
+        hidden sshape: N, hidden_dim, G
         """
 
         super(ConvLSTMCell, self).__init__()
@@ -134,8 +136,8 @@ class ConvLSTM(nn.Module):
        # if not self.batch_first:
             # (t, b, c, h, w) -> (b, t, c, h, w)
        #     input_tensor = input_tensor.permute(1, 0, 2, 3, 4)
-
-        b, _, _, w = input_tensor.size()
+       
+        b, seq_len, channel, w = input_tensor.size()
 
         # Implement stateful ConvLSTM
         if hidden_state is not None:
@@ -147,7 +149,7 @@ class ConvLSTM(nn.Module):
         layer_output_list = []
         last_state_list = []
 
-        seq_len = input_tensor.size(1)
+         
         cur_layer_input = input_tensor
 
         for layer_idx in range(self.num_layers):
@@ -157,13 +159,14 @@ class ConvLSTM(nn.Module):
             for t in range(seq_len):
                 h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :],
                                                  cur_state=[h, c])
+                ## output shpae b, hidden_dim, w
                 output_inner.append(h)
 
-            layer_output = torch.stack(output_inner, dim=1)
+            layer_output = torch.stack(output_inner, dim=1) ##stack every time step to form output
             cur_layer_input = layer_output
 
             layer_output_list.append(layer_output)
-            last_state_list.append([h, c])
+            last_state_list.append([h, c]) ## 
 
         if not self.return_all_layers:
             layer_output_list = layer_output_list[-1:]
@@ -172,6 +175,7 @@ class ConvLSTM(nn.Module):
         return layer_output_list, last_state_list
 
     def _init_hidden(self, batch_size, image_size):
+        ## init the hidden states for every layer
         init_states = []
         for i in range(self.num_layers):
             init_states.append(self.cell_list[i].init_hidden(batch_size, image_size))
@@ -228,11 +232,11 @@ class LSTM(nn.Module):
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
         frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
-        scaler = scale(input_frac[:,:,-1])
+        scaler = scale(input_frac[:,-1,-1])
        # param = input_1seq[:,self.output_len:] 
        ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
-            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler[:,i])           
+            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler+i/(frames-1))           
             output_frac[:,i,:] = frac
             #input_1seq[:,:self.output_len] = frac
             #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
