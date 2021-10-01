@@ -23,8 +23,8 @@ from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 #from melt_pool import *
-#from G_E_test import *
-from input1 import *
+from G_E import *
+#from input1 import *
 from models import *
 # global parameters
 host='cpu'
@@ -145,7 +145,7 @@ def tohost(data):
 
 class PrepareData(Dataset):
 
-     def __init__(self, input_, output_, init, scaler, mask):
+     def __init__(self, input_, output_, init):
           if not torch.is_tensor(input_):
               self.input_ = todevice(input_)
           if not torch.is_tensor(output_):

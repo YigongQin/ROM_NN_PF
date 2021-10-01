@@ -9,9 +9,10 @@ Created on Mon Sep 27 11:34:53 2021
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models import *
-from input1 import *
-scale = lambda x: (x+1/(frames-1))*expand
+#from models import *
+#from input1 import *
+from G_E import *
+scale = lambda x: (x+1.0/(frames-1))*expand
 
 class ConvLSTMCell(nn.Module):
 
@@ -227,11 +228,11 @@ class LSTM(nn.Module):
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
         frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
-        scaler = scale(input_frac[:,-1,:])
+        scaler = scale(input_frac[:,:,-1])
        # param = input_1seq[:,self.output_len:] 
        ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
-            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler)           
+            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler[:,i])           
             output_frac[:,i,:] = frac
             #input_1seq[:,:self.output_len] = frac
             #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
