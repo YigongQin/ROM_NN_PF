@@ -126,9 +126,11 @@ frac_train = frac_train - frac_train_ini[:,np.newaxis,:]
 frac_test = frac_test - frac_test_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
-linear_fact = expand/pred_frames 
-scaler_lstm = (frames-np.arange(frames))*linear_fact
-#scaler_lstm = np.ones(frames)
+
+scale = lambda x: (x+1.0/(frames-1))*expand
+
+scaler_lstm = scale(np.arange(frames)/(frames-1)) #0 to 1, frames
+
 frac_train = frac_train* scaler_lstm[np.newaxis,:,np.newaxis]
 frac_test = frac_test* scaler_lstm[np.newaxis,:,np.newaxis]
 
@@ -150,15 +152,12 @@ class PrepareData(Dataset):
               self.output_ = todevice(output_)
           if not torch.is_tensor(init):
               self.init = todevice(init)
-          if not torch.is_tensor(scaler):
-              self.scaler = todevice(scaler)
-          if not torch.is_tensor(mask):
-              self.mask = todevice(mask)
+
      def __len__(self):
          #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
-         return self.input_[idx,:,:], self.output_[idx,:,:], self.init[idx,:], self.scaler[idx,:], self.mask[idx,:]
+         return self.input_[idx,:,:], self.output_[idx,:,:], self.init[idx,:]
 
 # Shape the inputs and outputs
 input_seq = np.zeros(shape=(num_train*sam_per_run, window, input_len))
@@ -176,10 +175,12 @@ sample = 0
 for run in range(num_train):
     lstm_snapshot = frac_train[run,:,:]
     for t in range(window,frames-(out_win-1)):
-        input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
         input_seq[sample,:,output_len:-1] = param_train[run,:]
         input_seq[sample,:,-1] = t/(frames-1) 
+        
+        input_seq[sample,:,:output_len] = lstm_snapshot[t-window:t,:]        
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
+        
         ini_train[sample,:] = frac_train_ini[run,:]
         sample = sample + 1
 #print(np.max(output_seq))
@@ -187,31 +188,20 @@ sample = 0
 for run in range(num_test):
     lstm_snapshot = frac_test[run,:,:]
     for t in range(window,frames-(out_win-1)):
-        input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
         input_test[sample,:,output_len:-1] = param_test[run,:]
         input_test[sample,:,-1] = t/(frames-1) 
+        
+        input_test[sample,:,:output_len] = lstm_snapshot[t-window:t,:]
         output_test[sample,:,:] = lstm_snapshot[t:t+out_win,:]
+        
         ini_test[sample,:] = frac_test_ini[run,:]
         sample = sample + 1
         
 
 
-scaler_train = np.zeros((num_train*sam_per_run,out_win)) ## this is for the output scaling
-scaler_test = np.zeros((num_test*sam_per_run,out_win))
-for i in range(out_win):
-    scaler_train[:,i] = np.tile(scaler_lstm[window+i:frames-(out_win-1)+i],num_train)  
-    scaler_test[:,i] = np.tile(scaler_lstm[window+i:frames-(out_win-1)+i],num_test)
-
-## scaler 
-
-scaler_train_p = np.tile(scaler_lstm[window-1:frames-out_win],num_train)
-scaler_test_p = np.tile(scaler_lstm[window-1:frames-out_win],num_test)
-
-mask_train = (input_seq[:,-1,:output_len]/scaler_train_p[:,np.newaxis]+ini_train>1e-3)*np.ones((num_train*sam_per_run,output_len))
-mask_test = (input_test[:,-1,:output_len]/scaler_test_p[:,np.newaxis]+ini_test>1e-3)*np.ones((num_test*sam_per_run,output_len))
 #print(mask_train)
-train_loader = PrepareData(input_seq, output_seq, ini_train, scaler_train, mask_train)
-test_loader = PrepareData(input_test, output_test, ini_test, scaler_test, mask_test)
+train_loader = PrepareData(input_seq, output_seq, ini_train)
+test_loader = PrepareData(input_test, output_test, ini_test)
 
 #train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=False)
 train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
@@ -232,20 +222,20 @@ def train(model, num_epochs, train_loader, test_loader):
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
       if epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
-      for  ix, (I_train, O_train, ini_train, scaler_train, mask_train) in enumerate(train_loader):   
+      for  ix, (I_train, O_train, ini_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
          #recon = model(I_train,ini_train,scaler_train)
-         loss = criterion(model(I_train,ini_train,scaler_train, mask_train), O_train)
+         loss = criterion(model(I_train,ini_train), O_train)
         # print(recon,O_train)
          #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
          optimizer.zero_grad()
          loss.backward()
          optimizer.step()
         # optimizer.zero_grad() 
-      for  ix, (I_test, O_test, ini_test, scaler_test, mask_test) in enumerate(test_loader):
+      for  ix, (I_test, O_test, ini_test) in enumerate(test_loader):
         #pred = model(I_test,ini_test,scaler_test)
-        test_loss = criterion(model(I_test,ini_test,scaler_test, mask_test), O_test)
+        test_loss = criterion(model(I_test,ini_test), O_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
@@ -306,9 +296,7 @@ scaler_evolve = np.zeros(out_win)
 for i in range(0,pred_frames,out_win):
     train_dat[:evolve_runs,:,:output_len] = frac_out_info
     train_dat[:evolve_runs,:,-1] = (i+window)/(frames-1) ## the first output time
-    mask_before = (train_dat[:,-1,:output_len]/scaler_lstm[[window+i-1]]+frac_test_ini[:evolve_runs,:]>1e-3)*np.ones((evolve_runs,output_len))
-    scaler_evolve[:len(scaler_lstm[window+i:window+i+out_win])] = scaler_lstm[window+i:window+i+out_win]
-    frac_new_vec = tohost(model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]),todevice(scaler_evolve[np.newaxis,:]), todevice(mask_before) ) ) 
+    frac_new_vec = tohost( model(todevice(train_dat), todevice(frac_test_ini[:evolve_runs,:]) ) ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
