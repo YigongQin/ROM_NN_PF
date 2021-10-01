@@ -41,6 +41,6 @@ expand = 10
 
 seed = 1   
 #data_dir = '../../G_E/*'
-data_dir = '../../G_E_test/*'
-skip_check = True
+data_dir = '../../G_E/*'
+skip_check = False
 
