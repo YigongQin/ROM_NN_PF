@@ -98,7 +98,7 @@ class ConvLSTM(nn.Module):
     """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
-                 batch_first=True, bias=True, return_all_layers=True):
+                 batch_first=True, bias=True, return_all_layers=False):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -130,7 +130,7 @@ class ConvLSTM(nn.Module):
 
     def forward(self, input_tensor, hidden_state=None):
         '''
-        input for ConvLSTM B, T, C, H 
+        input for ConvLSTM B, T, C, W 
 
         '''
        # if not self.batch_first:
@@ -159,10 +159,12 @@ class ConvLSTM(nn.Module):
             for t in range(seq_len):
                 h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :],
                                                  cur_state=[h, c])
-                ## output shpae b, hidden_dim, w
+                ## output shape b, hidden_dim, w
                 output_inner.append(h)
-
-            layer_output = torch.stack(output_inner, dim=1) ##stack every time step to form output
+                
+            ##stack every time step to form output, shape is b, t, hidden, w
+            layer_output = torch.stack(output_inner, dim=1) 
+            
             cur_layer_input = layer_output
 
             layer_output_list.append(layer_output)
@@ -232,11 +234,12 @@ class LSTM(nn.Module):
         encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
         frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
-        scaler = scale(input_frac[:,-1,-1])
+        time_tag = input_frac[:,-1,-1]
        # param = input_1seq[:,self.output_len:] 
        ## step 3 for loop decode the time series one-by-one
         for i in range(self.out_win):
-            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler+i/(frames-1))           
+            scaler = scale(time_tag + i/(frames-1))  ## input_frac has the time information for the first output
+            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler)           
             output_frac[:,i,:] = frac
             #input_1seq[:,:self.output_len] = frac
             #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
@@ -245,7 +248,52 @@ class LSTM(nn.Module):
 
 
 
-
+class ConvLSTM_1step():
+    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias,device):
+        super(ConvLSTM_1step, self).__init__()
+        self.input_dim = input_dim  ## this input channel
+        self.hidden_dim = hidden_dim  ## this output_channel
+        self.num_layer = num_layer
+        self.w = w
+        self.out_win = out_win
+        #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
+        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
+        self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
+ 
+        self.kernel_size = kernel_size
+        self.bias = bias
+        self.device = device
+        
+    def forward(self, input_frac, frac_ini):
+        
+        #output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(self.device)
+        
+        ## step 1 remap the input to the channel with gridDdim G
+        ## b,t, input_len -> b,t,c,w 
+        frac = input_frac[:,:,:self.w].unsqueeze(dim=-2)
+        pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
+        param = input_frac[:,:,2*self.w:].unsqueeze(dim=-1)
+        input_frac = torch.stack([frac,pf,param],dim=2)
+        
+        encode_out, _ = self.lstm_encoder(input_frac)  # output range [-1,1]
+        ## step 2 start with "equal vector", the last 
+       # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
+        time_tag = input_frac[:,-1,-1]
+        scaler = scale(time_tag + 1.0/(frames-1))
+        
+        target = self.project(encode_out[:,-1,:,:])   # project last time output b,hidden_dim, to the desired shape b,w
+        
+        
+        target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
+        frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
+        frac = scaler.unsqueeze(dim=-1)*frac     # scale the output based on the output frame          
+        #output_frac[:,0,:] = frac
+        #input_1seq[:,:self.output_len] = frac
+        #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
+                        
+        return frac
+    
+    
 
 
 
