@@ -246,7 +246,8 @@ def train(model, num_epochs, train_loader, test_loader):
 
 decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
-model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+#model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+model = ConvLSTM_seq(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 model = model.double()
 if device=='cuda':
   model.cuda()

@@ -133,7 +133,7 @@ class ConvLSTM(nn.Module):
 
         self.cell_list = nn.ModuleList(cell_list)
 
-    def forward(self, input_tensor, hidden_state=None):
+    def forward(self, input_tensor, hidden_state):
         '''
         input for ConvLSTM B, T, C, W 
 
@@ -145,9 +145,10 @@ class ConvLSTM(nn.Module):
         b, seq_len, channel, w = input_tensor.size()
 
         # Implement stateful ConvLSTM
-        if hidden_state is not None:
-            raise NotImplementedError()
-        else:
+       # if hidden_state is not None:
+       #     raise NotImplementedError()
+       # else:
+        if hidden_state is None:
             # Since the init is done in forward. Can send image size here
             hidden_state = self._init_hidden(batch_size=b, image_size=w)
 
@@ -251,8 +252,6 @@ class LSTM(nn.Module):
                         
         return output_frac
 
-
-
 class ConvLSTM_1step(nn.Module):
     def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device):
         super(ConvLSTM_1step, self).__init__()
@@ -286,7 +285,7 @@ class ConvLSTM_1step(nn.Module):
         #print(fracs.shape,pf.shape,param.shape)
         input_frac = torch.cat([fracs,pf,param],dim=2)
         
-        encode_out, _ = self.lstm_encoder(input_frac)  # output range [-1,1]
+        encode_out, _ = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
         ## step 2 start with "equal vector", the last 
        # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
         target = self.project(encode_out[0][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w
@@ -302,7 +301,61 @@ class ConvLSTM_1step(nn.Module):
         return frac.unsqueeze(dim=1)
     
     
-
+class ConvLSTM_seq(nn.Module):
+    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device):
+        super(ConvLSTM_seq, self).__init__()
+        self.input_dim = input_dim  ## this input channel
+        self.hidden_dim = hidden_dim  ## this output_channel
+        self.num_layer = num_layer
+        self.w = w
+        self.out_win = out_win
+        #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
+        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
+        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
+        self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
+ 
+        self.kernel_size = kernel_size
+        self.bias = bias
+        self.device = device
+        
+    def forward(self, input_frac, frac_ini):
+        
+        #output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(self.device)
+        
+        ## step 1 remap the input to the channel with gridDdim G
+        ## b,t, input_len -> b,t,c,w 
+        b, t, all_para  = input_frac.size()
+        output_frac = torch.zeros(b,self.out_win,self.w,dtype=torch.float64).to(self.device)
+        
+        time_tag = input_frac[:,-1,-1]
+        
+        #mask = (input_frac[:,-1,:self.w]/scale(time_tag-1.0/(frames-1)).unsqueeze(dim=-1)+frac_ini>1e-3)*1
+        fracs = input_frac[:,:,:self.w].unsqueeze(dim=-2)
+        pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
+        param = (input_frac[:,:,2*self.w:].unsqueeze(dim=-1)) .expand(b,t,all_para-2*self.w,self.w)
+        #print(fracs.shape,pf.shape,param.shape)
+        input_frac = torch.cat([fracs,pf,param],dim=2)
+        
+        frac = input_frac[:,-1:,:,:]
+        encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
+        
+        ## step 2 start with "equal vector", the last 
+       # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
+        for i in range(self.out_win):
+            scaler = scale(time_tag + i/(frames-1))
+            encode_out, hidden_state = self.lstm_decoder(frac,hidden_state)
+            
+            target = self.project(encode_out[0][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w   
+            target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
+            frac = F.normalize(target, p=1, dim=-1)-frac_ini   # [b,w] normalize the fractions
+            frac = scaler.unsqueeze(dim=-1)*frac     # [b,w]scale the output based on the output frame     
+            
+            output_frac[:,i,:] = frac
+        #output_frac[:,0,:] = frac
+        #input_1seq[:,:self.output_len] = frac
+        #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
+                        
+        return output_frac
 
 
 
