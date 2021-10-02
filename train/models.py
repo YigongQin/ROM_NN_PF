@@ -274,7 +274,7 @@ class ConvLSTM_1step(nn.Module):
         b, t, all_para  = input_frac.size()
 
         time_tag = input_frac[:,-1,-1]
-        scaler = scale(time_tag + 1.0/(frames-1))
+        scaler = scale(time_tag)
 
         fracs = input_frac[:,:,:self.w].unsqueeze(dim=-2)
         pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
