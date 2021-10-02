@@ -18,7 +18,7 @@ num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
 window = 5
-out_win = 3
+out_win = 1
 frames = 26
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
@@ -32,8 +32,9 @@ input_len = 2*G + param_len + time_tag
 output_len = G
 
 ## architecture
-hidden_dim = 64
-LSTM_layer = 2
+hidden_dim = 32
+LSTM_layer = 3
+kernel_size = (3,)
 
 num_epochs = 40
 learning_rate=5e-4

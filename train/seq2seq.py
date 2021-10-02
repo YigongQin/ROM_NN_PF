@@ -127,7 +127,7 @@ frac_test = frac_test - frac_test_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
 
-scale = lambda x: (x+1.0/(frames-1))*expand
+scale = lambda x: (1-x+1.0/(frames-1))*expand
 
 scaler_lstm = scale(np.arange(frames)/(frames-1)) #0 to 1, frames
 
@@ -246,7 +246,8 @@ def train(model, num_epochs, train_loader, test_loader):
     return model 
 
 decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
-model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
+#model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
+model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 model = model.double()
 if device=='cuda':
   model.cuda()

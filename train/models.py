@@ -12,7 +12,8 @@ import torch.nn.functional as F
 #from models import *
 #from input1 import *
 from G_E import *
-scale = lambda x: (x+1.0/(frames-1))*expand
+
+scale = lambda x: (1-x+1.0/(frames-1))*expand
 
 class ConvLSTMCell(nn.Module):
 
@@ -39,10 +40,10 @@ class ConvLSTMCell(nn.Module):
         self.hidden_dim = hidden_dim
 
         self.kernel_size = kernel_size
-        self.padding = (kernel_size-1) // 2
+        self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
 
-        self.conv = nn.Conv2d(in_channels=self.input_dim + self.hidden_dim,
+        self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
                               padding=self.padding,
@@ -66,9 +67,9 @@ class ConvLSTMCell(nn.Module):
         return h_next, c_next
 
     def init_hidden(self, batch_size, image_size):
-        height, width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, width, device=self.conv.weight.device),
-                torch.zeros(batch_size, self.hidden_dim, width, device=self.conv.weight.device))
+        width = image_size
+        return (torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.conv.weight.device),
+                torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.conv.weight.device))
 
 
 class ConvLSTM(nn.Module):
@@ -248,8 +249,8 @@ class LSTM(nn.Module):
 
 
 
-class ConvLSTM_1step():
-    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias,device):
+class ConvLSTM_1step(nn.Module):
+    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device):
         super(ConvLSTM_1step, self).__init__()
         self.input_dim = input_dim  ## this input channel
         self.hidden_dim = hidden_dim  ## this output_channel
@@ -270,18 +271,21 @@ class ConvLSTM_1step():
         
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        frac = input_frac[:,:,:self.w].unsqueeze(dim=-2)
+        b, t, all_para  = input_frac.size()
+
+        time_tag = input_frac[:,-1,-1]
+        scaler = scale(time_tag + 1.0/(frames-1))
+
+        fracs = input_frac[:,:,:self.w].unsqueeze(dim=-2)
         pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
-        param = input_frac[:,:,2*self.w:].unsqueeze(dim=-1)
-        input_frac = torch.stack([frac,pf,param],dim=2)
+        param = (input_frac[:,:,2*self.w:].unsqueeze(dim=-1)) .expand(b,t,all_para-2*self.w,self.w)
+        #print(fracs.shape,pf.shape,param.shape)
+        input_frac = torch.cat([fracs,pf,param],dim=2)
         
         encode_out, _ = self.lstm_encoder(input_frac)  # output range [-1,1]
         ## step 2 start with "equal vector", the last 
        # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
-        time_tag = input_frac[:,-1,-1]
-        scaler = scale(time_tag + 1.0/(frames-1))
-        
-        target = self.project(encode_out[:,-1,:,:])   # project last time output b,hidden_dim, to the desired shape b,w
+        target = self.project(encode_out[0][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w
         
         
         target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
@@ -291,7 +295,7 @@ class ConvLSTM_1step():
         #input_1seq[:,:self.output_len] = frac
         #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
                         
-        return frac
+        return frac.unsqueeze(dim=1)
     
     
 
