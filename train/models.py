@@ -13,7 +13,11 @@ import torch.nn.functional as F
 #from input1 import *
 from G_E import *
 
-scale = lambda x: (1-x+1.0/(frames-1))*expand
+def scale(x): 
+    # x = 1, return 1, x = 0, return frames*beta
+    return (1 - x)*(frames-1) + 1
+
+
 
 class ConvLSTMCell(nn.Module):
 
@@ -275,7 +279,7 @@ class ConvLSTM_1step(nn.Module):
 
         time_tag = input_frac[:,-1,-1]
         scaler = scale(time_tag)
-
+        #mask = (input_frac[:,-1,:self.w]/scale(time_tag-1.0/(frames-1)).unsqueeze(dim=-1)+frac_ini>1e-3)*1
         fracs = input_frac[:,:,:self.w].unsqueeze(dim=-2)
         pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
         param = (input_frac[:,:,2*self.w:].unsqueeze(dim=-1)) .expand(b,t,all_para-2*self.w,self.w)
@@ -289,7 +293,7 @@ class ConvLSTM_1step(nn.Module):
         
         
         target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
-        frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
+        frac = F.normalize(target, p=1, dim=-1)-frac_ini   # normalize the fractions
         frac = scaler.unsqueeze(dim=-1)*frac     # scale the output based on the output frame          
         #output_frac[:,0,:] = frac
         #input_1seq[:,:self.output_len] = frac

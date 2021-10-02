@@ -127,7 +127,6 @@ frac_test = frac_test - frac_test_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
 
-scale = lambda x: (1-x+1.0/(frames-1))*expand
 
 scaler_lstm = scale(np.arange(frames)/(frames-1)) #0 to 1, frames
 
@@ -346,7 +345,7 @@ for batch_id in range(num_batch):
 fig, ax = plt.subplots() 
 cm = plt.cm.get_cmap('RdYlBu')
 cs = ax.scatter(np.array(e_list,dtype=float), np.array(G_list,dtype=float), c=np.array(miss_rate_param,dtype=float),vmin=0,vmax=0.1, s=35,cmap=cm)
-print(e_list,G_list)
+print(e_list,G_list,miss_rate_param)
 #ax.set_yscale('log')
 #ax.set_xscale('log')
 plt.colorbar(cs)

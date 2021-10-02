@@ -38,7 +38,6 @@ kernel_size = (3,)
 
 num_epochs = 40
 learning_rate=5e-4
-expand = 10 
 
 seed = 1   
 #data_dir = '../../G_E/*'
