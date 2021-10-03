@@ -101,7 +101,7 @@ def check_data_quality(frac_all,param_all,y_all,G,frames):
     print('weird values ', last_y[weird_y_loc])
     print('weird y traj',y_all[weird_y_loc,:])
     weird_sim = weird_sim + list(weird_y_loc[0])
-    return weird_sim
+    return list(set(weird_sim))
     
     
     
