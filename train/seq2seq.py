@@ -112,7 +112,7 @@ print('throw away simulations',weird_sim)
 #### delete the data in the actual training fractions and parameters
 frac_train = np.delete(frac_train,weird_sim,0)
 param_train = np.delete(param_train,weird_sim,0)
-idx_all = np.delete(idx,weird_sim,0)
+idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
 num_train -= len(weird_sim) 
 assert num_train==frac_train.shape[0]==param_train.shape[0]
 assert num_test==frac_test.shape[0]==param_test.shape[0]
@@ -134,7 +134,7 @@ print('========== architecture ========')
 # stack information
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
-y_all  = y_all[idx,:]/y[-2]
+y_all  = y_all[idx_all,:]/y[-2]
 
 
 ## subtract the initial part of the sequence, so we can focus on the change
@@ -148,10 +148,9 @@ scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
-
+param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
 assert param_all.shape[1] == (2*G+3)
-
 
 def todevice(data):
 
@@ -168,7 +167,7 @@ class PrepareData(Dataset):
           if not torch.is_tensor(output_):
               self.output_ = todevice(output_)
           if not torch.is_tensor(param):
-              self.init = todevice(param)
+              self.param = todevice(param)
 
      def __len__(self):
          #print('len of the dataset',len(self.output_[:,0]))
@@ -201,7 +200,7 @@ for run in range(num_all):
         sample = sample + 1
         
 assert sample==input_seq.shape[0]==train_sam+test_sam
-assert np.all(input_param>0)
+assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
 train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:])
 test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:])
@@ -209,7 +208,6 @@ test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:]
 #train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=False)
 train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = test_sam, shuffle=False)
-
 
 def train(model, num_epochs, train_loader, test_loader):
     
@@ -248,10 +246,10 @@ def train(model, num_epochs, train_loader, test_loader):
       scheduler.step()
     return model 
 
-decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
+#decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-model = ConvLSTM_seq(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+model = ConvLSTM_seq(5, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 model = model.double()
 if device=='cuda':
   model.cuda()

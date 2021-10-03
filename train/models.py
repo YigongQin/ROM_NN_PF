@@ -335,8 +335,8 @@ class ConvLSTM_seq(nn.Module):
         param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
         
         input_frac = torch.cat([input_frac.unsqueeze(dim=-2), pf, param],dim=2)
-        
         frac_1 = input_frac[:,-1,:,:]
+
         encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
         
         ## step 2 start with "equal vector", the last 
