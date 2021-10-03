@@ -113,6 +113,13 @@ weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 frac_train = np.delete(frac_train,weird_sim,0)
 num_train -= len(weird_sim) 
 print('actual num_train',num_train)
+print('total frames',frames,'in_win',window,'out_win',out_win)
+print('epoch', num_epochs, 'learning rate',learning_rate)
+print('1d grid size (number of grains)', G)
+print('========== architecture ========')
+print('type -- LSTM')
+print('hidden dim', hidden_dim, 'number of layers', LSTM_layer)
+print('convolution kernel size', kernel_size)
 
 ## calculate the mask first
 

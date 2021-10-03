@@ -103,7 +103,7 @@ class ConvLSTM(nn.Module):
     """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
-                 batch_first=True, bias=True, return_all_layers=False):
+                 batch_first=True, bias=True, return_all_layers=True):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -288,7 +288,7 @@ class ConvLSTM_1step(nn.Module):
         encode_out, _ = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
         ## step 2 start with "equal vector", the last 
        # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
-        target = self.project(encode_out[0][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w
+        target = self.project(encode_out[-1][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w
         
         
         target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
@@ -336,21 +336,22 @@ class ConvLSTM_seq(nn.Module):
         #print(fracs.shape,pf.shape,param.shape)
         input_frac = torch.cat([fracs,pf,param],dim=2)
         
-        frac = input_frac[:,-1:,:,:]
+        frac_1 = input_frac[:,-1,:,:]
         encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
         
         ## step 2 start with "equal vector", the last 
        # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
         for i in range(self.out_win):
             scaler = scale(time_tag + i/(frames-1))
-            encode_out, hidden_state = self.lstm_decoder(frac,hidden_state)
+            encode_out, hidden_state = self.lstm_decoder(frac_1.unsqueeze(dim=1),hidden_state)
             
-            target = self.project(encode_out[0][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w   
+            target = self.project(encode_out[-1][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w   
             target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
             frac = F.normalize(target, p=1, dim=-1)-frac_ini   # [b,w] normalize the fractions
             frac = scaler.unsqueeze(dim=-1)*frac     # [b,w]scale the output based on the output frame     
             
             output_frac[:,i,:] = frac
+            frac_1 = torch.cat([frac.unsqueeze(dim=1), pf[:,-1,:,:], param[:,-1,:-1,:], param[:,-1,-1:,:] + 1.0/(frames-1)],dim=1)
         #output_frac[:,0,:] = frac
         #input_1seq[:,:self.output_len] = frac
         #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
