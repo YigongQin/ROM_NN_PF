@@ -35,13 +35,8 @@ model_exist = False
 
 param_list = ['anis','G0','Rmax']
 
-print('train, test', num_train, num_test)
-print('frames, window', frames, window)
+print('(input data) train, test', num_train, num_test)
 
-# global information that apply for every run
-#datasets = glob.glob('../../mulbatch_train/ML_PF10_train1000_test100_Mt47024_grains8_frames25_anis*_G05.000_Rmax1.000_seed*_rank0.h5')
-#datasets = glob.glob('../../ML_mask_PF10_train500_test50_Mt70536_grains20_frames27_anis0.130_G05.000_Rmax1.000_seed2_rank0.h5')
-#datasets = glob.glob('../../ML_PF10_train200_test20_Mt23274_grains8_frames25_anis0.050_G01.000_Rmax1.000_seed1_rank0.h5')
 datasets = sorted(glob.glob(data_dir))
 print('dataset list',datasets,' and size',len(datasets))
 filename = datasets[0]
@@ -104,6 +99,8 @@ idx =  np.arange(num_runs) # you can permute the order of train here
 np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
 #print(idx)
+
+## select num_train from num_train_all to frac_train, param_train
 frac_train = frac_all[idx[:num_train],:,:]
 frac_test = frac_all[idx[num_train_all:],:,:]
 param_train = param_all[idx[:num_train],:]
@@ -114,6 +111,9 @@ weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 frac_train = np.delete(frac_train,weird_sim,0)
 param_train = np.delete(param_train,weird_sim,0)
 num_train -= len(weird_sim) 
+
+assert num_train==frac_train.shape[0]==param_train.shape[0]
+assert num_test==frac_test.shape[0]==param_test.shape[0]
 
 print('actual num_train',num_train)
 print('total frames',frames,'in_win',window,'out_win',out_win)
@@ -137,8 +137,7 @@ frac_test = frac_test - frac_test_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
 
-
-scaler_lstm = scale(np.arange(frames)/(frames-1)) #0 to 1, frames
+scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
 
 frac_train = frac_train* scaler_lstm[np.newaxis,:,np.newaxis]
 frac_test = frac_test* scaler_lstm[np.newaxis,:,np.newaxis]
