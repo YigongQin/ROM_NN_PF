@@ -110,8 +110,11 @@ param_train = param_all[idx[:num_train],:]
 param_test = param_all[idx[num_train_all:],:]
 
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
+#### delete the data in the actual training fractions and parameters
 frac_train = np.delete(frac_train,weird_sim,0)
+param_train = np.delete(param_train,weird_sim,0)
 num_train -= len(weird_sim) 
+
 print('actual num_train',num_train)
 print('total frames',frames,'in_win',window,'out_win',out_win)
 print('epoch', num_epochs, 'learning rate',learning_rate)
