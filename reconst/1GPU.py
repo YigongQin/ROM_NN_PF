@@ -25,8 +25,8 @@ npy = npx
 ratio=1
 hd=1
 filebase = sys.argv[1]
-filename = filebase + str(num_gpu-1)+'.h5'
-
+filename = glob.glob(filebase) 
+print(filename)
 
 number_list=re.findall(r"[-+]?\d*\.\d+|\d+", filename)
 
@@ -99,7 +99,7 @@ for tid in range(test):
   plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
   cs.set_clim(vmin, vmax)
   plt.show()
-  plt.savefig(var + '_8grains_test_' +str(tid)+ '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
+  plt.savefig(filebase + '_8grains_test_' +str(tid)+ '.pdf',dpi=800,facecolor="white", bbox_inches='tight')
   plt.close()
   print(u.shape)
   print(u.T)
