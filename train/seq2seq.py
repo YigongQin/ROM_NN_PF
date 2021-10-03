@@ -31,7 +31,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 
 param_list = ['anis','G0','Rmax']
 
@@ -249,7 +249,7 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-model = ConvLSTM_seq(5, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+model = ConvLSTM_seq(6, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 model = model.double()
 if device=='cuda':
   model.cuda()
@@ -291,7 +291,8 @@ param_dat = np.zeros((evolve_runs,))
 #frac_out_true = output_test[:pred_frames,:]
 
 # evole physics based on trained network
-seq_dat = frac_test[:evolve_runs,:window,:]
+seq_test = frac_all[num_train:,:]
+seq_dat = seq_test[:evolve_runs,:window,:]
 frac_out[:,:window,:] = seq_dat
 
 param_test = param_all[num_train:,:]
@@ -313,8 +314,8 @@ for i in range(0,pred_frames,out_win):
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
-frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test_ini[:evolve_runs,np.newaxis,:]
-
+frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
+assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
@@ -339,9 +340,9 @@ for batch_id in range(num_batch):
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
-   G0 = param_test[data_id,G+1]
+   G0 = param_test[data_id,2*G+1]
    Rmax = 1 
-   anis = param_test[data_id,G]
+   anis = param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
    miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
    sum_miss = sum_miss + miss

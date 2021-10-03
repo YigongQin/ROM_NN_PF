@@ -331,10 +331,11 @@ class ConvLSTM_seq(nn.Module):
         time_tag = input_param[:,-1]
         
         frac_ini = input_param[:, :self.w]
+        ini      = frac_ini                       .view(b,1,1,self.w) .expand(-1, t, -1, -1)
         pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) .expand(-1, t, -1, -1)
         param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
         
-        input_frac = torch.cat([input_frac.unsqueeze(dim=-2), pf, param],dim=2)
+        input_frac = torch.cat([input_frac.unsqueeze(dim=-2), ini, pf, param],dim=2)
         frac_1 = input_frac[:,-1,:,:]
 
         encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
@@ -351,7 +352,7 @@ class ConvLSTM_seq(nn.Module):
             frac = scaler.unsqueeze(dim=-1)*frac     # [b,w]scale the output based on the output frame     
             
             output_frac[:,i,:] = frac
-            frac_1 = torch.cat([frac.unsqueeze(dim=1), pf[:,-1,:,:], param[:,-1,:-1,:], param[:,-1,-1:,:] + 1.0/(frames-1)],dim=1)
+            frac_1 = torch.cat([frac.unsqueeze(dim=1), ini[:,-1,:,:], pf[:,-1,:,:], param[:,-1,:-1,:], param[:,-1,-1:,:] + 1.0/(frames-1)],dim=1)
         #output_frac[:,0,:] = frac
         #input_1seq[:,:self.output_len] = frac
         #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
