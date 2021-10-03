@@ -318,23 +318,23 @@ class ConvLSTM_seq(nn.Module):
         self.bias = bias
         self.device = device
         
-    def forward(self, input_frac, frac_ini):
+    def forward(self, input_frac, input_param):
         
-        #output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(self.device)
+
         
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        b, t, all_para  = input_frac.size()
+        b, t, w  = input_frac.size()
+        
         output_frac = torch.zeros(b,self.out_win,self.w,dtype=torch.float64).to(self.device)
         
-        time_tag = input_frac[:,-1,-1]
+        time_tag = input_param[:,-1]
         
-        #mask = (input_frac[:,-1,:self.w]/scale(time_tag-1.0/(frames-1)).unsqueeze(dim=-1)+frac_ini>1e-3)*1
-        fracs = input_frac[:,:,:self.w].unsqueeze(dim=-2)
-        pf = input_frac[:,:,self.w:2*self.w].unsqueeze(dim=-2)
-        param = (input_frac[:,:,2*self.w:].unsqueeze(dim=-1)) .expand(b,t,all_para-2*self.w,self.w)
-        #print(fracs.shape,pf.shape,param.shape)
-        input_frac = torch.cat([fracs,pf,param],dim=2)
+        frac_ini = input_param[:, :self.w]
+        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) .expand(-1, t, -1, -1)
+        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
+        
+        input_frac = torch.cat([input_frac.unsqueeze(dim=-2), pf, param],dim=2)
         
         frac_1 = input_frac[:,-1,:,:]
         encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM

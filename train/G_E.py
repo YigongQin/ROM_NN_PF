@@ -26,9 +26,7 @@ total_size = frames*num_runs
 
 
 G = 8     # G is the number of grains
-param_len = 2   # how many parameters
-time_tag = 1
-input_len = 2*G + param_len + time_tag
+param_len = G + 3   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
