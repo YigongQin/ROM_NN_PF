@@ -147,6 +147,7 @@ frac_all = frac_all - frac_ini[:,np.newaxis,:]
 scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
+seq_all = np.concatenate( ( frac_all[run,:,:], y_all[run,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -176,10 +177,14 @@ class PrepareData(Dataset):
          return self.input_[idx,:,:], self.output_[idx,:,:], self.param[idx,:]
 
 # Shape the inputs and outputs
-input_seq = np.zeros((num_all*sam_per_run, window, G))
+input_seq = np.zeros((num_all*sam_per_run, window, G+1))
 input_param = np.zeros((num_all*sam_per_run, param_len))
-output_seq = np.zeros((num_all*sam_per_run, out_win, G))
+output_seq = np.zeros((num_all*sam_per_run, out_win, G+1))
 assert input_param.shape[1]==param_all.shape[1]
+
+###### input_seq last dim seq: frac, y #######
+###### input_param last dim seq: ini, phase_field, ek, G, time #######
+
 
 train_sam=num_train*sam_per_run
 test_sam=num_test*sam_per_run
@@ -188,7 +193,7 @@ test_sam=num_test*sam_per_run
 # output t to t+win_out-1
 sample = 0
 for run in range(num_all):
-    lstm_snapshot = frac_all[run,:,:]
+    lstm_snapshot = seq_all[run,:,:]
     for t in range(window,frames-(out_win-1)):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
@@ -226,17 +231,19 @@ def train(model, num_epochs, train_loader, test_loader):
       for  ix, (I_train, O_train, P_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
-         #recon = model(I_train,ini_train,scaler_train)
-         loss = criterion(model(I_train, P_train), O_train)
-        # print(recon,O_train)
+         recon, area_train = model(I_train, P_train)
+        # loss = criterion(model(I_train, P_train), O_train)
+         loss = criterion(recon, O_train) 
          #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
          optimizer.zero_grad()
          loss.backward()
          optimizer.step()
        
       for  ix, (I_test, O_test, P_test) in enumerate(test_loader):
-        #pred = model(I_test,ini_test,scaler_test)
-        test_loss = criterion(model(I_test, P_test), O_test)
+          
+        pred, area_test = model(I_test, P_test)
+        #test_loss = criterion(model(I_test, P_test), O_test)
+        test_loss = criterion(pred, O_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
@@ -249,7 +256,7 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-model = ConvLSTM_seq(6, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 model = model.double()
 if device=='cuda':
   model.cuda()
@@ -286,12 +293,11 @@ else:
 evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 
-param_dat = np.zeros((evolve_runs,))
 
 #frac_out_true = output_test[:pred_frames,:]
 
 # evole physics based on trained network
-seq_test = frac_all[num_train:,:]
+seq_test = seq_all[num_train:,:,:]
 seq_dat = seq_test[:evolve_runs,:window,:]
 frac_out[:,:window,:] = seq_dat
 
@@ -351,7 +357,7 @@ for batch_id in range(num_batch):
 
 
 fig, ax = plt.subplots() 
-cm = plt.cm.get_cmap('RdYlBu')
+cm = plt.cm.get_cmap('viridis')
 cs = ax.scatter(np.array(e_list,dtype=float), np.array(G_list,dtype=float), c=np.array(miss_rate_param,dtype=float),vmin=0,vmax=0.1, s=35,cmap=cm)
 print(e_list,G_list,miss_rate_param)
 #ax.set_yscale('log')

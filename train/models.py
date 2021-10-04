@@ -313,51 +313,64 @@ class ConvLSTM_seq(nn.Module):
         self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
         self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
         self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
- 
+        self.project_y = nn.Linear(hidden_dim*w, 1)
+    
         self.kernel_size = kernel_size
         self.bias = bias
         self.device = device
         
-    def forward(self, input_frac, input_param):
+    def forward(self, input_seq, input_param):
         
 
-        
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        b, t, w  = input_frac.size()
+        b, t, _  = input_seq.size()
         
-        output_frac = torch.zeros(b,self.out_win,self.w,dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
+        area_sum   = torch.zeros(b, self.w, dtype=torch.float64).to(self.device)
         
-        time_tag = input_param[:,-1]
-        
+        time_tag = input_param[:,-1]        
         frac_ini = input_param[:, :self.w]
+        
+        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      .expand(-1,-1, -1, self.w)
         ini      = frac_ini                       .view(b,1,1,self.w) .expand(-1, t, -1, -1)
         pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) .expand(-1, t, -1, -1)
         param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
         
-        input_frac = torch.cat([input_frac.unsqueeze(dim=-2), ini, pf, param],dim=2)
-        frac_1 = input_frac[:,-1,:,:]
+        ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
+        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), yt, ini, pf, param],dim=2)   
+        seq_1 = input_seq[:,-1,:,:]    # the last frame
 
-        encode_out, hidden_state = self.lstm_encoder(input_frac,None)  # output range [-1,1], None means stateless LSTM
+        encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
-        ## step 2 start with "equal vector", the last 
-       # frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
+        frac_old = frac_ini + seq_1[:,0,:]/ ( scale(time_tag - 1.0/(frames-1)).unsqueeze(dim=-1) )
+        
         for i in range(self.out_win):
-            scaler = scale(time_tag + i/(frames-1))
-            encode_out, hidden_state = self.lstm_decoder(frac_1.unsqueeze(dim=1),hidden_state)
             
-            target = self.project(encode_out[-1][:,-1,:,:].view(b,self.hidden_dim*self.w))   # project last time output b,hidden_dim, to the desired shape b,w   
-            target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
-            frac = F.normalize(target, p=1, dim=-1)-frac_ini   # [b,w] normalize the fractions
-            frac = scaler.unsqueeze(dim=-1)*frac     # [b,w]scale the output based on the output frame     
+            encode_out, hidden_state = self.lstm_decoder(seq_1.unsqueeze(dim=1),hidden_state)
+            last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
-            output_frac[:,i,:] = frac
-            frac_1 = torch.cat([frac.unsqueeze(dim=1), ini[:,-1,:,:], pf[:,-1,:,:], param[:,-1,:-1,:], param[:,-1,-1:,:] + 1.0/(frames-1)],dim=1)
-        #output_frac[:,0,:] = frac
-        #input_1seq[:,:self.output_len] = frac
-        #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
+            y = self.project_y(last_time)    # [b,1]
+            frac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
+            frac = F.relu(frac+frac_ini)         # frac_ini here is necessary to keep
+            frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
+            
+            ## at this moment, frac is the actual fraction which can be used to calculate area
+            area_sum += 0.5*( y.expand(-1,self.w) - seq_1[:,1,:] )*( frac + frac_old )
+            frac_old = frac
+            
+            frac = scale(time_tag).unsqueeze(dim=-1)*(frac-frac_ini)      # [b,w]scale the output based on the output frame     
+            
+            output_seq[:,i, :self.w] = frac
+            output_seq[:,i, self.w:] = y
+            
+            ## assemble with new time-dependent variables: FRAC, Y, T  [b,c,w]
+            time_tag += 1.0/(frames-1)
+            seq_1 = torch.cat([frac.unsqueeze(dim=1), y.expand(-1,self.w).view(b,1,self.w), \
+                               seq_1[:,2:-1,:], param[:,-1,-1:,:]+1.0/(frames-1)],dim=1)
+
                         
-        return output_frac
+        return output_seq, area_sum
 
 
 
