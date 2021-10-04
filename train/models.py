@@ -13,9 +13,9 @@ import torch.nn.functional as F
 #from input1 import *
 from G_E import *
 
-def scale(x): 
+def scale(t): 
     # x = 1, return 1, x = 0, return frames*beta
-    return (1 - x)*(frames-1) + 1
+    return (1 - t)/dt + 1
 
 
 
@@ -328,8 +328,7 @@ class ConvLSTM_seq(nn.Module):
         
         output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
         area_sum   = torch.zeros(b, self.w, dtype=torch.float64).to(self.device)
-        
-        time_tag = input_param[:,-1]        
+             
         frac_ini = input_param[:, :self.w]
         
         yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      .expand(-1,-1, -1, self.w)
@@ -343,7 +342,7 @@ class ConvLSTM_seq(nn.Module):
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
-        frac_old = frac_ini + seq_1[:,0,:]/ ( scale(time_tag - 1.0/(frames-1)).unsqueeze(dim=-1) )
+        frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - dt ) # fraction at t-1
         
         for i in range(self.out_win):
             
@@ -359,15 +358,15 @@ class ConvLSTM_seq(nn.Module):
             area_sum += 0.5*( y.expand(-1,self.w) - seq_1[:,1,:] )*( frac + frac_old )
             frac_old = frac
             
-            frac = scale(time_tag).unsqueeze(dim=-1)*(frac-frac_ini)      # [b,w]scale the output based on the output frame     
+            frac = scale(seq_1[:,-1,:])*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = y
             
-            ## assemble with new time-dependent variables: FRAC, Y, T  [b,c,w]
-            time_tag += 1.0/(frames-1)
+            ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
+            
             seq_1 = torch.cat([frac.unsqueeze(dim=1), y.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,2:-1,:], param[:,-1,-1:,:]+1.0/(frames-1)],dim=1)
+                               seq_1[:,2:-1,:], seq_1[:,-1:,:] + dt ],dim=1)
 
                         
         return output_seq, area_sum
