@@ -23,7 +23,7 @@ frames = 26
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
-
+dt = 1.0/(frames-1)
 
 G = 8     # G is the number of grains
 param_len = G + 3   # how many parameters, color plus 3 physical
