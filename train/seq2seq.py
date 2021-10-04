@@ -31,7 +31,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 
 param_list = ['anis','G0','Rmax']
 
@@ -147,7 +147,7 @@ frac_all = frac_all - frac_ini[:,np.newaxis,:]
 scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( frac_all[run,:,:], y_all[run,:,np.newaxis] ), axis=-1) 
+seq_all = np.concatenate( ( frac_all[:,:,:], y_all[:,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
