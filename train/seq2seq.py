@@ -298,7 +298,7 @@ else:
 ## plot to check if the construction is reasonable
 evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-
+y_out = np.zeros((evolve_runs,frames))
 
 #frac_out_true = output_test[:pred_frames,:]
 
@@ -306,6 +306,7 @@ frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 seq_test = seq_all[num_train:,:,:]
 seq_dat = seq_test[:evolve_runs,:window,:]
 frac_out[:,:window,:] = seq_dat[:,:,:-1]
+y_out[:,:window] = seq_dat[:,:,-1]
 
 param_test = param_all[num_train:,:]
 param_dat = param_test[:evolve_runs,:]
@@ -321,12 +322,16 @@ for i in range(0,pred_frames,out_win):
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
     if i>=pack:
-        frac_out[:evolve_runs,-alone:,:] = frac_new_vec[:,:alone,:-1]
-    else: frac_out[:evolve_runs,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
+        frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
+        y_out[:,-alone:] = frac_new_vec[:,:alone,-1]
+    else: 
+        frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
+        y_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
+y_out = y_out*y[-2]
 assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
 miss_rate_param = np.zeros(num_batch)
@@ -356,7 +361,7 @@ for batch_id in range(num_batch):
    Rmax = 1 
    anis = param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
-   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
  miss_rate_param[batch_id] = sum_miss/run_per_param
