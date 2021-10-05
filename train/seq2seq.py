@@ -31,8 +31,8 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
-
+model_exist = True
+if mode == 'interp': model_exist = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -212,11 +212,12 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
-train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
+if not mode=='interp':
+   train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
+   train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
+
 test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:], output_area[train_sam:,:])
 
-#train_loader = DataLoader(train_loader, batch_size = num_train*(frames-window), shuffle=False)
-train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 test_loader = DataLoader(test_loader, batch_size = test_sam, shuffle=False)
 
 def train(model, num_epochs, train_loader, test_loader):
@@ -377,6 +378,6 @@ plt.colorbar(cs)
 plt.xlabel(r'$\epsilon_k$')
 plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
-plt.savefig('miss_rate_validation.png',dpi=600)
+plt.savefig('miss_rate'+mode+'.png',dpi=600)
 
 #print(miss_rate_param)
