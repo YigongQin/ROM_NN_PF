@@ -238,7 +238,7 @@ def train(model, num_epochs, train_loader, test_loader):
          #print(I_train.shape)
          recon, area_train = model(I_train, P_train)
         # loss = criterion(model(I_train, P_train), O_train)
-         loss = criterion(recon, O_train) + criterion(area_train, A_train)
+         loss = criterion(recon, O_train) + out_win/dt*criterion(area_train, A_train)
          #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
          optimizer.zero_grad()
          loss.backward()
@@ -248,7 +248,7 @@ def train(model, num_epochs, train_loader, test_loader):
           
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
-        test_loss = criterion(pred, O_test) + criterion(area_test, A_test)
+        test_loss = criterion(pred, O_test) + out_win/dt*criterion(area_test, A_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
