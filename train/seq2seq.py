@@ -158,7 +158,7 @@ param_all = np.concatenate( (param_train, param_test), axis=0)
 y_all  = y_all[idx_all,:]/y[-2]
 
 ## add area 
-area_all = 0.5*np.diff(y_all, axis=1)[:,:,np.newaxis]*( frac_all[:,:,:-1] + frac_all[:,:,1:] )
+area_all = 0.5*np.diff(y_all, axis=1)[:,:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
 assert area_all.shape[1]==frames-1
 
 ## subtract the initial part of the sequence, so we can focus on the change
@@ -248,6 +248,7 @@ def train(model, num_epochs, train_loader, test_loader):
           
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
+        #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
         test_loss = criterion(pred, O_test) + out_win/dt*criterion(area_test, A_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
