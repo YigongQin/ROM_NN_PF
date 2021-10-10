@@ -23,7 +23,7 @@ from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 #from melt_pool import *
-from G_E import *
+from G_E_extrap import *
 #from input1 import *
 from models import *
 # global parameters
@@ -31,8 +31,8 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
-if mode == 'interp': model_exist = True
+model_exist = False
+if not mode == 'train': model_exist = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -106,7 +106,7 @@ frac_train = frac_all[idx[:num_train],:,:]
 frac_test = frac_all[idx[num_train_all:],:,:]
 param_train = param_all[idx[:num_train],:]
 param_test = param_all[idx[num_train_all:],:]
-
+print('nan', np.where(np.isnan(frac_all)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 print('throw away simulations',weird_sim)
 #### delete the data in the actual training fractions and parameters
@@ -155,7 +155,8 @@ class PrepareData(Dataset):
 # stack information
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
-y_all  = y_all[idx_all,:]/y[-2]
+y_norm = xmax
+y_all  = y_all[idx_all,:]/y_norm
 
 ## add area 
 area_all = 0.5*np.diff(y_all, axis=1)[:,:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
@@ -180,6 +181,8 @@ assert param_all.shape[1] == (2*G+3)
 
 
 # Shape the inputs and outputs
+trunc = 0
+sam_per_run-=trunc
 input_seq = np.zeros((num_all*sam_per_run, window, G+1))
 input_param = np.zeros((num_all*sam_per_run, param_len))
 output_seq = np.zeros((num_all*sam_per_run, out_win, G+1))
@@ -198,7 +201,7 @@ test_sam=num_test*sam_per_run
 sample = 0
 for run in range(num_all):
     lstm_snapshot = seq_all[run,:,:]
-    for t in range(window,frames-(out_win-1)):
+    for t in range(window,frames-(out_win-1)-trunc):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
@@ -212,7 +215,7 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
-if not mode=='interp':
+if mode=='train':
    train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
    train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 
@@ -317,7 +320,8 @@ pack = pred_frames-alone
 
 for i in range(0,pred_frames,out_win):
     
-    param_dat[:,-1] = (i+window)/(frames-1) ## the first output time
+    param_dat[:,-1] = (i+window)/(train_frames-1) ## the first output time
+    print('nondim time',(i+window)/(train_frames-1))
     frac_new_vec = tohost( model(todevice(seq_dat), todevice(param_dat) )[0] ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
@@ -332,7 +336,8 @@ for i in range(0,pred_frames,out_win):
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
-y_out = y_out*y[-2]
+y_out = y_out*y_norm
+#print(np.diff(y_out[0,:]))
 assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
 miss_rate_param = np.zeros(num_batch)
@@ -355,13 +360,14 @@ for batch_id in range(num_batch):
    alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
    aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
    tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
+   #print(np.diff(tip_y))
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
    G0 = param_test[data_id,2*G+1]
    Rmax = 1 
    anis = param_test[data_id,2*G]
-   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx*num_batch+batch_id,:,:].T,window,data_id)
+   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[plot_idx*data_id,:,:].T,window,data_id)
    miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
