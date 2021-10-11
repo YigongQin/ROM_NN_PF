@@ -22,9 +22,8 @@ from plot_funcs import plot_reconst, plot_real, plot_IO, miss_rate
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
-#from melt_pool import *
-from G_E_extrap import *
-#from input1 import *
+if sys.argv[1] == 'train': from G_E import *
+if sys.argv[1] == 'test': from G_E_test import *
 from models import *
 # global parameters
 host='cpu'
@@ -87,8 +86,8 @@ for batch_id in range(num_batch):
     frac_all[run*num_batch+batch_id,:,:] = frac
     y_all[run*num_batch+batch_id,:] = tip_y 
     param_all[run*num_batch+batch_id,:G] = Color
-    param_all[run*num_batch+batch_id,G] = float(number_list[6])
-    param_all[run*num_batch+batch_id,G+1] = float(number_list[7])/100 
+    param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
+    param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 if skip_check == False:
@@ -158,9 +157,8 @@ param_all = np.concatenate( (param_train, param_test), axis=0)
 y_norm = 1
 y_all  = y_all[idx_all,:]
 dy_all  = np.diff(y_all, axis=1) ## from here y_all means
-dy_all = np.concatenate((dy_all[:,0],dy_all),axis=-1)
+dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
 dy_all = dy_all/y_norm
-
 ## add area 
 area_all = 0.5*dy_all[:,:-1,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
 assert area_all.shape[1]==frames-1
@@ -172,7 +170,7 @@ frac_all = frac_all - frac_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
 
-scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
+scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
 seq_all = np.concatenate( ( frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
@@ -210,7 +208,7 @@ for run in range(num_all):
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
         
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
-        input_param[sample,-1] = t/(frames-1) 
+        input_param[sample,-1] = t*dt 
         output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
         
         sample = sample + 1
@@ -228,7 +226,7 @@ test_loader = DataLoader(test_loader, batch_size = test_sam, shuffle=False)
 
 def train(model, num_epochs, train_loader, test_loader):
     
-    #torch.manual_seed(42)
+    torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
                                  #weight_decay=1e-5) # <--
@@ -245,7 +243,7 @@ def train(model, num_epochs, train_loader, test_loader):
          #print(I_train.shape)
          recon, area_train = model(I_train, P_train)
         # loss = criterion(model(I_train, P_train), O_train)
-         loss = criterion(recon, O_train) + out_win/dt*criterion(area_train, A_train)
+         loss = criterion(recon, O_train) #+ 0.01*out_win/dt*criterion(area_train, A_train)
          #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
          optimizer.zero_grad()
          loss.backward()
@@ -256,7 +254,7 @@ def train(model, num_epochs, train_loader, test_loader):
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
         #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
-        test_loss = criterion(pred, O_test) + out_win/dt*criterion(area_test, A_test)
+        test_loss = criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
@@ -269,7 +267,7 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
 model = model.double()
 if device=='cuda':
   model.cuda()
@@ -332,18 +330,18 @@ for i in range(0,pred_frames,out_win):
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
     if i>=pack:
         frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
-        y_out[:,-alone:] = frac_new_vec[:,:alone,-1]
+        dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
     else: 
         frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
-        y_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
+        dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
-y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,0]
-#print(np.diff(y_out[0,:]))
+y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
+#print((y_out[0,:]))
 assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
 miss_rate_param = np.zeros(num_batch)
@@ -366,14 +364,14 @@ for batch_id in range(num_batch):
    alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
    aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
    tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
-   #print(np.diff(tip_y))
+   #print((tip_y))
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
    G0 = param_test[data_id,2*G+1]
    Rmax = 1 
    anis = param_test[data_id,2*G]
-   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[plot_idx*data_id,:,:].T,window,data_id)
+   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)

@@ -6,7 +6,6 @@ Created on Wed Sep 15 22:12:11 2021
 @author: yigongqin
 """
 
-
 batch = 220
 num_batch = 20
 num_runs = batch*num_batch
@@ -20,6 +19,7 @@ num_test_b = int(num_test/num_batch)
 window = 5
 out_win = 3
 frames = 26
+train_frames=frames
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
@@ -36,9 +36,10 @@ kernel_size = (3,)
 
 num_epochs = 40
 learning_rate=5e-4
+area_scale = 0.1
 
 seed = 1   
 #data_dir = '../../G_E/*'
 data_dir = '../../G_E/*'
 skip_check = False
-
+mode='train'

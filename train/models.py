@@ -9,11 +9,9 @@ Created on Mon Sep 27 11:34:53 2021
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-#from models import *
-#from input1 import *
-from G_E import *
+#from G_E import *
 
-def scale(t): 
+def scale(t,dt): 
     # x = 1, return 1, x = 0, return frames*beta
     return (1 - t)/dt + 1
 
@@ -256,7 +254,7 @@ class LSTM(nn.Module):
     
     
 class ConvLSTM_seq(nn.Module):
-    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device):
+    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device, dt):
         super(ConvLSTM_seq, self).__init__()
         self.input_dim = input_dim  ## this input channel
         self.hidden_dim = hidden_dim  ## this output_channel
@@ -272,6 +270,7 @@ class ConvLSTM_seq(nn.Module):
         self.kernel_size = kernel_size
         self.bias = bias
         self.device = device
+        self.dt = dt
         
     def forward(self, input_seq, input_param):
         
@@ -296,7 +295,7 @@ class ConvLSTM_seq(nn.Module):
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
-        frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - dt ) # fraction at t-1
+        frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - self.dt, self.dt ) # fraction at t-1
         
         for i in range(self.out_win):
             
@@ -312,15 +311,15 @@ class ConvLSTM_seq(nn.Module):
             area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             frac_old = frac
             
-            frac = scale(seq_1[:,-1,:])*( frac - frac_ini )      # [b,w] scale the output with time t    
+            frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = dy
             
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([frac.unsqueeze(dim=1), y.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,2:-1,:], seq_1[:,-1:,:] + dt ],dim=1)
+            seq_1 = torch.cat([frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
+                               seq_1[:,2:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, area_sum
