@@ -155,11 +155,14 @@ class PrepareData(Dataset):
 # stack information
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
-y_norm = xmax
-y_all  = y_all[idx_all,:]/y_norm
+y_norm = 1
+y_all  = y_all[idx_all,:]
+dy_all  = np.diff(y_all, axis=1) ## from here y_all means
+dy_all = np.concatenate((dy_all[:,0],dy_all),axis=-1)
+dy_all = dy_all/y_norm
 
 ## add area 
-area_all = 0.5*np.diff(y_all, axis=1)[:,:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
+area_all = 0.5*dy_all[:,:-1,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
 assert area_all.shape[1]==frames-1
 
 ## subtract the initial part of the sequence, so we can focus on the change
@@ -172,7 +175,7 @@ frac_all = frac_all - frac_ini[:,np.newaxis,:]
 scaler_lstm = scale(np.arange(frames)/(frames-1)) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( frac_all[:,:,:], y_all[:,:,np.newaxis] ), axis=-1) 
+seq_all = np.concatenate( ( frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -302,7 +305,7 @@ else:
 ## plot to check if the construction is reasonable
 evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-y_out = np.zeros((evolve_runs,frames))
+dy_out = np.zeros((evolve_runs,frames))
 
 #frac_out_true = output_test[:pred_frames,:]
 
@@ -310,7 +313,8 @@ y_out = np.zeros((evolve_runs,frames))
 seq_test = seq_all[num_train:,:,:]
 seq_dat = seq_test[:evolve_runs,:window,:]
 frac_out[:,:window,:] = seq_dat[:,:,:-1]
-y_out[:,:window] = seq_dat[:,:,-1]
+dy_out[:,:window] = seq_dat[:,:,-1]
+
 
 param_test = param_all[num_train:,:]
 param_dat = param_test[:evolve_runs,:]
@@ -336,7 +340,9 @@ for i in range(0,pred_frames,out_win):
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
-y_out = y_out*y_norm
+dy_out = dy_out*y_norm
+dy_out[:,0] = 0
+y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,0]
 #print(np.diff(y_out[0,:]))
 assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
