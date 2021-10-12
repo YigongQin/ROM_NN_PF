@@ -154,7 +154,7 @@ class PrepareData(Dataset):
 # stack information
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
-y_norm = 1
+y_norm = 0.5
 y_all  = y_all[idx_all,:]
 dy_all  = np.diff(y_all, axis=1) ## from here y_all means
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
@@ -182,7 +182,8 @@ assert param_all.shape[1] == (2*G+3)
 
 
 # Shape the inputs and outputs
-trunc = 0
+trunc = int(sys.argv[2])
+print('truncate train len', trunc)
 sam_per_run-=trunc
 input_seq = np.zeros((num_all*sam_per_run, window, G+1))
 input_param = np.zeros((num_all*sam_per_run, param_len))
@@ -216,6 +217,9 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
+
+torch.manual_seed(35)
+
 if mode=='train':
    train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
    train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
@@ -226,7 +230,7 @@ test_loader = DataLoader(test_loader, batch_size = test_sam, shuffle=False)
 
 def train(model, num_epochs, train_loader, test_loader):
     
-    torch.manual_seed(42)
+    #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
                                  #weight_decay=1e-5) # <--
@@ -372,7 +376,7 @@ for batch_id in range(num_batch):
    Rmax = 1 
    anis = param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
+   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[-1])
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
  miss_rate_param[batch_id] = sum_miss/run_per_param
@@ -388,6 +392,6 @@ plt.colorbar(cs)
 plt.xlabel(r'$\epsilon_k$')
 plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
-plt.savefig('miss_rate'+mode+'.png',dpi=600)
+plt.savefig('miss_rate_trunc'+str(trunc)+mode+'.png',dpi=600)
 
 #print(miss_rate_param)

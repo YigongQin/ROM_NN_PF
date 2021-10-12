@@ -23,22 +23,24 @@ frames = 26
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
-
+dt = 1.0/(frames-1)
 
 G = 8     # G is the number of grains
-param_len = 2   # how many parameters
-time_tag = 1
-input_len = 2*G + param_len + time_tag
+param_len = G + 3   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
-hidden_dim = 64
-LSTM_layer = 2
+hidden_dim = 32
+LSTM_layer = 3
+kernel_size = (3,)
 
 num_epochs = 40
 learning_rate=5e-4
-expand = 10
+area_scale = 0.1
 
 seed = 1   
-skip_check = True
+#data_dir = '../../G_E/*'
 data_dir = '../../G_E_test/*'
+skip_check = True
+mode='interp'
+
