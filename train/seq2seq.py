@@ -207,7 +207,7 @@ test_sam=num_test*sam_per_run
 sample = 0
 for run in range(num_all):
     lstm_snapshot = seq_all[run,:,:]
-    for t in range(window,frames-(out_win-1)-trunc):
+    for t in range(window,sam_per_run+window-trunc):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
