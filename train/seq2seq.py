@@ -26,9 +26,9 @@ from models import *
 
 mode = sys.argv[1]
 if mode == 'train': from G_E import *
-if mode == 'test': from G_E_test import *
-if mode == 'ini': from G_E_ini import *
-
+elif mode == 'test': from G_E_test import *
+elif mode == 'ini': from G_E_ini import *
+else: raise ValueError('mode not specified')
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -286,9 +286,12 @@ print('total number of trained parameters ', pytorch_total_params)
 
 
 if model_exist:
-
-  model.load_state_dict(torch.load('./lstmmodel'))
-  model.eval()   
+  if mode == 'train':
+    model.load_state_dict(torch.load('./lstmmodel'))
+    model.eval()  
+  if mode == 'ini':  
+    model.load_state_dict(torch.load('./ini_lstmmodel'))
+    model.eval() 
 else: 
   train_list=[]
   test_list=[]
@@ -296,7 +299,8 @@ else:
   model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
-  torch.save(model.state_dict(), './lstmmodel')
+  if mode == 'train': torch.save(model.state_dict(), './lstmmodel')
+  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel')
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
