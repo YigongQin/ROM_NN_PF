@@ -22,16 +22,20 @@ from plot_funcs import plot_reconst, plot_real, plot_IO, miss_rate
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
-if sys.argv[1] == 'train': from G_E import *
-if sys.argv[1] == 'test': from G_E_test import *
 from models import *
+
+mode = sys.argv[1]
+if mode == 'train': from G_E import *
+if mode == 'test': from G_E_test import *
+if mode == 'ini': from G_E_ini import *
+
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
 model_exist = False
-if not mode == 'train': model_exist = True
+if mode == 'test': model_exist = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -220,7 +224,7 @@ assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
 torch.manual_seed(35)
 
-if mode=='train':
+if not mode=='test':
    train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
    train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 
@@ -326,8 +330,8 @@ pack = pred_frames-alone
 
 for i in range(0,pred_frames,out_win):
     
-    param_dat[:,-1] = (i+window)/(train_frames-1) ## the first output time
-    print('nondim time',(i+window)/(train_frames-1))
+    param_dat[:,-1] = (i+window)*dt ## the first output time
+    print('nondim time', param_dat[:,-1])
     frac_new_vec = tohost( model(todevice(seq_dat), todevice(param_dat) )[0] ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
