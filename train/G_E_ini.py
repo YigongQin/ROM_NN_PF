@@ -16,12 +16,12 @@ num_train = num_batch*100 #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
-window = 5
-out_win = 3
+window = 1
+out_win = 4
 frames = 26
-train_frames=frames
-pred_frames= frames-window
-sam_per_run = frames - window - (out_win-1)
+train_frames = window+out_win
+pred_frames = out_win
+sam_per_run = 1
 total_size = frames*num_runs
 dt = 1.0/(frames-1)
 
@@ -34,8 +34,8 @@ hidden_dim = 32
 LSTM_layer = 3
 kernel_size = (3,)
 
-num_epochs = 40
-learning_rate=5e-4
+num_epochs = 60
+learning_rate= 100e-4
 area_scale = 0.1
 
 seed = 1   

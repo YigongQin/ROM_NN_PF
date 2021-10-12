@@ -207,7 +207,7 @@ test_sam=num_test*sam_per_run
 sample = 0
 for run in range(num_all):
     lstm_snapshot = seq_all[run,:,:]
-    for t in range(window,sam_per_run+window-trunc):
+    for t in range(window,sam_per_run+window):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
@@ -217,7 +217,7 @@ for run in range(num_all):
         output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
         
         sample = sample + 1
-        
+
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
@@ -245,7 +245,7 @@ def train(model, num_epochs, train_loader, test_loader):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
-      if epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
 
          #print(I_train.shape)
@@ -276,7 +276,7 @@ def train(model, num_epochs, train_loader, test_loader):
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
 if mode=='train': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(7, hidden_dim//4, LSTM_layer, G, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -337,7 +337,7 @@ pack = pred_frames-alone
 for i in range(0,pred_frames,out_win):
     
     param_dat[:,-1] = (i+window)*dt ## the first output time
-    print('nondim time', param_dat[:,-1])
+    print('nondim time', (i+window)*dt)
     frac_new_vec = tohost( model(todevice(seq_dat), todevice(param_dat) )[0] ) 
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
@@ -386,7 +386,7 @@ for batch_id in range(num_batch):
    Rmax = 1 
    anis = param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[-1])
+   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
  miss_rate_param[batch_id] = sum_miss/run_per_param

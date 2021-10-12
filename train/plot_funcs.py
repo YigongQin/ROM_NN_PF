@@ -281,7 +281,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac,plot_idx):
     
     return
 
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax):
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final):
     
 
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -298,7 +298,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
     
     temp_piece = np.zeros(G, dtype=int)
     miss=0
-    for j in range(ntip_y[-1]):
+    for j in range(ntip_y[final-1]):
      #  loc = 0
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
@@ -323,8 +323,8 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
             
     ## need to count for the error of y
     nymax = int(ymax/dx)
-    miss += nx*(nymax-ntip_y[-1])
-    miss_rate = miss/(nx*ntip_y[-1]);
+    miss += nx*(nymax-ntip_y[final-1])
+    miss_rate = miss/(nx*ntip_y[final-1]);
  
     return miss_rate
 
