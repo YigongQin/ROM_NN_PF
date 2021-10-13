@@ -114,10 +114,15 @@ di0_std = np.zeros((num_batch,bars))
 dif_std = np.zeros((num_batch,bars))    
 aprf = np.zeros((num_batch,bars)) 
 
+G0 = np.zeros(num_batch)
+anis = np.zeros(num_batch)
+
 for batch_id in range(num_batch):
     fname =datasets[batch_id]; print(fname)
     f = h5py.File(str(fname), 'r')
-    print(f)
+    number_list=re.findall(r"[-+]?\d*\.\d+|\d+", fname)
+    G0[batch_id] = number_list[7]
+    anis[batch_id] = number_list[6]
     aseq_asse = np.asarray(f['sequence'])
     frac_asse = np.asarray(f['fractions'])
     tip_y_asse = np.asarray(f['y_t'])
@@ -138,17 +143,15 @@ for batch_id in range(num_batch):
         aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
         frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
         tip_y = tip_y_asse[run*frames:(run+1)*frames]
-    #    angles = angles_asse[run*pfs:(run+1)*pfs]
-        #print(frac[:,0]) 
-        #Color = angles[aseq]*180/pi+90  # in the range of 0-90 degree
+
         interval = aseq-1 #np.asarray(Color/10,dtype=int)
         #print('angle sequence', interval)
         ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf,apr_list)
 
     Ni0=Ni0/batch
     Nif=Nif/batch
-    print('initial distribution of average number of grains',Ni0)
-    print('final istribution of average number of grains',Nif)
+    #print('initial distribution of average number of grains',Ni0)
+    #print('final istribution of average number of grains',Nif)
     #print(area0)
     
     for i in range(bars):
@@ -159,12 +162,14 @@ for batch_id in range(num_batch):
        di0_std[batch_id,i] = np.std( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx/np.sqrt(len(area0[i]))
        dif_std[batch_id,i] = np.std( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx/np.sqrt(len(areaf[i]))
        aprf[batch_id,i] = np.mean(np.asarray(apr_list[i]))
-    print('initial distribution of average grain diameter',di0)
-    print('final istribution of average grain diameter',dif)
-    print(di0_std,dif_std)
+    #print('initial distribution of average grain diameter',di0)
+    #print('final istribution of average grain diameter',dif)
+    #print(di0_std,dif_std)
 
 
-    
+print(G0)
+print(anis)    
+sio.savemat('interp.mat',{'G0':G0,'anis':anis,'dif':dif})
 plt.plot(dif[0,:])
 
 
