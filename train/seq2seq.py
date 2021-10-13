@@ -36,6 +36,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
+noPDE = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -319,20 +320,28 @@ evolve_runs = num_batch*20 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
 
-#frac_out_true = output_test[:pred_frames,:]
-
-# evole physics based on trained network
-seq_test = seq_all[num_train:,:,:]
-seq_dat = seq_test[:evolve_runs,:window,:]
-frac_out[:,:window,:] = seq_dat[:,:,:-1]
-dy_out[:,:window] = seq_dat[:,:,-1]
-
+alone = pred_frames%out_win
+pack = pred_frames-alone
 
 param_test = param_all[num_train:,:]
 param_dat = param_test[:evolve_runs,:]
 
-alone = pred_frames%out_win
-pack = pred_frames-alone
+seq_test = seq_all[num_train:,:,:]
+
+if noPDE == False:
+    seq_dat = seq_test[:evolve_runs,:window,:]
+
+else: 
+    ini_model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
+    ini_model.load_state_dict(torch.load('./ini_lstmmodel'))
+    ini_model.eval() 
+    seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
+    param_dat[:,-1] = dt
+    frac_new_vec = tohost( ini_model(todevice(seq_1), todevice(param_dat) )[0] ) 
+    seq_dat = np.concatenate((seq_1,frac_new_vec),axis=1)
+
+frac_out[:,:window,:] = seq_dat[:,:,:-1]
+dy_out[:,:window] = seq_dat[:,:,-1]
 
 for i in range(0,pred_frames,out_win):
     
