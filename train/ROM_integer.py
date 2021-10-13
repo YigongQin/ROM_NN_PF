@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy import io as sio 
 import sys
 
-def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
+def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf,ap_list):
 
    # note here frac dim [G,frames]
    # step 1: count the initial and final no. grain
@@ -48,7 +48,20 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
         # here remains the question whether it should be interger
         arf[g] = np.sum(grid_piece) + ar0[g]   # sum from 0-tip0, tip0+1 to tip-1
         
-   # step 3: attach every grain to the size list
+   # step 3: calculate aspect ratio
+    apf = np.zeros(G)
+      # find the last active location
+    for g in range(G):
+        
+        if piece_len[g,0]>0: 
+            if piece_len[g,-1]<0:
+              height_id = list((piece_len[g,:]>0)*1).index(0)-1
+            else: height_id = frames-1
+            height = ntip_y[height_id]
+            apf[g] = height/( arf[g]/height )
+            
+        
+   # step 4: attach every grain to the size list
     for g in range(G):
          
         if piece_len[g,0]>0:
@@ -56,14 +69,16 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,Ni0,Nif,area0,areaf):
             listfg = areaf[angle_id[g]]
             list0g.extend([ar0[g]])
             listfg.extend([arf[g]])
+            listap = ap_list[angle_id[g]]
+            listap.extend([apf[g]])
         #print(area0[angle_id[g]])
         #print(areaf[angle_id[g]])
 # plot a bar graph with initial and final grain information:
 # (1) the number of grains active on the S-L interface: total/num_simulations
 # (2) the average and standard deviation of the grain area: total/num_grains
 
-batch = 1000#2500
-num_batch = 1
+batch = 200#2500
+num_batch = 4
 num_runs = batch*num_batch
 
 frames = 25 +1
@@ -71,22 +86,12 @@ G = 8
 bars = 10
 pfs=11
 # targets
-Ni0 = np.zeros(bars,dtype=int) 
-Nif = np.zeros(bars,dtype=int)    
-di0 = np.zeros(bars)
-dif = np.zeros(bars)   
-di0_std = np.zeros(bars)
-dif_std = np.zeros(bars)
-# create list of lists, both of them should have the same size 
-# size of each interval is Ni0, for each sublist, do mean and std
-area0 = [[] for _ in range(bars)]
-areaf = [[] for _ in range(bars)]
 
 
 ## start with loading data
 #datasets = glob.glob('../../mulbatch_train/*0.130*.h5')
 #datasets = glob.glob('../../t_ML_PF10_train1000_test100_Mt23274_grains8_frames25_anis*.h5')
-datasets = glob.glob(sys.argv[1])
+datasets = glob.glob('*.h5')
 #datasets = glob.glob('../../*test250_Mt70536*.h5')
 #datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
 #                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
@@ -101,96 +106,65 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 print('nx,ny', nx,ny)
 
+Ni0 = np.zeros(bars,dtype=int) 
+Nif = np.zeros(bars,dtype=int)    
+di0 = np.zeros((num_batch,bars))
+dif = np.zeros((num_batch,bars))   
+di0_std = np.zeros((num_batch,bars))
+dif_std = np.zeros((num_batch,bars))    
+aprf = np.zeros((num_batch,bars)) 
 
 for batch_id in range(num_batch):
-  fname =datasets[batch_id]; print(fname)
-  f = h5py.File(str(fname), 'r')
-  aseq_asse = np.asarray(f['sequence'])
-  frac_asse = np.asarray(f['fractions'])
-  tip_y_asse = np.asarray(f['y_t'])
+    fname =datasets[batch_id]; print(fname)
+    f = h5py.File(str(fname), 'r')
+    print(f)
+    aseq_asse = np.asarray(f['sequence'])
+    frac_asse = np.asarray(f['fractions'])
+    tip_y_asse = np.asarray(f['y_t'])
   #angles_asse = np.asarray(f['angles'])
   #number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
   #print(number_list[6])
   # compile all the datasets interleave
-  for run in range(batch):
- # for run in range(1):
-    aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
-    frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
-    tip_y = tip_y_asse[run*frames:(run+1)*frames]
-#    angles = angles_asse[run*pfs:(run+1)*pfs]
-    #print(frac[:,0]) 
-    #Color = angles[aseq]*180/pi+90  # in the range of 0-90 degree
-    interval = aseq-1 #np.asarray(Color/10,dtype=int)
-    #print('angle sequence', interval)
-    ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf)
-    #print(Ni0,Nif)
-Ni0=Ni0/num_runs
-Nif=Nif/num_runs
-print('initial distribution of average number of grains',Ni0)
-print('final istribution of average number of grains',Nif)
-#print(area0)
 
-for i in range(bars):
-#    print('Initial # grains:',len(area0[i]),' average:',dx**2*np.mean(np.asarray(area0[i])))
-#    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
-   di0[i] = np.mean( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx
-   dif[i] = np.mean( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx
-   di0_std[i] = np.std( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx/np.sqrt(len(area0[i]))
-   dif_std[i] = np.std( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx/np.sqrt(len(areaf[i]))
-print('initial distribution of average grain diameter',di0)
-print('final istribution of average grain diameter',dif)
-print(di0_std,dif_std)
+    
+    # create list of lists, both of them should have the same size 
+    # size of each interval is Ni0, for each sublist, do mean and std
+    area0 = [[] for _ in range(bars)]
+    areaf = [[] for _ in range(bars)]
+    
+    apr_list = [[] for _ in range(bars)]
+    for run in range(batch):
+     # for run in range(1):
+        aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
+        frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
+        tip_y = tip_y_asse[run*frames:(run+1)*frames]
+    #    angles = angles_asse[run*pfs:(run+1)*pfs]
+        #print(frac[:,0]) 
+        #Color = angles[aseq]*180/pi+90  # in the range of 0-90 degree
+        interval = aseq-1 #np.asarray(Color/10,dtype=int)
+        #print('angle sequence', interval)
+        ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf,apr_list)
 
-
-labels = ['0','10','20','30','40','50','60','70','80','90']
-
-x = np.arange(len(labels))
-width = 0.35
-
-fig1, ax1 = plt.subplots()
-
-
-rects1 = ax1.bar(x - width/2, Ni0, width, label=r'$t=0$')
-rects2 = ax1.bar(x + width/2, Nif, width, label=r'$t=T_f$')
+    Ni0=Ni0/batch
+    Nif=Nif/batch
+    print('initial distribution of average number of grains',Ni0)
+    print('final istribution of average number of grains',Nif)
+    #print(area0)
+    
+    for i in range(bars):
+    #    print('Initial # grains:',len(area0[i]),' average:',dx**2*np.mean(np.asarray(area0[i])))
+    #    print('Final # grains:',len(areaf[i]),' average:',dx**2*np.mean(np.asarray(areaf[i])))
+       di0[batch_id,i] = np.mean( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx
+       dif[batch_id,i] = np.mean( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx
+       di0_std[batch_id,i] = np.std( np.sqrt(4.0*np.asarray(area0[i])/pi) )*dx/np.sqrt(len(area0[i]))
+       dif_std[batch_id,i] = np.std( np.sqrt(4.0*np.asarray(areaf[i])/pi) )*dx/np.sqrt(len(areaf[i]))
+       aprf[batch_id,i] = np.mean(np.asarray(apr_list[i]))
+    print('initial distribution of average grain diameter',di0)
+    print('final istribution of average grain diameter',dif)
+    print(di0_std,dif_std)
 
 
-ax1.set_ylabel('# grains')
-ax1.set_xlabel(r'$\theta_0^{\circ}$')
-ax1.set_title('average # grains on the S-L interface')
-ax1.set_xticks(x)
-ax1.set_xticklabels(labels)
-ax1.legend()
-
-#ax1.bar_label(rects1, padding=3)
-#ax1.bar_label(rects2, padding=3)
-
-fig1.tight_layout()
-
-plt.show()
-plt.savefig(str(G)+'num_grainsS-L'+str(num_runs)+'.png')
-
-
-fig2, ax2 = plt.subplots()
-
-rects3 = ax2.bar(x - width/2, di0, width, label=r'$t=0$', yerr=di0_std)
-rects4 = ax2.bar(x + width/2, dif, width, label=r'$t=T_f$', yerr=dif_std)
-
-
-ax2.set_ylabel(r'grain diameter ($\mu m$)')
-ax2.set_xlabel(r'$\theta_0^{\circ}$')
-ax2.set_title('average grain diameter')
-ax2.set_xticks(x)
-ax2.set_xticklabels(labels)
-ax2.legend()
-
-#ax1.bar_label(rects1, padding=3)
-#ax1.bar_label(rects2, padding=3)
-
-fig2.tight_layout()
-
-plt.show()
-plt.savefig(str(G)+'grain_dia'+str(num_runs)+'.png')
-sio.savemat('qois_'+str(G)+'grains_'+str(num_runs)+'.mat',{'di0':di0,'dif':dif,'Ni0':Ni0,'Nif':Nif})
-
+    
+plt.plot(dif[0,:])
 
 
