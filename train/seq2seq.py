@@ -34,7 +34,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 if mode == 'test': model_exist = True
 noPDE = True
 param_list = ['anis','G0','Rmax']
@@ -332,14 +332,22 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, dt)
+    ini_model = ini_model.double()
+    if device=='cuda':
+       ini_model.cuda()
+    init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
+    print('total number of trained parameters for initialize model', init_total_params)
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'))
-    ini_model.eval() 
+    ini_model.eval()
+
     seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
     param_dat[:,-1] = dt
     frac_new_vec = tohost( ini_model(todevice(seq_1), todevice(param_dat) )[0] ) 
     seq_dat = np.concatenate((seq_1,frac_new_vec),axis=1)
+    print(frac_new_vec.shape)
 
+## write initial windowed data to out arrays
 frac_out[:,:window,:] = seq_dat[:,:,:-1]
 dy_out[:,:window] = seq_dat[:,:,-1]
 
