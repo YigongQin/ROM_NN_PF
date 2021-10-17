@@ -29,6 +29,7 @@ if mode == 'train': from G_E import *
 elif mode == 'test': from G_E_test import *
 elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
+print('the mode is', mode)
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -276,7 +277,7 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
 if mode=='ini': model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
 
 model = model.double()
@@ -289,7 +290,7 @@ print('total number of trained parameters ', pytorch_total_params)
 
 
 if model_exist:
-  if mode == 'train':
+  if mode == 'train' or mode== 'test':
     model.load_state_dict(torch.load('./lstmmodel'))
     model.eval()  
   if mode == 'ini':  
@@ -374,6 +375,8 @@ dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 #print((y_out[0,:]))
 assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
+
+sio.savemat('evolving_dat.mat',{'frac_out':frac_out,'y_out':y_out,'e_list':np.array(e_list,dtype=float),'G_list':np.array(G_list,dtype=float)})
 
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)

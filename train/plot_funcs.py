@@ -323,7 +323,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
             
     ## need to count for the error of y
     nymax = int(ymax/dx)
-    miss += nx*(nymax-ntip_y[final-1])
+    if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
     miss_rate = miss/(nx*ntip_y[final-1]);
  
     return miss_rate
