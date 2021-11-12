@@ -123,13 +123,13 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx):
     plot_flag=True
     if plot_flag==True:
       fig = plt.figure()
-      txt = r'$\epsilon_k$'+str(anis)+'_G'+str(G0)+r'_$R_{max}$'+str(Rmax)
+      txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
       fig.text(.5, .2, txt, ha='center')
       ax1 = fig.add_subplot(131)
       cs1 = ax1.imshow(ini_field.T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
       subplot_rountine(fig, ax1, cs1, 1)
-      ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
- 
+      #ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
+      ax1.set_title('initial condition',color=bg_color,fontsize=8)
       ax2 = fig.add_subplot(132)
       cs2 = ax2.imshow(alpha_true[1:-1,1:-1].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
       subplot_rountine(fig, ax2, cs2, 2)

@@ -5,6 +5,7 @@ Created on Thu Jul 15 20:41:18 2021
 
 @author: yigongqin
 """
+from math import pi
 import time
 import torch
 import torch.nn as nn
@@ -23,6 +24,7 @@ from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
+import matplotlib.tri as tri
 
 mode = sys.argv[1]
 if mode == 'train': from G_E import *
@@ -35,9 +37,9 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 if mode == 'test': model_exist = True
-noPDE = True
+noPDE = False
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -71,6 +73,7 @@ for batch_id in range(num_batch):
   fname =datasets[batch_id]; print(fname)
   f = h5py.File(str(fname), 'r') 
   aseq_asse = np.asarray(f['sequence'])
+  #aseq_asse = np.asarray(f['angles'])
   frac_asse = np.asarray(f['fractions'])
   tip_y_asse = np.asarray(f['y_t'])
   number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
@@ -85,10 +88,11 @@ for batch_id in range(num_batch):
     tip_y = tip_y_asse[run*frames:(run+1)*frames]
 #    Color = (aseq-3)/2        # normalize C to [-1,1]
     Color = (aseq-5.5)/4.5
+    #Color = 2*(aseq + pi/2)/(pi/2) - 1
     #print('angle sequence', Color)
     frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
     frac = frac.T
-    
+    #if run<1: print(frac) 
     frac_all[run*num_batch+batch_id,:,:] = frac
     y_all[run*num_batch+batch_id,:] = tip_y 
     param_all[run*num_batch+batch_id,:G] = Color
@@ -243,6 +247,15 @@ def train(model, num_epochs, train_loader, test_loader):
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
+    for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
+
+        pred, area_test = model(I_test, P_test)
+        #test_loss = criterion(model(I_test, P_test), O_test)
+        #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
+        test_loss = criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+        #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
+        #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
+    print('Epoch:{}, valid loss:{:.6f}'.format(0, float(test_loss)))
     for epoch in range(num_epochs):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
@@ -402,10 +415,11 @@ for batch_id in range(num_batch):
    #plot_real(x,y,alpha_true,plot_idx)
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
-   G0 = param_test[data_id,2*G+1]
+   G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
    Rmax = 1 
-   anis = param_test[data_id,2*G]
+   anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
+   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id)
    miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
@@ -413,12 +427,18 @@ for batch_id in range(num_batch):
 
 
 fig, ax = plt.subplots() 
-cm = plt.cm.get_cmap('viridis')
-cs = ax.scatter(np.array(e_list,dtype=float), np.array(G_list,dtype=float), c=np.array(miss_rate_param,dtype=float),vmin=0,vmax=0.1, s=35,cmap=cm)
-print(e_list,G_list,miss_rate_param)
+
+x = np.array(e_list,dtype=float)
+y = np.array(G_list,dtype=float)
+z = np.array(miss_rate_param,dtype=float)
+
+cntr = ax.tricontourf(x, y, z, levels=np.linspace(0.04,0.12,9), cmap="RdBu_r")
+
+fig.colorbar(cntr, ax=ax)
+ax.plot(x, y, 'ko', ms=8)
+print(x, y, z)
 #ax.set_yscale('log')
 #ax.set_xscale('log')
-plt.colorbar(cs)
 plt.xlabel(r'$\epsilon_k$')
 plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
