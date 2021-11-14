@@ -196,17 +196,20 @@ assert param_all.shape[1] == (2*G+3)
 trunc = int(sys.argv[2])
 print('truncate train len', trunc)
 sam_per_run-=trunc
-input_seq = np.zeros((num_all*sam_per_run, window, G+1))
-input_param = np.zeros((num_all*sam_per_run, param_len))
-output_seq = np.zeros((num_all*sam_per_run, out_win, G+1))
-output_area = np.zeros((num_all*sam_per_run, G))
+num_all_traj = int(0.1*num_train)
+all_samp = num_all*sam_per_run + num_all_traj*trunc
+
+input_seq = np.zeros((all_samp, window, G+1))
+input_param = np.zeros((all_samp, param_len))
+output_seq = np.zeros((all_samp, out_win, G+1))
+output_area = np.zeros((all_samp, G))
 assert input_param.shape[1]==param_all.shape[1]
 
 ###### input_seq last dim seq: frac, y #######
 ###### input_param last dim seq: ini, phase_field, ek, G, time #######
 
 
-train_sam=num_train*sam_per_run
+train_sam=num_train*sam_per_run + num_all_traj*trunc
 test_sam=num_test*sam_per_run
 # Setting up inputs and outputs
 # input t-window to t-1
@@ -214,7 +217,11 @@ test_sam=num_test*sam_per_run
 sample = 0
 for run in range(num_all):
     lstm_snapshot = seq_all[run,:,:]
-    for t in range(window,sam_per_run+window):
+    if run < num_all_traj:
+        end_frame = sam_per_run+window+trunc
+    else: end_frame = sam_per_run+window
+        
+    for t in range(window, end_frame):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
