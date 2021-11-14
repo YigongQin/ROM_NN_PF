@@ -281,7 +281,7 @@ def plot_reconst(G,x,y,aseq,tip_y,alpha_true,frac,plot_idx):
     
     return
 
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final):
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles):
     
 
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -313,13 +313,13 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
           for i in range( temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]): miss+=1
         else:
           for i in range(temp_piece[g-1], temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]): miss+=1
             
     ## need to count for the error of y
     nymax = int(ymax/dx)

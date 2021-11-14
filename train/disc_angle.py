@@ -399,6 +399,7 @@ for batch_id in range(num_batch):
  fname = datasets[batch_id] 
  f = h5py.File(fname, 'r')
  aseq_asse = np.asarray(f['sequence'])
+ angles_asse = np.asarray(f['angles'])
  frac_asse = np.asarray(f['fractions'])
  tip_y_asse = np.asarray(f['y_t'])
  sum_miss = 0
@@ -411,6 +412,7 @@ for batch_id in range(num_batch):
    
    alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
    aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
+   pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
    tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
    #print((tip_y))
    #plot_real(x,y,alpha_true,plot_idx)
@@ -421,7 +423,7 @@ for batch_id in range(num_batch):
    anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id)
-   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames)
+   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
  miss_rate_param[batch_id] = sum_miss/run_per_param
