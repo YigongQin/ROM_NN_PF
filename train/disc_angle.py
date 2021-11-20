@@ -196,7 +196,7 @@ assert param_all.shape[1] == (2*G+3)
 trunc = int(sys.argv[2])
 print('truncate train len', trunc)
 sam_per_run-=trunc
-num_all_traj = int(0.1*num_train)
+num_all_traj = int(1*num_train)
 all_samp = num_all*sam_per_run + num_all_traj*trunc
 
 input_seq = np.zeros((all_samp, window, G+1))
@@ -211,6 +211,8 @@ assert input_param.shape[1]==param_all.shape[1]
 
 train_sam=num_train*sam_per_run + num_all_traj*trunc
 test_sam=num_test*sam_per_run
+print('train samples', train_sam)
+
 # Setting up inputs and outputs
 # input t-window to t-1
 # output t to t+win_out-1
@@ -235,7 +237,7 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
-
+sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
 torch.manual_seed(35)
 
 if not mode=='test':
@@ -420,6 +422,7 @@ for batch_id in range(num_batch):
    alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
    aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
    pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
+   pf_angles = pf_angles*180/pi + 90
    tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
    #print((tip_y))
    #plot_real(x,y,alpha_true,plot_idx)
@@ -429,7 +432,7 @@ for batch_id in range(num_batch):
    Rmax = 1 
    anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id)
+   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id, pf_angles)
    miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles)
    sum_miss = sum_miss + miss
    print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
