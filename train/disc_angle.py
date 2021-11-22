@@ -240,8 +240,25 @@ assert np.all(np.absolute(input_param[:,G:])>1e-6)
 sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
 torch.manual_seed(35)
 
+
+def con_samlpe(a, b):
+    
+    return np.concatenate((a,b), axis=0)
+
+def augmentation(input_seq, output_seq, input_param, output_area):
+    
+    input_seq_re   = np.concatenate(( input_seq[:,:,:1],  np.flip( input_seq [:,:,1:],-1) ))
+    output_seq_re  = np.concatenate(( output_seq[:,:,:1], np.flip( output_seq[:,:,1:],-1) ))
+    input_param_re = np.concatenate(( np.flip( input_param[:,:G],-1), input_param[:,G:]))    
+    output_area_re = np.flip( input_param[:,:],-1)
+    
+    return con_samlpe(input_seq, input_seq_re), con_samlpe(output_seq, output_seq_re),\
+           con_samlpe(input_param, input_param_re), con_samlpe(output_area, output_area_re)
+
+
 if not mode=='test':
-   train_loader = PrepareData(input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], input_param[:train_sam,:], output_area[:train_sam,:])
+   train_loader = PrepareData( augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
+                                           input_param[:train_sam,:], output_area[:train_sam,:] ) )
    train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 
 test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:], output_area[train_sam:,:])
