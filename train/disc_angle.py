@@ -256,8 +256,10 @@ def augmentation(input_seq, output_seq, input_param, output_area):
            con_samlpe(input_param, input_param_re), con_samlpe(output_area, output_area_re)
 
 
-data_para = augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
-                                           input_param[:train_sam,:], output_area[:train_sam,:] )
+#data_para = augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
+#                                           input_param[:train_sam,:], output_area[:train_sam,:] )
+data_para = [input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
+                                           input_param[:train_sam,:], output_area[:train_sam,:]] 
 
 if not mode=='test':
    train_loader = PrepareData( data_para[0], data_para[1], data_para[2], data_para[3] )
@@ -464,7 +466,7 @@ x = np.array(e_list,dtype=float)
 y = np.array(G_list,dtype=float)
 z = np.array(miss_rate_param,dtype=float)
 
-cntr = ax.tricontourf(x, y, z, levels=np.linspace(0.04,0.12,9), cmap="RdBu_r")
+cntr = ax.tricontourf(x, y, z, levels=np.linspace(0.04,0.12,1000), cmap="RdBu_r")
 
 fig.colorbar(cntr, ax=ax)
 ax.plot(x, y, 'ko', ms=8)
