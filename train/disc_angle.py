@@ -247,9 +247,9 @@ def con_samlpe(a, b):
 
 def augmentation(input_seq, output_seq, input_param, output_area):
     
-    input_seq_re   = np.concatenate(( input_seq[:,:,:1],  np.flip( input_seq [:,:,1:],-1) ))
-    output_seq_re  = np.concatenate(( output_seq[:,:,:1], np.flip( output_seq[:,:,1:],-1) ))
-    input_param_re = np.concatenate(( np.flip( input_param[:,:G],-1), input_param[:,G:]))    
+    input_seq_re   = np.concatenate(( input_seq[:,:,:1],  np.flip( input_seq [:,:,1:],-1) ), axis = -1)
+    output_seq_re  = np.concatenate(( output_seq[:,:,:1], np.flip( output_seq[:,:,1:],-1) ), axis = -1)
+    input_param_re = np.concatenate(( np.flip( input_param[:,:G],-1), input_param[:,G:]), axis = -1)    
     output_area_re = np.flip( input_param[:,:],-1)
     
     return con_samlpe(input_seq, input_seq_re), con_samlpe(output_seq, output_seq_re),\
