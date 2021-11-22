@@ -256,9 +256,11 @@ def augmentation(input_seq, output_seq, input_param, output_area):
            con_samlpe(input_param, input_param_re), con_samlpe(output_area, output_area_re)
 
 
+data_para = augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
+                                           input_param[:train_sam,:], output_area[:train_sam,:] )
+
 if not mode=='test':
-   train_loader = PrepareData( augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
-                                           input_param[:train_sam,:], output_area[:train_sam,:] ) )
+   train_loader = PrepareData( data_para[0], data_para[1], data_para[2], data_para[3] )
    train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
 
 test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:], output_area[train_sam:,:])
