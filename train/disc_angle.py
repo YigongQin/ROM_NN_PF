@@ -25,6 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
+from split_merge import split_grain, merge_grain
 
 mode = sys.argv[1]
 if mode == 'train': from G_E import *
@@ -396,6 +397,9 @@ else:
 frac_out[:,:window,:] = seq_dat[:,:,:-1]
 dy_out[:,:window] = seq_dat[:,:,-1]
 
+param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
+print('the sub simulations', expand)
+
 for i in range(0,pred_frames,out_win):
     
     param_dat[:,-1] = (i+window)*dt ## the first output time
@@ -405,11 +409,13 @@ for i in range(0,pred_frames,out_win):
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
     if i>=pack:
-        frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
-        dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
+        #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
+        #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
+        frac_out[:,-alone:,:], dy_out[:,-alone:] = merge_grain(frac_new_vec[:,:alone,:], G_small, G, expand)
     else: 
-        frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
-        dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
+        #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
+        #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
+        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new_vec, G_small, G, expand)
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
     
