@@ -28,7 +28,7 @@ import matplotlib.tri as tri
 from split_merge import split_grain, merge_grain
 
 mode = sys.argv[1]
-if mode == 'train': from G_E import *
+if mode == 'train': from big_G_E import *
 elif mode == 'test': from G_E_test import *
 elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
@@ -38,7 +38,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -322,8 +322,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -417,14 +417,14 @@ for i in range(0,pred_frames,out_win):
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new_vec, G_small, G, expand)
     #print(frac_new_vec)
-    seq_dat = np.concatenate((seq_dat[:evolve_runs,out_win:,:],frac_new_vec),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:],frac_new_vec),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 #print((y_out[0,:]))
-assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
+#assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
 sio.savemat('evolving_dat.mat',{'frac_out':frac_out,'y_out':y_out,'e_list':np.array(e_list,dtype=float),'G_list':np.array(G_list,dtype=float)})
 

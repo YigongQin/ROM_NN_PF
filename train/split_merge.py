@@ -16,7 +16,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
     Assume G and G_all here are all even numbers 
     G = N_w +2, N_w is the no. grains one grain can affect
     '''
-    check_dat = True
+    check_dat = False
     size_b = seq_dat.shape[0]
     size_t = seq_dat.shape[1]
     size_v = seq_dat.shape[2]
@@ -75,8 +75,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - zeros ) <1e-5
-            assert np.all(param_sliced>=0)
-
+            #assert np.all(param_sliced>=0)
+            print(np.where(param_sliced<0))
             new_seq[i*size_b:(i+1)*size_b,:,:-1]  = frac_sliced
             new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
 
