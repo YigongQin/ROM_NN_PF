@@ -58,20 +58,20 @@ def split_grain(param_dat, seq_dat, G, G_all):
             if i==0: 
                 ## modify right
                 frac_sliced[:,:,-1] = zeros - np.sum(frac_sliced[:,:,:-1], axis=-1)
-                param_sliced[:,:,-1] = ones - np.sum(param_sliced[:,:,:-1], axis=-1)
+                param_sliced[:,-1] = ones - np.sum(param_sliced[:,:-1], axis=-1)
 
             elif i==expand-1:
                 ## modify left
                 frac_sliced[:,:,0] = zeros - np.sum(frac_sliced[:,:,1:], axis=-1)
-                param_sliced[:,:,0] = ones - np.sum(param_sliced[:,:,1:], axis=-1)
+                param_sliced[:,0] = ones - np.sum(param_sliced[:,1:], axis=-1)
 
             else: 
                 gap = zeros - np.sum(frac_sliced[:,:,1:-1], axis=-1)
                 frac_sliced[:,:,0] = gap/2
                 frac_sliced[:,:,-1] = gap/2
-                gap = ones - np.sum(param_sliced[:,:,1:-1], axis=-1)
-                param_sliced[:,:,0] = gap/2
-                param_sliced[:,:,-1] = gap/2
+                gap = ones - np.sum(param_sliced[:,1:-1], axis=-1)
+                param_sliced[:,0] = gap/2
+                param_sliced[:,-1] = gap/2
 
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - zeros ) <1e-5
