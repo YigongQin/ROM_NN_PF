@@ -262,8 +262,8 @@ class ConvLSTM_seq(nn.Module):
         self.w = w
         self.out_win = out_win
         #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
-        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
+        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim[0], kernel_size, num_layer[0])
+        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim[1], kernel_size, num_layer[1])
         self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
         self.project_y = nn.Linear(hidden_dim*w, 1)
     
