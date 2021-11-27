@@ -28,7 +28,7 @@ import matplotlib.tri as tri
 from split_merge import split_grain, merge_grain
 
 mode = sys.argv[1]
-if mode == 'train': from big_G_E import *
+if mode == 'train': from G_E import *
 elif mode == 'test': from G_E_test import *
 elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
@@ -38,7 +38,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -172,7 +172,7 @@ dy_all  = np.diff(y_all, axis=1) ## from here y_all means
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
 dy_all = dy_all/y_norm
 ## add area 
-area_all = 0.5*dy_all[:,:-1,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
+area_all = 0.5*dy_all[:,1:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
 assert area_all.shape[1]==frames-1
 
 ## subtract the initial part of the sequence, so we can focus on the change
