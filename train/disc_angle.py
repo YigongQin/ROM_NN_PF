@@ -239,7 +239,7 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
-sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
+#sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
 torch.manual_seed(35)
 
 
@@ -473,13 +473,13 @@ x = np.array(e_list,dtype=float)
 y = np.array(G_list,dtype=float)
 z = np.array(miss_rate_param,dtype=float)
 
-xi = np.linspace(np.min(x), np.max(x), 100)
-yi = np.linspace(np.min(y), np.max(y), 100)
+xi = np.linspace(np.min(x), np.max(x), 1000)
+yi = np.linspace(np.min(y), np.max(y), 1000)
 X,Y= np.meshgrid(xi,yi)
-Z = griddata((x, y), z, (X, Y),method='nearest')
+Z = griddata((x, y), z, (X, Y),method='linear')
 
 
-cntr = ax.contourf(X, Y, Z, vmin = 0.04, vmax =0.12, cmap="RdBu_r")
+cntr = ax.contourf(X, Y, Z, vmin = 0.04, vmax =0.12,levels=np.linspace(0.04,0.12,1000), cmap="RdBu_r")
 
 fig.colorbar(cntr, ax=ax)
 ax.plot(x, y, 'ko', ms=8)
@@ -491,4 +491,5 @@ plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
 plt.savefig('miss_rate_trunc'+str(trunc)+mode+'.png',dpi=600)
 
+#sio.savemat(sys.argv[3]+'.mat',{'e':x,'G':y,'err':z})
 #print(miss_rate_param)
