@@ -26,6 +26,7 @@ from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
 from split_merge import split_grain, merge_grain
+from scipy.interpolate import griddata
 
 mode = sys.argv[1]
 if mode == 'train': from G_E import *
@@ -472,7 +473,13 @@ x = np.array(e_list,dtype=float)
 y = np.array(G_list,dtype=float)
 z = np.array(miss_rate_param,dtype=float)
 
-cntr = ax.tricontourf(x, y, z, levels=np.linspace(0.04,0.12,1000), cmap="RdBu_r")
+xi = np.linspace(np.min(x), np.max(x), 100)
+yi = np.linspace(np.min(y), np.max(y), 100)
+X,Y= np.meshgrid(xi,yi)
+Z = griddata((x, y), z, (X, Y),method='nearest')
+
+
+cntr = ax.contourf(X, Y, Z, vmin = 0.04, vmax =0.12, cmap="RdBu_r")
 
 fig.colorbar(cntr, ax=ax)
 ax.plot(x, y, 'ko', ms=8)
