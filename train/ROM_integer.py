@@ -5,7 +5,7 @@ Created on Sat Aug 28 11:09:05 2021
 
 @author: yigongqin
 """
-
+from math import pi
 import numpy as np
 import scipy.io as sio
 import h5py
@@ -83,8 +83,7 @@ num_runs = batch*num_batch
 
 frames = 25 +1
 G = 8
-bars = 10
-pfs=11
+bars = 9
 # targets
 
 
@@ -123,7 +122,7 @@ for batch_id in range(num_batch):
     number_list=re.findall(r"[-+]?\d*\.\d+|\d+", fname)
     G0[batch_id] = number_list[7]
     anis[batch_id] = number_list[6]
-    aseq_asse = np.asarray(f['sequence'])
+    aseq_asse = np.asarray(f['angles'])
     frac_asse = np.asarray(f['fractions'])
     tip_y_asse = np.asarray(f['y_t'])
   #angles_asse = np.asarray(f['angles'])
@@ -140,11 +139,13 @@ for batch_id in range(num_batch):
     apr_list = [[] for _ in range(bars)]
     for run in range(batch):
      # for run in range(1):
-        aseq = aseq_asse[run*G:(run+1)*G]  # 1 to 10
+        aseq = aseq_asse[run*(G+1):(run+1)*(G+1)][1:]  # 1 to 10
+        aseq = (aseq+pi/2)*180/pi
         frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
         tip_y = tip_y_asse[run*frames:(run+1)*frames]
 
-        interval = aseq-1 #np.asarray(Color/10,dtype=int)
+        interval = np.asarray(aseq/10,dtype=int)
+        assert np.all(interval>=0) and np.all(interval<9)
         #print('angle sequence', interval)
         ROM_qois(nx,ny,dx,G,interval,tip_y,frac,Ni0,Nif,area0,areaf,apr_list)
 
