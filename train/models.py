@@ -5,13 +5,14 @@ Created on Mon Sep 27 11:34:53 2021
 
 @author: yigongqin
 """
-
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.parameter import Parameter, UninitializedParameter
+from torch.nn.parameter import Parameter
 from torch import Tensor
 import torch.nn.init as init
+from typing import Callable, List, Optional, Tuple
 #from G_E import *
 
 def scale(t,dt): 
@@ -55,8 +56,6 @@ class CCNN1d(nn.Module):
 
         self.c1 = torch.arange(self.batch_size).view(-1,1,1).expand(-1, in_channels, self.G)
         self.c2 = torch.arange(in_channels).view(1,-1,1).expand(self.batch_size, -1, self.G)
-        self.left = torch.cat(0, torch.arange(self.G-1), dim = 0).view(1,1,-1).expand(,-1)
-
     def reset_parameters(self) -> None:
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
         # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
@@ -85,8 +84,8 @@ class CCNN1d(nn.Module):
         for now, k = 3 
         padding: copy the boundary points
         """
-        output = torch.einsum('bij,ki->bkj', input, weight[:,:,1])
-               + torch.einsum('bij,ki->bkj', self.permute(input, left),  weight[:,:,0])
+        output = torch.einsum('bij,ki->bkj', input, weight[:,:,1]) \
+               + torch.einsum('bij,ki->bkj', self.permute(input, left),  weight[:,:,0]) \
                + torch.einsum('bij,ki->bkj', self.permute(input, right), weight[:,:,2])
 
         if bias == None: return output
@@ -162,8 +161,9 @@ class Full_conv1d(nn.Module):
         """
         output = torch.einsum('bij,kij->bkj', input, weight)
 
-        if bias == None: return output
-        else: return output + bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
+        #if bias == None: return output
+        #else: 
+        return output + bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
 
 
     def forward(self, input: Tensor) -> Tensor:
