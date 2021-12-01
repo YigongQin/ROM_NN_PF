@@ -36,7 +36,10 @@ class CCNN1d(nn.Module):
         >> y = CCNN1d(x)
     """
     def __init__(self, in_channels, out_channels, kernel_size, bias):
-        super(ConvLSTM, self).__init__()
+        super(CCNN1d, self).__init__()
+
+        self.G = 8
+        self.batch_size = 64
 
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -50,8 +53,9 @@ class CCNN1d(nn.Module):
             self.register_parameter('bias', None)
         self.reset_parameters()
 
-        self.c1 = torch.arange(64).view(-1,1,1).expand(-1, in_channels, 8)
-        self.c2 = torch.arange(in_channels).view(1,-1,1).expand(64, -1, 8)
+        self.c1 = torch.arange(self.batch_size).view(-1,1,1).expand(-1, in_channels, self.G)
+        self.c2 = torch.arange(in_channels).view(1,-1,1).expand(self.batch_size, -1, self.G)
+        self.left = torch.cat(0, torch.arange(self.G-1), dim = 0).view(1,1,-1).expand(,-1)
 
     def reset_parameters(self) -> None:
         # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
@@ -71,12 +75,9 @@ class CCNN1d(nn.Module):
     def _cconv1d_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
 
         b, in_ch, w = input.size()
-        if in_ch != self.in_channels+2:
+        if in_ch != self.in_channels:
             raise ValueError('in_channels must be equal to the second dimension of input')
         output = torch.empty((b, self.out_channels, w))
-        left = input[:,[0],:].expand(-1,self.in_channels,-1)
-        right = input[:,[1],:].expand(-1,self.in_channels,-1)
-        input = input[:,2:,:]  # the first two dims are permutation matrices
         
         """
         convolution operation (b, in_ch, w)*(out_ch, in_ch, k) = (b, out_ch, w)
@@ -100,6 +101,77 @@ class CCNN1d(nn.Module):
         return self._cconv1d_forward(input, self.weight, self.bias)
 
 
+
+class Full_conv1d(nn.Module):
+
+    """
+    1D coarsening CNN
+    Parameters:
+        input_dim: Number of input channels 
+        hidden_dim: Number of channels
+        kernel_size: tuple, size of kernel in convolution
+        bias: boolean, bias or no bias 
+        Note: Will do same padding.
+    Input:
+        A tensor of size B, C_in, W 
+    Output:
+        A tensor of size B, C_out, W
+    Example:
+        >> y = CCNN1d(x)
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, padding, bias):
+        super(Full_conv1d, self).__init__()
+
+        self.G = 8
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size[0]
+        self.padding = padding
+
+        self.weight = Parameter(torch.empty((out_channels, in_channels, self.G)))
+        if bias:
+           self.bias = Parameter(torch.empty(out_channels))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.bias, -bound, bound)
+
+
+    def _conv1d_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
+
+        b, in_ch, w = input.size()
+        if in_ch != self.in_channels:
+            raise ValueError('in_channels must be equal to the second dimension of input')
+
+        if w != self.G:
+            raise ValueError('G must be equal to the third dimension of input')
+
+        """
+        convolution operation (b, in_ch, w)*(out_ch, in_ch, w) = (b, out_ch, w)
+        padding: copy the boundary points
+        """
+        output = torch.einsum('bij,kij->bkj', input, weight)
+
+        if bias == None: return output
+        else: return output + bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
+
+
+    def forward(self, input: Tensor) -> Tensor:
+        '''
+        input for MCNN B, C_in, W 
+        input for MCNN B, C_out, W         
+        '''
+        return self._conv1d_forward(input, self.weight, self.bias)
 
 
 
@@ -132,7 +204,7 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
 
-        self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
+        self.conv = Full_conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
                               padding=self.padding,
