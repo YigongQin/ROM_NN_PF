@@ -204,7 +204,7 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
 
-        self.conv = Full_conv1d(in_channels=self.input_dim + self.hidden_dim,
+        self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
                               padding=self.padding,
@@ -449,12 +449,13 @@ class ConvLSTM_seq(nn.Module):
         param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
         
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
-        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), yt, ini, pf, param],dim=2)   
+        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
+                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), yt, ini, pf, param],dim=2)   
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
-        frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - self.dt, self.dt ) # fraction at t-1
+        #frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - self.dt, self.dt ) # fraction at t-1
         
         for i in range(self.out_win):
             
@@ -466,9 +467,10 @@ class ConvLSTM_seq(nn.Module):
             frac = F.relu(frac+frac_ini)         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
+            active = (frac>1e-6)*1
             ## at this moment, frac is the actual fraction which can be used to calculate area
-            area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
-            frac_old = frac
+            #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
+            #frac_old = frac
             
             frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
@@ -477,7 +479,7 @@ class ConvLSTM_seq(nn.Module):
             
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
+            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
                                seq_1[:,2:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         

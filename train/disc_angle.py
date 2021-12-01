@@ -176,6 +176,8 @@ dy_all = dy_all/y_norm
 area_all = 0.5*dy_all[:,1:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
 assert area_all.shape[1]==frames-1
 
+
+active_all = (frac_all>1e-6)*1
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_ini = frac_all[:,0,:]
@@ -186,7 +188,7 @@ frac_all = frac_all - frac_ini[:,np.newaxis,:]
 scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
+seq_all = np.concatenate( ( active_all, frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -201,7 +203,7 @@ sam_per_run-=trunc
 num_all_traj = int(1*num_train)
 all_samp = num_all*sam_per_run + num_all_traj*trunc
 
-input_seq = np.zeros((all_samp, window, G+1))
+input_seq = np.zeros((all_samp, window, 2*G+1))
 input_param = np.zeros((all_samp, param_len))
 output_seq = np.zeros((all_samp, out_win, G+1))
 output_area = np.zeros((all_samp, G))
@@ -228,7 +230,7 @@ for run in range(num_all):
     for t in range(window, end_frame):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
-        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,:]
+        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
         
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
         input_param[sample,-1] = t*dt 
