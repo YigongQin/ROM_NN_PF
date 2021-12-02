@@ -41,19 +41,30 @@ class self_attention(nn.Module):
         super(self_attention, self).__init__()
 
         self.device = device
-        self.G = 8  ## number of tokens/grains
-        self.P = (torch.arange(self.G, dtype = torch.float64, device = device)/self.G).view(self.G,1)
+        self.w = 8  ## number of tokens/grains
+        #self.P = (torch.arange(self.G, dtype = torch.float64, device = device)/self.G).view(self.G,1)
+        
         self.query_dim = 8  ## e
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.heads = kernel_size[0]
-        self.qk_len = 2  ## query/key length, active/position
+
         self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
         self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
-        #self.W_qry = torch.empty((1, self.query_dim, self.heads), dtype = torch.float64, device = device)
-        #self.W_key = torch.empty((1, self.query_dim, self.heads), dtype = torch.float64, device = device)
+
         self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
         self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
+        self.P = self.distance()
+
+    def distance(self):
+
+        idx  = torch.arange(self.w, dtype = torch.float64, device = self.device)
+        idx0 = idx.view(self.w,1,1).expand(self.w,self.w,self.heads)
+        idx1 = idx.view(1,self.w,1).expand(self.w,self.w,self.heads)
+        idx2 = ( torch.arange(self.heads, dtype = torch.float64, device = self.device) -self.heads//2 )\
+               .view(1,1,self.heads).expand(self.w,self.w,self.heads)
+        print(idx0 - idx1 + idx2)
+        return torch.exp( - (idx0 - idx1 + idx2)**2 )
 
     def forward(self, input):
         '''
@@ -64,12 +75,14 @@ class self_attention(nn.Module):
         # active matrix
         active = input[:,0,:]
         ## [B, W, W] outer product
-        outer_active = torch.einsum('bi, bj->bij', active, active)
-        Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
-        K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        QK = torch.einsum('qeh, keh -> qkh', Q, K)
+        active = torch.ones((b,w),  dtype = torch.float64, device = device)
+        M = torch.einsum('bi, bj->bij', active, active)
+        #Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
+        #K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
+        #QK = torch.einsum('qeh, keh -> qkh', Q, K)
         #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
-        A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
+        A  = torch.softmax( torch.einsum('abc, bcd -> abcd', M, self.P), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         ## finally reduction
         value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
