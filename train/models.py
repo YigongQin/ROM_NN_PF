@@ -37,20 +37,21 @@ class self_attention(nn.Module):
     Example:
         >> y = CCNN1d(x)
     """
-    def __init__(self, in_channels, out_channels, kernel_size, bias):
+    def __init__(self, in_channels, out_channels, kernel_size, bias, device):
         super(self_attention, self).__init__()
 
+        self.device = device
         self.G = 8  ## number of tokens/grains
-        self.P = (torch.arange(self.G)/self.G).view(self.G,1)
+        self.P = (torch.arange(self.G, device = device)/self.G).view(self.G,1)
         self.query_dim = 8  ## e
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.heads = kernel_size[0]
         self.qk_len = 2  ## query/key length, active/position
-        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads)))
-        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads)))
-        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads)))
-        self.bias = Parameter(torch.empty(out_channels))
+        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), device = device))
+        self.bias = Parameter(torch.empty(out_channels, device = device))
 
     def forward(self, input):
         '''
@@ -64,21 +65,21 @@ class self_attention(nn.Module):
         outer_active = torch.einsum('bi, bj->bij', active, active).view(b ,w, w, 1).expand(-1,-1,-1,self.heads) 
         Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
         K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        QK = torch.einsum('qeh, keh -> qkh', Q, K)
-        A  = torch.softmax( torch.einsum('bwqh, qkh -> bwkh', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        QK = torch.einsum('qeh, keh -> qkh', Q, K).view(1, w, w, self.heads).expand(b, w, w, self.heads)
+        A  = torch.softmax( outer_active*QK, dim = 2 )  ## softmax on key dim, [B, W, W, h]
 
         ## finally reduction
         value = torch.einsum('biwh, oih -> bowh', input.view(b, in_ch, w, 1).expand(-1,-1,-1,self.heads), self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
 
-        return output + bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
+        return output + self.bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
 
 
 
 
 class ConvLSTMCell(nn.Module):
 
-    def __init__(self, input_dim, hidden_dim, kernel_size, bias):
+    def __init__(self, input_dim, hidden_dim, kernel_size, bias, device):
         """
         Initialize ConvLSTM cell.
         Parameters
@@ -103,6 +104,7 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = kernel_size
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
+        self.device = device
         '''
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
@@ -113,7 +115,8 @@ class ConvLSTMCell(nn.Module):
         self.conv = self_attention(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
-                              bias=self.bias)
+                              bias=self.bias,
+                              device=self.device)
 
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
@@ -134,8 +137,8 @@ class ConvLSTMCell(nn.Module):
 
     def init_hidden(self, batch_size, image_size):
         width = image_size
-        return (torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.conv.weight.device),
-                torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.conv.weight.device))
+        return (torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.device),
+                torch.zeros(batch_size, self.hidden_dim, width, dtype=torch.float64, device=self.device))
 
 
 class ConvLSTM(nn.Module):
@@ -165,7 +168,7 @@ class ConvLSTM(nn.Module):
     """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
-                 batch_first=True, bias=True, return_all_layers=True):
+                 batch_first=True, bias=True, return_all_layers=True, device):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
@@ -183,6 +186,7 @@ class ConvLSTM(nn.Module):
         self.batch_first = batch_first
         self.bias = bias
         self.return_all_layers = return_all_layers
+        self.device = device
 
         cell_list = []
         for i in range(0, self.num_layers):
@@ -191,7 +195,8 @@ class ConvLSTM(nn.Module):
             cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
                                           hidden_dim=self.hidden_dim[i],
                                           kernel_size=self.kernel_size[i],
-                                          bias=self.bias))
+                                          bias=self.bias,
+                                          device=self.device))
 
         self.cell_list = nn.ModuleList(cell_list)
 
@@ -275,8 +280,8 @@ class ConvLSTM_seq(nn.Module):
         self.w = w
         self.out_win = out_win
         #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[0])
-        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1])
+        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[0], device)
+        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1], device)
         self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
         self.project_y = nn.Linear(hidden_dim*w, 1)
     
