@@ -42,7 +42,7 @@ class self_attention(nn.Module):
 
         self.device = device
         self.G = 8  ## number of tokens/grains
-        self.P = (torch.arange(self.G, device = device)/self.G).view(self.G,1)
+        self.P = (torch.arange(self.G, dtype = torch.float64, device = device)/self.G).view(self.G,1)
         self.query_dim = 8  ## e
         self.in_channels = in_channels
         self.out_channels = out_channels
