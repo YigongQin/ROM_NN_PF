@@ -110,7 +110,7 @@ class ConvLSTMCell(nn.Module):
                               padding=self.padding,
                               bias=self.bias)
         '''
-        self.conv = nn.self_attention(in_channels=self.input_dim + self.hidden_dim,
+        self.conv = self_attention(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
                               bias=self.bias)
@@ -321,7 +321,7 @@ class ConvLSTM_seq(nn.Module):
             frac = F.relu(frac+frac_ini)         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
-            active = (frac>1e-6)*1
+            active = ((frac>1e-6)*1.0).double()
             ## at this moment, frac is the actual fraction which can be used to calculate area
             #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             #frac_old = frac
@@ -334,7 +334,7 @@ class ConvLSTM_seq(nn.Module):
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
             seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,2:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
+                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, area_sum
