@@ -62,14 +62,14 @@ class self_attention(nn.Module):
         # active matrix
         active = input[:,0,:]
         ## [B, W, W] outer product
-        outer_active = torch.einsum('bi, bj->bij', active, active).view(b ,w, w, 1).expand(-1,-1,-1,self.heads) 
+        outer_active = torch.einsum('bi, bj->bij', active, active).view(b ,w, w, 1)
         Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
         K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        QK = torch.einsum('qeh, keh -> qkh', Q, K).view(1, w, w, self.heads).expand(b, w, w, self.heads)
-        A  = torch.softmax( outer_active*QK, dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        QK = torch.einsum('qeh, keh -> qkh', Q, K).view(1, w, w, self.heads)
+        A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
 
         ## finally reduction
-        value = torch.einsum('biwh, oih -> bowh', input.view(b, in_ch, w, 1).expand(-1,-1,-1,self.heads), self.W_value) ## [B, C, W, h]
+        value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
 
         return output + self.bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
@@ -105,7 +105,7 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
         self.device = device
-        '''
+        
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
@@ -117,7 +117,7 @@ class ConvLSTMCell(nn.Module):
                               kernel_size=self.kernel_size,
                               bias=self.bias,
                               device=self.device)
-
+        '''
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
@@ -302,14 +302,19 @@ class ConvLSTM_seq(nn.Module):
              
         frac_ini = input_param[:, :self.w]
         
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      .expand(-1,-1, -1, self.w)
-        ini      = frac_ini                       .view(b,1,1,self.w) .expand(-1, t, -1, -1)
-        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) .expand(-1, t, -1, -1)
-        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
+        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
+        ini      = frac_ini                       .view(b,1,1,self.w) 
+        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
+        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
         
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
         input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), yt, ini, pf, param],dim=2)   
+                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
+                               yt.expand(-1,-1, -1, self.w), \
+                               ini.expand(-1, t, -1, -1), \
+                               pf.expand(-1, t, -1, -1), \
+                               param.expand(-1, t, -1, self.w)], dim=2) 
+
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
