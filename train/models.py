@@ -168,7 +168,7 @@ class ConvLSTM(nn.Module):
     """
 
     def __init__(self, input_dim, hidden_dim, kernel_size, num_layers,
-                 batch_first=True, bias=True, return_all_layers=True, device):
+                 device, batch_first=True, bias=True, return_all_layers=True):
         super(ConvLSTM, self).__init__()
 
         self._check_kernel_size_consistency(kernel_size)
