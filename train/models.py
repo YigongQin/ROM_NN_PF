@@ -50,8 +50,10 @@ class self_attention(nn.Module):
         self.qk_len = 2  ## query/key length, active/position
         self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
         self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
-        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), device = device))
-        self.bias = Parameter(torch.empty(out_channels, device = device))
+        #self.W_qry = torch.empty((1, self.query_dim, self.heads), dtype = torch.float64, device = device)
+        #self.W_key = torch.empty((1, self.query_dim, self.heads), dtype = torch.float64, device = device)
+        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
+        self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
 
     def forward(self, input):
         '''
@@ -62,12 +64,12 @@ class self_attention(nn.Module):
         # active matrix
         active = input[:,0,:]
         ## [B, W, W] outer product
-        outer_active = torch.einsum('bi, bj->bij', active, active).view(b ,w, w, 1)
+        outer_active = torch.einsum('bi, bj->bij', active, active)
         Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
         K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        QK = torch.einsum('qeh, keh -> qkh', Q, K).view(1, w, w, self.heads)
-        A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
-
+        QK = torch.einsum('qeh, keh -> qkh', Q, K)
+        #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         ## finally reduction
         value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
@@ -105,7 +107,7 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
         self.device = device
-        
+        ''' 
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
@@ -117,7 +119,7 @@ class ConvLSTMCell(nn.Module):
                               kernel_size=self.kernel_size,
                               bias=self.bias,
                               device=self.device)
-        '''
+        
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
