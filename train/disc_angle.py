@@ -325,8 +325,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(7, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -397,7 +397,7 @@ else:
     print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
-frac_out[:,:window,:] = seq_dat[:,:,:-1]
+frac_out[:,:window,:] = seq_dat[:,:,G:-1]
 dy_out[:,:window] = seq_dat[:,:,-1]
 
 param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
