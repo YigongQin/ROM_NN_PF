@@ -19,8 +19,7 @@ def scale(t,dt):
     # x = 1, return 1, x = 0, return frames*beta
     return (1 - t)/dt + 1
 
-
-class self_attention(nn.Module):
+class CCNN1d(nn.Module):
 
     """
     1D coarsening CNN
@@ -38,40 +37,141 @@ class self_attention(nn.Module):
         >> y = CCNN1d(x)
     """
     def __init__(self, in_channels, out_channels, kernel_size, bias):
-        super(self_attention, self).__init__()
+        super(CCNN1d, self).__init__()
 
-        self.G = 8  ## number of tokens/grains
-        self.P = (torch.arange(self.G)/self.G).view(self.G,1)
-        self.query_dim = 8  ## e
+        self.G = 8
+        self.batch_size = 64
+
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.heads = kernel_size[0]
-        self.qk_len = 2  ## query/key length, active/position
-        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads)))
-        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads)))
-        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads)))
-        self.bias = Parameter(torch.empty(out_channels))
+        self.kernel_size = kernel_size[0]
+        self.padding = (kernel_size[0]-1) // 2
 
-    def forward(self, input):
-        '''
-        input  for B, C_in, W 
-        output for B, C_out, W         
-        '''
+        self.weight = Parameter(torch.empty((out_channels, in_channels, kernel_size[0])))
+        if bias:
+           self.bias = Parameter(torch.empty(out_channels))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+        self.c1 = torch.arange(self.batch_size).view(-1,1,1).expand(-1, in_channels, self.G)
+        self.c2 = torch.arange(in_channels).view(1,-1,1).expand(self.batch_size, -1, self.G)
+    def reset_parameters(self) -> None:
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.bias, -bound, bound)
+
+    def permute(self, input: Tensor, index: Tensor):
+        return input[(self.c1, self.c2, index)]
+
+
+    def _cconv1d_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
+
         b, in_ch, w = input.size()
-        # active matrix
-        active = input[:,0,:]
-        ## [B, W, W] outer product
-        outer_active = torch.einsum('bi, bj->bij', active, active).view(b ,w, w, 1).expand(-1,-1,-1,self.heads) 
-        Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
-        K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        QK = torch.einsum('qeh, keh -> qkh', Q, K)
-        A  = torch.softmax( torch.einsum('bwqh, qkh -> bwkh', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        if in_ch != self.in_channels:
+            raise ValueError('in_channels must be equal to the second dimension of input')
+        output = torch.empty((b, self.out_channels, w))
+        
+        """
+        convolution operation (b, in_ch, w)*(out_ch, in_ch, k) = (b, out_ch, w)
+        k = 1 -> F.linear at the second dimension
+        for now, k = 3 
+        padding: copy the boundary points
+        """
+        output = torch.einsum('bij,ki->bkj', input, weight[:,:,1]) \
+               + torch.einsum('bij,ki->bkj', self.permute(input, left),  weight[:,:,0]) \
+               + torch.einsum('bij,ki->bkj', self.permute(input, right), weight[:,:,2])
 
-        ## finally reduction
-        value = torch.einsum('biwh, oih -> bowh', input.view(b, in_ch, w, 1).expand(-1,-1,-1,self.heads), self.W_value) ## [B, C, W, h]
-        output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
+        if bias == None: return output
+        else: return output + self.bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
 
+
+    def forward(self, input: Tensor) -> Tensor:
+        '''
+        input for MCNN B, C_in, W 
+        input for MCNN B, C_out, W         
+        '''
+        return self._cconv1d_forward(input, self.weight, self.bias)
+
+
+
+class Full_conv1d(nn.Module):
+
+    """
+    1D coarsening CNN
+    Parameters:
+        input_dim: Number of input channels 
+        hidden_dim: Number of channels
+        kernel_size: tuple, size of kernel in convolution
+        bias: boolean, bias or no bias 
+        Note: Will do same padding.
+    Input:
+        A tensor of size B, C_in, W 
+    Output:
+        A tensor of size B, C_out, W
+    Example:
+        >> y = CCNN1d(x)
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, padding, bias):
+        super(Full_conv1d, self).__init__()
+
+        self.G = 8
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size[0]
+        self.padding = padding
+
+        self.weight = Parameter(torch.empty((out_channels, in_channels, self.G)))
+        if bias:
+           self.bias = Parameter(torch.empty(out_channels))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.bias, -bound, bound)
+
+
+    def _conv1d_forward(self, input: Tensor, weight: Tensor, bias: Optional[Tensor]):
+
+        b, in_ch, w = input.size()
+        if in_ch != self.in_channels:
+            raise ValueError('in_channels must be equal to the second dimension of input')
+
+        if w != self.G:
+            raise ValueError('G must be equal to the third dimension of input')
+
+        """
+        convolution operation (b, in_ch, w)*(out_ch, in_ch, w) = (b, out_ch, w)
+        padding: copy the boundary points
+        """
+        output = torch.einsum('bij,kij->bkj', input, weight)
+
+        #if bias == None: return output
+        #else: 
         return output + bias.view(1,self.out_channels,1).expand(b, self.out_channels, w)
+
+
+    def forward(self, input: Tensor) -> Tensor:
+        '''
+        input for MCNN B, C_in, W 
+        input for MCNN B, C_out, W         
+        '''
+        return self._conv1d_forward(input, self.weight, self.bias)
 
 
 
@@ -103,16 +203,11 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = kernel_size
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
-        '''
+
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
                               kernel_size=self.kernel_size,
                               padding=self.padding,
-                              bias=self.bias)
-        '''
-        self.conv = nn.self_attention(in_channels=self.input_dim + self.hidden_dim,
-                              out_channels=4 * self.hidden_dim,
-                              kernel_size=self.kernel_size,
                               bias=self.bias)
 
     def forward(self, input_tensor, cur_state):
@@ -264,6 +359,57 @@ class ConvLSTM(nn.Module):
         return param
     
     
+    
+class Decoder(nn.Module):
+    def __init__(self,input_len,output_len,hidden_dim,num_layer):
+        super(Decoder, self).__init__()
+        self.input_len = input_len 
+        self.output_len = output_len  
+        self.hidden_dim = hidden_dim
+        self.num_layer = num_layer
+        self.lstm_decoder = nn.LSTM(output_len,hidden_dim,num_layer,batch_first=True)    
+        self.project = nn.Linear(hidden_dim, output_len)
+    def forward(self,frac,hidden,cell,frac_ini,scaler):
+        output, (hidden, cell) = self.lstm_decoder(frac.unsqueeze(dim=1), (hidden,cell) )
+        target = self.project(output[:,-1,:])   # project last layer output to the desired shape
+        target = F.relu(target+frac_ini)         # frac_ini here is necessary to keep
+        frac = F.normalize(target,p=1,dim=-1)-frac_ini   # normalize the fractions
+        frac = scaler.unsqueeze(dim=-1)*frac     # scale the output based on the output frame
+        
+        return frac, hidden, cell
+# The model
+class LSTM(nn.Module):
+    def __init__(self,input_len,output_len,hidden_dim,num_layer,out_win,decoder,device):
+        super(LSTM, self).__init__()
+        self.input_len = input_len
+        self.output_len = output_len  
+        self.hidden_dim = hidden_dim
+        self.num_layer = num_layer
+        self.out_win = out_win
+        self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
+        self.decoder = decoder
+        self.device = device
+      
+    def forward(self, input_frac, frac_ini):
+        
+        output_frac = torch.zeros(input_frac.shape[0],self.out_win,self.output_len,dtype=torch.float64).to(self.device)
+        ## step 1 encode the input to hidden and cell state
+        encode_out, (hidden, cell) = self.lstm_encoder(input_frac)  # output range [-1,1]
+        ## step 2 start with "equal vector", the last 
+        frac = input_frac[:,-1,:self.output_len]  ## the ancipated output frame is 
+        time_tag = input_frac[:,-1,-1]
+       # param = input_1seq[:,self.output_len:] 
+       ## step 3 for loop decode the time series one-by-one
+        for i in range(self.out_win):
+            scaler = scale(time_tag + i/(frames-1))  ## input_frac has the time information for the first output
+            frac, hidden, cell = self.decoder(frac, hidden, cell, frac_ini, scaler)           
+            output_frac[:,i,:] = frac
+            #input_1seq[:,:self.output_len] = frac
+            #param[:,-1] = param[:,-1] + 1.0/(frames-1)  ## time tag 
+                        
+        return output_frac
+
+
     
     
 class ConvLSTM_seq(nn.Module):
