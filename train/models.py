@@ -97,7 +97,7 @@ class self_attention(nn.Module):
         #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', M, self.P), dim = 2 )  ## softmax on key dim, [B, W, W, h]
         #print(A)
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
-        M = torch.ones((1,w,w)) - torch.diag_embed(1.0-active)
+        M = torch.ones((1,w,w), dtype = torch.float64, device = self.device) - torch.diag_embed(1.0-active)
         print(M[0,:,:])
         A = torch.softmax( M.view(b,w,w,1)*( I.view(b,w,w,1) + self.P.view(1,w,w,self.heads) ), dim = 2 )
         print(A[0,:,:,0])
