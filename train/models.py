@@ -63,8 +63,10 @@ class self_attention(nn.Module):
         idx1 = idx.view(1,self.w,1).expand(self.w,self.w,self.heads)
         idx2 = ( torch.arange(self.heads, dtype = torch.float64, device = self.device) -self.heads//2 )\
                .view(1,1,self.heads).expand(self.w,self.w,self.heads)
-        print(idx0 - idx1 + idx2)
-        return torch.exp( - (idx0 - idx1 + idx2)**2 )
+       # P = torch.exp( - (idx0 - idx1 + idx2)**2 )
+        P = - 10*(idx0 - idx1 + idx2)**2 
+        print(torch.softmax(P,dim=1))
+        return P
 
     def forward(self, input):
         '''
@@ -75,15 +77,21 @@ class self_attention(nn.Module):
         # active matrix
         active = input[:,0,:]
         ## [B, W, W] outer product
-        active = torch.ones((b,w),  dtype = torch.float64, device = device)
-        M = torch.einsum('bi, bj->bij', active, active)
+        #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
+        M = 1.0 - torch.einsum('bi, bj->bij', active, active) 
+          #+ 0.5*torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w).expand(b,w,w)
+        print(M[0,:,:])
         #Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
         #K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
         #QK = torch.einsum('qeh, keh -> qkh', Q, K)
         #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
-        A  = torch.softmax( torch.einsum('abc, bcd -> abcd', M, self.P), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', M, self.P), dim = 2 )  ## softmax on key dim, [B, W, W, h]
+        #print(A)
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
+        print((M.view(b,w,w,1).expand(b,w,w,self.heads)*self.P.view(1,w,w,self.heads).expand(b,w,w,self.heads))[0,:,:,0])
+        A = torch.softmax( M.view(b,w,w,1).expand(b,w,w,self.heads)+self.P.view(1,w,w,self.heads).expand(b,w,w,self.heads), dim = 2 )
         ## finally reduction
+        print(A[0,:,:,0])
         value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3)
 
