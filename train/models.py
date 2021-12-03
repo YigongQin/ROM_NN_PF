@@ -49,8 +49,8 @@ class self_attention(nn.Module):
         self.out_channels = out_channels
         self.heads = kernel_size[0]
 
-        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
-        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+        #self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+        #self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
 
         self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
         self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
@@ -69,11 +69,12 @@ class self_attention(nn.Module):
 
         if self.heads == 3:
             ones = torch.ones((self.w, self.w), dtype = torch.float64, device = self.device)
-            P[:,:,self.heads//2+1] = 2.0/(idx1-idx0-0.5) - 10*torch.tril(ones, diagonal=-1)   ## diag = -4
-            P[:,:,self.heads//2-1] = 2.0/(idx0-idx1-0.5) - 10*torch.triu(ones, diagonal=1)
+            P[:,:,self.heads//2+1] = 5.0/(idx1-idx0-0.5) - 20*torch.tril(ones, diagonal=-1)   ## diag = -4
+            P[:,:,self.heads//2-1] = 5.0/(idx0-idx1-0.5) - 20*torch.triu(ones, diagonal=1)
             
         # P = torch.exp( - (idx0 - idx1 + idx2)**2 )
         # P = - 10*(idx0 - idx1 + idx2)**2 
+        print(P)
         print(torch.softmax(P,dim=1))
         return P
 
@@ -87,7 +88,7 @@ class self_attention(nn.Module):
         active = input[:,0,:]
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
-        I = -10*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
+        I = -40*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
           #+ 0.5*torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w).expand(b,w,w)
         
         #Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
@@ -98,9 +99,9 @@ class self_attention(nn.Module):
         #print(A)
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         M = torch.ones((1,w,w), dtype = torch.float64, device = self.device) - torch.diag_embed(1.0-active)
-        print(M[0,:,:])
+        #print(M[0,:,:])
         A = torch.softmax( M.view(b,w,w,1)*( I.view(b,w,w,1) + self.P.view(1,w,w,self.heads) ), dim = 2 )
-        print(A[0,:,:,0])
+        #print(A[0,:,:,0])
 
         value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 )
