@@ -385,7 +385,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(7, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -411,7 +411,9 @@ for i in range(0,pred_frames,out_win):
     
     param_dat[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
-    frac_new_vec = tohost( model(todevice(seq_dat), todevice(param_dat) )[0] ) 
+    output_model = model(todevice(seq_dat), todevice(param_dat) )
+    frac_new_vec = tohost( output_model[0] ) 
+    active_dat = tohost(output_model[1])
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
@@ -424,7 +426,6 @@ for i in range(0,pred_frames,out_win):
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new_vec, G_small, G, expand)
     #print(frac_new_vec)
-    active_dat = (frac_new_vec[:,:,:-1]>1e-6)*1
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((active_dat, frac_new_vec), axis = -1) ),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]

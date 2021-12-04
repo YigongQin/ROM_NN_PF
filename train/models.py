@@ -332,7 +332,7 @@ class ConvLSTM_seq(nn.Module):
         b, t, _  = input_seq.size()
         
         output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
-        area_sum   = torch.zeros(b, self.w, dtype=torch.float64).to(self.device)
+        active_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :self.w]
         
@@ -374,14 +374,14 @@ class ConvLSTM_seq(nn.Module):
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = dy
-            
+            active_seq[:,i,:] = active
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
             seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
                                seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
-        return output_seq, area_sum
+        return output_seq, active_seq
 
 
 
