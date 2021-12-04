@@ -27,6 +27,7 @@ from models import *
 import matplotlib.tri as tri
 from split_merge import split_grain, merge_grain
 from scipy.interpolate import griddata
+torch.cuda.empty_cache()
 
 mode = sys.argv[1]
 if mode == 'train': from G_E import *
@@ -39,7 +40,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -271,7 +272,7 @@ if not mode=='test':
 
 test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:], output_area[train_sam:,:])
 
-test_loader = DataLoader(test_loader, batch_size = test_sam, shuffle=False)
+test_loader = DataLoader(test_loader, batch_size = test_sam//8, shuffle=False)
 
 def train(model, num_epochs, train_loader, test_loader):
     
@@ -283,7 +284,7 @@ def train(model, num_epochs, train_loader, test_loader):
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
     for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
-
+        
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
         #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
@@ -297,8 +298,7 @@ def train(model, num_epochs, train_loader, test_loader):
       #                               lr=learning_rate)
       if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
-
-         #print(I_train.shape)
+         #print(I_train.shape[0])
          recon, area_train = model(I_train, P_train)
         # loss = criterion(model(I_train, P_train), O_train)
          loss = criterion(recon, O_train) #+ 0.01*out_win/dt*criterion(area_train, A_train)
@@ -306,15 +306,19 @@ def train(model, num_epochs, train_loader, test_loader):
          optimizer.zero_grad()
          loss.backward()
          optimizer.step()
-       
+        # exit() 
+      test_loss = 0
+      count = 0
       for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
-          
+        #print(I_test.shape[0])
+        count += I_test.shape[0]
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
         #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
-        test_loss = criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+        test_loss += I_test.shape[0]*criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
         #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
         #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
+      test_loss/=count
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
         # outputs.append((epoch, data, recon),)
       train_list.append(float(loss))
@@ -420,7 +424,8 @@ for i in range(0,pred_frames,out_win):
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new_vec, G_small, G, expand)
     #print(frac_new_vec)
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:],frac_new_vec),axis=1)
+    active_dat = (frac_new_vec[:,:,:-1]>1e-6)*1
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((active_dat, frac_new_vec), axis = -1) ),axis=1)
     
 frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
