@@ -344,10 +344,10 @@ class ConvLSTM_seq(nn.Module):
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
         input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
                                input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, self.w), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
-                               param.expand(-1, t, -1, self.w)], dim=2) 
+                               param.expand(-1, t, -1, self.w), \
+                               yt.expand(-1,-1, -1, self.w)], dim=2) 
 
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
@@ -377,8 +377,8 @@ class ConvLSTM_seq(nn.Module):
             active_seq[:,i,:] = active
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
+            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), \
+                               seq_1[:,2:-2,:], seq_1[:,-2:-1,:] + self.dt, dy.expand(-1,self.w).view(b,1,self.w) ],dim=1)
 
                         
         return output_seq, active_seq
