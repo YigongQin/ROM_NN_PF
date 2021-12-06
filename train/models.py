@@ -50,8 +50,10 @@ class self_attention(nn.Module):
         self.out_channels = out_channels
         self.heads = kernel_size[0]
 
-        self.W_self = Parameter(torch.empty((self.out_channels, 4), dtype = torch.float64, device = device))
-        self.W_conv = Parameter(torch.empty((self.out_channels, 4, self.heads), dtype = torch.float64, device = device))
+        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
+
+        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
         self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
         self.P = self.distance()
 
@@ -101,9 +103,8 @@ class self_attention(nn.Module):
         A = torch.softmax( M.view(b,w,w,1)*( I.view(b,w,w,1) + self.P.view(1,w,w,self.heads) ), dim = 2 )
         #print(A[0,:,:,0])
 
-        value = torch.einsum('biw, oih -> bowh', input[:,:4,:], self.W_conv) ## [B, C, W, h]
-        output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 ) \
-            + torch.einsum('biw, oi -> bow', input[:,4:,:], self.W_self)
+        value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
+        output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 )
 
         return output + self.bias.view(1,self.out_channels,1)
 
@@ -343,10 +344,10 @@ class ConvLSTM_seq(nn.Module):
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
         input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
                                input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
+                               yt.expand(-1,-1, -1, self.w), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
-                               param.expand(-1, t, -1, self.w), \
-                               yt.expand(-1,-1, -1, self.w)], dim=2) 
+                               param.expand(-1, t, -1, self.w)], dim=2) 
 
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
@@ -369,15 +370,15 @@ class ConvLSTM_seq(nn.Module):
             #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             #frac_old = frac
             
-            frac = scale(seq_1[:,-2,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
+            frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = dy
             active_seq[:,i,:] = active
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), \
-                               seq_1[:,2:-2,:], seq_1[:,-2:-1,:] + self.dt, dy.expand(-1,self.w).view(b,1,self.w) ],dim=1)
+            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
+                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, active_seq

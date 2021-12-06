@@ -40,7 +40,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -280,7 +280,7 @@ def train(model, num_epochs, train_loader, test_loader):
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
                                  #weight_decay=1e-5) # <--
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 30, 40, 50], gamma=0.5, last_epoch=-1)
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
   #  outputs = []
     for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
