@@ -143,7 +143,7 @@ class ConvLSTMCell(nn.Module):
         self.weight_cf = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
         self.weight_co = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
         self.reset_parameters()
-        
+
         ''' 
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
@@ -172,14 +172,14 @@ class ConvLSTMCell(nn.Module):
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
 
-        sc_i = torch.einsum('biw, oi -> bow', c_cur, sel.weight_ci) 
-        sc_f = torch.einsum('biw, oi -> bow', c_cur, sel.weight_cf) 
+        sc_i = torch.einsum('biw, oi -> bow', c_cur, self.weight_ci) 
+        sc_f = torch.einsum('biw, oi -> bow', c_cur, self.weight_cf) 
 
         i = torch.sigmoid(cc_i + sc_i)
         f = torch.sigmoid(cc_f + sc_f)
         c_next = f * c_cur + i * torch.tanh(cc_g)
 
-        sc_o = torch.einsum('biw, oi -> bow', c_next, sel.weight_co) 
+        sc_o = torch.einsum('biw, oi -> bow', c_next, self.weight_co) 
 
         o = torch.sigmoid(cc_o + sc_o)
         
