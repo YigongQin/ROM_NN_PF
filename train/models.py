@@ -43,9 +43,6 @@ class self_attention(nn.Module):
         self.device = device
         self.w = 8  ## number of tokens/grains
         self.ds = 10
-        #self.P = (torch.arange(self.G, dtype = torch.float64, device = device)/self.G).view(self.G,1)
-        
-        self.query_dim = 8  ## e
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.heads = kernel_size[0]
@@ -83,8 +80,6 @@ class self_attention(nn.Module):
             P[:,:,self.heads//2+1] = self.ds*( (idx0-idx1) - self.w*torch.tril(ones, diagonal=-1) + self.w*torch.triu(ones, diagonal=1) )  ## diag = -4
             P[:,:,self.heads//2-1] = - P[:,:,self.heads//2+1]
             
-        # P = torch.exp( - (idx0 - idx1 + idx2)**2 )
-        # P = - 10*(idx0 - idx1 + idx2)**2 
         print(torch.softmax(P,dim=1))
         return P
 
@@ -99,14 +94,7 @@ class self_attention(nn.Module):
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
         I = -self.ds*(self.w+2)*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
-          #+ 0.5*torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w).expand(b,w,w)
-        
-        #Q  = torch.einsum('wu, ukh -> wkh', self.P, self.W_qry)    ## calculate query    
-        #K  = torch.einsum('wu, ukh -> wkh', self.P, self.W_key)    ## calculate key 
-        #QK = torch.einsum('qeh, keh -> qkh', Q, K)
-        #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', outer_active, QK), dim = 2 )  ## softmax on key dim, [B, W, W, h]
-        #A  = torch.softmax( torch.einsum('abc, bcd -> abcd', M, self.P), dim = 2 )  ## softmax on key dim, [B, W, W, h]
-        #print(A)
+
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         M = torch.ones((1,w,w), dtype = torch.float64, device = self.device) - torch.diag_embed(1.0-active)
         #print(M[0,:,:])
@@ -151,6 +139,10 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
         self.device = device
+        self.weight_ci = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+        self.weight_cf = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+        self.weight_co = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+
         ''' 
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
@@ -163,7 +155,12 @@ class ConvLSTMCell(nn.Module):
                               kernel_size=self.kernel_size,
                               bias=self.bias,
                               device=self.device)
-         
+
+    def reset_parameters(self) -> None:
+        stdv = 1.0 / math.sqrt(self.hidden_dim)
+        for weight in self.parameters():
+            init.uniform_(weight, -stdv, stdv)
+
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
@@ -171,12 +168,19 @@ class ConvLSTMCell(nn.Module):
 
         combined_conv = self.conv(combined)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
-        i = torch.sigmoid(cc_i)
-        f = torch.sigmoid(cc_f)
-        o = torch.sigmoid(cc_o)
-        g = torch.tanh(cc_g)
 
-        c_next = f * c_cur + i * g
+
+        sc_i = torch.einsum('biw, oi -> bow', c_cur, sel.weight_ci) 
+        sc_f = torch.einsum('biw, oi -> bow', c_cur, sel.weight_cf) 
+
+        i = torch.sigmoid(cc_i + sc_i)
+        f = torch.sigmoid(cc_f + sc_f)
+        c_next = f * c_cur + i * torch.tanh(cc_g)
+
+        sc_o = torch.einsum('biw, oi -> bow', c_next, sel.weight_co) 
+
+        o = torch.sigmoid(cc_o + sc_o)
+        
         h_next = o * torch.tanh(c_next)
 
         return h_next, c_next
