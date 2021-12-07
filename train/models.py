@@ -42,7 +42,7 @@ class self_attention(nn.Module):
 
         self.device = device
         self.w = 8  ## number of tokens/grains
-        self.ds = 5
+        self.ds = 10
         #self.P = (torch.arange(self.G, dtype = torch.float64, device = device)/self.G).view(self.G,1)
         
         self.query_dim = 8  ## e
@@ -50,12 +50,22 @@ class self_attention(nn.Module):
         self.out_channels = out_channels
         self.heads = kernel_size[0]
 
-        self.W_qry = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
-        self.W_key = Parameter(torch.empty((1, self.query_dim, self.heads), device = device))
-
-        self.W_value = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
+        self.weight = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
         self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
         self.P = self.distance()
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        # Setting a=sqrt(5) in kaiming_uniform is the same as initializing with
+        # uniform(-1/sqrt(k), 1/sqrt(k)), where k = weight.size(1) * prod(*kernel_size)
+        # For more details see: https://github.com/pytorch/pytorch/issues/15314#issuecomment-477448573
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            if fan_in != 0:
+                bound = 1 / math.sqrt(fan_in)
+                init.uniform_(self.bias, -bound, bound)
+
 
     def distance(self):
 
@@ -103,7 +113,9 @@ class self_attention(nn.Module):
         A = torch.softmax( M.view(b,w,w,1)*( I.view(b,w,w,1) + self.P.view(1,w,w,self.heads) ), dim = 2 )
         #print(A[0,:,:,0])
 
-        value = torch.einsum('biw, oih -> bowh', input, self.W_value) ## [B, C, W, h]
+        value = torch.einsum('biw, oih -> bowh', input, self.weight) ## [B, C, W, h]
+        #output= value.view(b, self.out_channels, w)
+        #output = self.linear(input.permute(0,2,1)).permute(0,2,1) 
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 )
 
         return output + self.bias.view(1,self.out_channels,1)
@@ -151,7 +163,7 @@ class ConvLSTMCell(nn.Module):
                               kernel_size=self.kernel_size,
                               bias=self.bias,
                               device=self.device)
-        
+         
     def forward(self, input_tensor, cur_state):
         h_cur, c_cur = cur_state
 
