@@ -142,7 +142,8 @@ class ConvLSTMCell(nn.Module):
         self.weight_ci = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
         self.weight_cf = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
         self.weight_co = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
-
+        self.reset_parameters()
+        
         ''' 
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
                               out_channels=4 * self.hidden_dim,
@@ -155,6 +156,7 @@ class ConvLSTMCell(nn.Module):
                               kernel_size=self.kernel_size,
                               bias=self.bias,
                               device=self.device)
+
 
     def reset_parameters(self) -> None:
         stdv = 1.0 / math.sqrt(self.hidden_dim)
