@@ -103,7 +103,7 @@ for batch_id in range(num_batch):
     param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
-sio.savemat('ini_data.mat',{'frac':frac_all[:,0,:],'y':y_all,'param':param_all})
+
 if skip_check == False:
  weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
 else: weird_sim=[]
@@ -185,6 +185,8 @@ frac_ini = frac_all[:,0,:]
 frac_all = frac_all - frac_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
+frac_mean = np.mean(np.mean(frac_all, axis=-1), axis=0)
+sio.savemat('ini_data.mat',{'frac_mean':frac_mean,'y':y_all,'param':param_all})
 
 scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
