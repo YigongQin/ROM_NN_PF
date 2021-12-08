@@ -341,7 +341,8 @@ class ConvLSTM_seq(nn.Module):
         self.bias = bias
         self.device = device
         self.scale = scale
-        
+        self.scale = torch.cat([self.scale, self.scale[-1]*self.ones(self.out_win, dtype = torch.float64, device = device)])
+
     def forward(self, input_seq, input_param):
         
 
@@ -388,7 +389,7 @@ class ConvLSTM_seq(nn.Module):
             #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             #frac_old = frac
             
-            frac = self.scale[seq_1[:,-1,:]]*( frac - frac_ini )      # [b,w] scale the output with time t    
+            frac = self.scale[seq_1[:,-1,:].long()]*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = dy
