@@ -80,7 +80,7 @@ class self_attention(nn.Module):
             P[:,:,self.heads//2+1] = self.ds*( (idx0-idx1) - self.w*torch.tril(ones, diagonal=-1) + self.w*torch.triu(ones, diagonal=1) )  ## diag = -4
             P[:,:,self.heads//2-1] = - P[:,:,self.heads//2+1]
             
-        print(torch.softmax(P,dim=1))
+        #print(torch.softmax(P,dim=1))
         return P
 
     def forward(self, input):

@@ -190,10 +190,13 @@ frac_mean = np.mean(np.mean(np.absolute(frac_all), axis=-1), axis=0)
 
 if mode == 'train' or mode == 'ini':
   scaler_lstm = frac_mean[-1]/frac_mean
+  scaler_lstm[0] = scaler_lstm[1]
   sio.savemat('frac_scale.mat',{'frac_mean':frac_mean})
 elif mode == 'test':
   scaler_lstm = sio.loadmat('frac_scale.mat',squeeze_me=True)['frac_mean']
 else: pass
+
+scaler_device = todevice(scaler_lstm)
 #scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
@@ -338,8 +341,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_lstm)
-if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_lstm)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_device)
+if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_device)
 
 model = model.double()
 if device=='cuda':
@@ -394,7 +397,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, scaler_lstm)
+    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, scaler_device)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
