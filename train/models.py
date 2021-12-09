@@ -80,7 +80,7 @@ class self_attention(nn.Module):
             P[:,:,self.heads//2+1] = self.ds*( (idx0-idx1) - self.w*torch.tril(ones, diagonal=-1) + self.w*torch.triu(ones, diagonal=1) )  ## diag = -4
             P[:,:,self.heads//2-1] = - P[:,:,self.heads//2+1]
             
-        #print(torch.softmax(P,dim=1))
+        print(torch.softmax(P,dim=1))
         return P
 
     def forward(self, input):
@@ -324,7 +324,7 @@ class ConvLSTM(nn.Module):
     
     
 class ConvLSTM_seq(nn.Module):
-    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device, scale):
+    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device, dt):
         super(ConvLSTM_seq, self).__init__()
         self.input_dim = input_dim  ## this input channel
         self.hidden_dim = hidden_dim  ## this output_channel
@@ -340,9 +340,8 @@ class ConvLSTM_seq(nn.Module):
         self.kernel_size = kernel_size
         self.bias = bias
         self.device = device
-        self.scale = scale
-        self.scale = torch.cat([self.scale, self.scale[-1]*self.ones(self.out_win, dtype = torch.float64, device = device)])
-
+        self.dt = dt
+        
     def forward(self, input_seq, input_param):
         
 
@@ -389,7 +388,7 @@ class ConvLSTM_seq(nn.Module):
             #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             #frac_old = frac
             
-            frac = self.scale[seq_1[:,-1,:].long()]*( frac - frac_ini )      # [b,w] scale the output with time t    
+            frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = frac
             output_seq[:,i, self.w:] = dy
@@ -397,7 +396,7 @@ class ConvLSTM_seq(nn.Module):
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
             seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + 1 ],dim=1)
+                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, active_seq

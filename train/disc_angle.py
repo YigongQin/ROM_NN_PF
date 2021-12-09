@@ -103,7 +103,7 @@ for batch_id in range(num_batch):
     param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
-
+sio.savemat('ini_data.mat',{'frac':frac_all[:,0,:],'y':y_all,'param':param_all})
 if skip_check == False:
  weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
 else: weird_sim=[]
@@ -185,19 +185,8 @@ frac_ini = frac_all[:,0,:]
 frac_all = frac_all - frac_ini[:,np.newaxis,:]
 
 ## scale the frac according to the time frame 
-frac_mean = np.mean(np.mean(np.absolute(frac_all), axis=-1), axis=0)
 
-
-if mode == 'train' or mode == 'ini':
-  scaler_lstm = frac_mean[-1]/frac_mean
-  scaler_lstm[0] = scaler_lstm[1]
-  sio.savemat('frac_scale.mat',{'frac_mean':frac_mean})
-elif mode == 'test':
-  scaler_lstm = sio.loadmat('frac_scale.mat',squeeze_me=True)['frac_mean']
-else: pass
-
-scaler_device = todevice(scaler_lstm)
-#scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
+scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
 seq_all = np.concatenate( ( active_all, frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
@@ -245,7 +234,7 @@ for run in range(num_all):
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
         
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
-        input_param[sample,-1] = t
+        input_param[sample,-1] = t*dt 
         output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
         
         sample = sample + 1
@@ -341,8 +330,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_device)
-if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, scaler_device)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -397,7 +386,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, scaler_device)
+    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -407,7 +396,7 @@ else:
     ini_model.eval()
 
     seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
-    param_dat[:,-1] = 1
+    param_dat[:,-1] = dt
     frac_new_vec = tohost( ini_model(todevice(seq_1), todevice(param_dat) )[0] ) 
     seq_dat = np.concatenate((seq_1,frac_new_vec),axis=1)
     print(frac_new_vec.shape)
@@ -421,7 +410,7 @@ print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
     
-    param_dat[:,-1] = (i+window) ## the first output time
+    param_dat[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
     output_model = model(todevice(seq_dat), todevice(param_dat) )
     frac_new_vec = tohost( output_model[0] ) 
