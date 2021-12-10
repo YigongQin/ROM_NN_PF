@@ -188,8 +188,8 @@ dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate 
 ## scale the frac according to the time frame 
 
 #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
-t_tag = np.arange(frames)*dt
-seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis], t_tag[np.newaxis,:,np.newaxis]), axis=-1) 
+t_tag = np.tile(np.arange(frames)*dt,(frac_all.shape[0],1))
+seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis], t_tag[:,:,np.newaxis]), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -418,7 +418,7 @@ for i in range(0,pred_frames,out_win):
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
-    t_new = t_tag[np.newaxis,window+i:window+i+out_win,:]
+    t_new = t_tag[:frac_new.shape[0],window+i:window+i+out_win,np.newaxis]
     if i>=pack:
         #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
         #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
