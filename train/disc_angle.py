@@ -168,28 +168,26 @@ class PrepareData(Dataset):
 # stack information
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
+
 y_norm = 0.5
 y_all  = y_all[idx_all,:]
-dy_all  = np.diff(y_all, axis=1) ## from here y_all means
-dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
+dy_all  = np.diff(y_all, axis=1) 
+dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
-## add area 
-area_all = 0.5*dy_all[:,1:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
-assert area_all.shape[1]==frames-1
 
-
-active_all = (frac_all>1e-6)*1
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_ini = frac_all[:,0,:]
-frac_all = frac_all - frac_ini[:,np.newaxis,:]
+
+dfrac_all = np.diff(frac_all, axis=1)/frac_norm
+dfrac_all = np.concatenate((dfrac_all[:,[0]],dfrac_all),axis=1) ##extrapolate dfrac at t=0
 
 ## scale the frac according to the time frame 
 
 scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
-frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
+#frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( active_all, frac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
+seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -402,7 +400,7 @@ else:
     print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
-frac_out[:,:window,:] = seq_dat[:,:,G:-1]
+frac_out[:,:window,:] = seq_dat[:,:,:G]
 dy_out[:,:window] = seq_dat[:,:,-1]
 
 param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
@@ -413,23 +411,23 @@ for i in range(0,pred_frames,out_win):
     param_dat[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
     output_model = model(todevice(seq_dat), todevice(param_dat) )
-    frac_new_vec = tohost( output_model[0] ) 
-    active_dat = tohost(output_model[1])
+    dfrac_new = tohost( output_model[0] ) 
+    frac_new = tohost(output_model[1])
     #print('timestep ',i)
     #print('predict',frac_new_vec/scaler_lstm[window+i])
     #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
     if i>=pack:
         #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
         #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
-        frac_out[:,-alone:,:], dy_out[:,-alone:] = merge_grain(frac_new_vec[:,:alone,:], G_small, G, expand)
+        frac_out[:,-alone:,:], dy_out[:,-alone:] = merge_grain(frac_new[:,:alone,:], G_small, G, expand)
     else: 
         #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
-        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new_vec, G_small, G, expand)
+        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new, G_small, G, expand)
     #print(frac_new_vec)
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((active_dat, frac_new_vec), axis = -1) ),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
     
-frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
+#frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]

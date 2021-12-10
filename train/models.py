@@ -14,7 +14,7 @@ from torch import Tensor
 import torch.nn.init as init
 from typing import Callable, List, Optional, Tuple
 #from G_E import *
-
+frac_norm = 0.02
 def scale(t,dt): 
     # x = 1, return 1, x = 0, return frames*beta
     return (1 - t)/dt + 1
@@ -90,7 +90,7 @@ class self_attention(nn.Module):
         '''
         b, in_ch, w = input.size()
         # active matrix
-        active = input[:,0,:]
+        active = ((input[:,0,:]>1e-6)*1.0).double()
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
         I = -self.ds*(self.w+2)*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
@@ -350,7 +350,7 @@ class ConvLSTM_seq(nn.Module):
         b, t, _  = input_seq.size()
         
         output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
-        active_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
+        frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :self.w]
         
@@ -379,27 +379,28 @@ class ConvLSTM_seq(nn.Module):
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
-            frac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
-            frac = F.relu(frac+frac_ini)         # frac_ini here is necessary to keep
+            dfrac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
+            frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
-            active = ((frac>1e-6)*1.0).double()
+            #active = ((frac>1e-6)*1.0).double()
+            dfrac = (frac - seq_1[:,0,:])/frac_norm 
             ## at this moment, frac is the actual fraction which can be used to calculate area
             #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
             #frac_old = frac
             
-            frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
+            #frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
-            output_seq[:,i, :self.w] = frac
+            output_seq[:,i, :self.w] = dfrac
             output_seq[:,i, self.w:] = dy
-            active_seq[:,i,:] = active
+            frac_seq[:,i,:] = frac
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([active.unsqueeze(dim=1), frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
+            seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
                                seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
-        return output_seq, active_seq
+        return output_seq, frac_seq
 
 
 
