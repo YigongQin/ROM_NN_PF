@@ -101,9 +101,9 @@ def merge_grain(frac, y, G, G_all, expand):
     G = N_w +2, N_w is the no. grains one grain can affect
     '''
 
-    size_b = seq_dat.shape[0]
-    size_t = seq_dat.shape[1]
-    size_v = seq_dat.shape[2]
+    size_b = frac.shape[0]
+    size_t = frac.shape[1]
+    size_v = frac.shape[2]
     #frac = seq_dat[:,:,:-1]
     #y = seq_dat[:,:,-1]
 
@@ -126,7 +126,7 @@ def merge_grain(frac, y, G, G_all, expand):
     elif G_all>G:
 
 
-        new_frac = np.zeros((new_size_b, size_t, new_size_v-1))
+        new_frac = np.zeros((new_size_b, size_t, new_size_v))
         ## first give the first and last data
         new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
         new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
