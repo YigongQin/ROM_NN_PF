@@ -187,7 +187,6 @@ dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate 
 
 ## scale the frac according to the time frame 
 
-scaler_lstm = scale(np.arange(frames)*dt,dt) # input to scale always 0 to 1
 #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
 seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
