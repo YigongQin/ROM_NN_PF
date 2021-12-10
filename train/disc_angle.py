@@ -175,6 +175,9 @@ dy_all  = np.diff(y_all, axis=1)
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
+## add area 
+area_all = 0.5*dy_all[:,1:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
+assert area_all.shape[1]==frames-1
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_ini = frac_all[:,0,:]
