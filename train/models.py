@@ -14,7 +14,7 @@ from torch import Tensor
 import torch.nn.init as init
 from typing import Callable, List, Optional, Tuple
 #from G_E import *
-frac_norm = 0.02
+frac_norm = 0.06
 def scale(t,dt): 
     # x = 1, return 1, x = 0, return frames*beta
     return (1 - t)/dt + 1

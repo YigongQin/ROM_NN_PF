@@ -93,7 +93,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-def merge_grain(seq_dat, G, G_all, expand):
+def merge_grain(frac, y, G, G_all, expand):
     
     
     '''
@@ -104,8 +104,8 @@ def merge_grain(seq_dat, G, G_all, expand):
     size_b = seq_dat.shape[0]
     size_t = seq_dat.shape[1]
     size_v = seq_dat.shape[2]
-    frac = seq_dat[:,:,:-1]
-    y = seq_dat[:,:,-1]
+    #frac = seq_dat[:,:,:-1]
+    #y = seq_dat[:,:,-1]
 
 
     assert size_b%expand == 0
