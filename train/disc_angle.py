@@ -183,7 +183,7 @@ assert area_all.shape[1]==frames-1
 frac_ini = frac_all[:,0,:]
 
 dfrac_all = np.diff(frac_all, axis=1)/frac_norm
-dfrac_all = np.concatenate((dfrac_all[:,[0]],dfrac_all),axis=1) ##extrapolate dfrac at t=0
+dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate dfrac at t=0
 
 ## scale the frac according to the time frame 
 
