@@ -231,7 +231,7 @@ for run in range(num_all):
     for t in range(window, end_frame):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
-        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
+        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:-1]
         
         input_param[sample,:] = param_all[run,:]  # except the last one, other parameters are independent on time
 
