@@ -15,6 +15,10 @@ import torch.nn.init as init
 from typing import Callable, List, Optional, Tuple
 #from G_E import *
 frac_norm = 0.06
+def scale(t,dt): 
+    # x = 1, return 1, x = 0, return frames*beta
+    return (1 - t)/dt + 1
+
 
 class self_attention(nn.Module):
 
@@ -135,7 +139,10 @@ class ConvLSTMCell(nn.Module):
         self.padding = (kernel_size[0]-1) // 2
         self.bias = bias
         self.device = device
- 
+        self.weight_ci = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+        self.weight_cf = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+        self.weight_co = Parameter(torch.empty((self.hidden_dim, self.hidden_dim), dtype = torch.float64, device = device))
+        self.reset_parameters()
 
         ''' 
         self.conv = nn.Conv1d(in_channels=self.input_dim + self.hidden_dim,
@@ -164,12 +171,17 @@ class ConvLSTMCell(nn.Module):
         combined_conv = self.conv(combined)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
-        i = torch.sigmoid(cc_i )
-        f = torch.sigmoid(cc_f )
+
+        sc_i = torch.einsum('biw, oi -> bow', c_cur, self.weight_ci) 
+        sc_f = torch.einsum('biw, oi -> bow', c_cur, self.weight_cf) 
+
+        i = torch.sigmoid(cc_i + sc_i)
+        f = torch.sigmoid(cc_f + sc_f)
         c_next = f * c_cur + i * torch.tanh(cc_g)
 
+        sc_o = torch.einsum('biw, oi -> bow', c_next, self.weight_co) 
 
-        o = torch.sigmoid(cc_o )
+        o = torch.sigmoid(cc_o + sc_o)
         
         h_next = o * torch.tanh(c_next)
 
