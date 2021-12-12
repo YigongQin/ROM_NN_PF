@@ -354,8 +354,7 @@ class ConvLSTM_seq(nn.Module):
              
         frac_ini = input_param[:, :self.w]
         
-        yt       = input_seq[:, :, -2:-1]         .view(b,t,1,1)        
-        time     = input_seq[:, :, -1:]           .view(b,t,1,1)      
+        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
         ini      = frac_ini                       .view(b,1,1,self.w) 
         pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
         param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
@@ -364,7 +363,6 @@ class ConvLSTM_seq(nn.Module):
         input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
                                input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
                                yt.expand(-1,-1, -1, self.w), \
-                               time.expand(-1,-1, -1, self.w), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
                                param.expand(-1, t, -1, self.w)], dim=2) 
@@ -399,7 +397,7 @@ class ConvLSTM_seq(nn.Module):
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
             seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,3:4,:] + self.dt, seq_1[:,4:,:] ],dim=1)
+                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, frac_seq
