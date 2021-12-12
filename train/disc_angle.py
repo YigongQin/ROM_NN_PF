@@ -407,7 +407,7 @@ dy_out[:,:window] = seq_dat[:,:,-1]
 
 param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
 print('the sub simulations', expand)
-
+t_new = t_tag[:frac_new.shape[0],window:window+out_win,np.newaxis]
 for i in range(0,pred_frames,out_win):
     
     #param_dat[:,-1] = (i+window)*dt ## the first output time
@@ -423,14 +423,14 @@ for i in range(0,pred_frames,out_win):
         #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
         #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
         frac_out[:,-alone:,:], dy_out[:,-alone:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], G_small, G, expand)
-        t_new = t_tag[:frac_new.shape[0],-alone:,np.newaxis]
+
     else: 
         #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new, dfrac_new[:,:,-1], G_small, G, expand)
-        t_new = t_tag[:frac_new.shape[0],window+i:window+i+out_win,np.newaxis]
+
     #print(frac_new_vec)
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new, t_new), axis = -1) ),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new, t_new+out_win*dt), axis = -1) ),axis=1)
     
 #frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
