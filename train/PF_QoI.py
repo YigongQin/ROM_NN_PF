@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy import io as sio 
 import sys
 
-def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,ap_list):
+def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0,areaf,ap_list):
 
    # note here frac dim [G,frames]
    # step 1: count the initial and final no. grain
@@ -33,20 +33,8 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,ap_li
 
    # step 2: area computing for every grain
 
-    ntip_y = np.asarray(tip_y/dx,dtype=int)    
-
-
-    ar0 = piece0*(ntip_y[0]+1)
-    arf = np.zeros(G, dtype=int)
-    #temp_piece = np.zeros(G, dtype=int)
-    yj = np.arange(ntip_y[0]+1,ntip_y[-1]+1)
-
-    for g in range(G):
-        fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
-        new_f = fint(yj)
-        grid_piece = np.asarray(new_f,dtype=int)  
-        # here remains the question whether it should be interger
-        arf[g] = np.sum(grid_piece) + ar0[g] + extra_area[g,-1]  # sum from 0-tip0, tip0+1 to tip-1
+    ar0 = total_area[:, 0]
+    arf = total_area[:,-1]
         
    # step 3: calculate aspect ratio
     apf = np.zeros(G)
@@ -54,13 +42,8 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,ap_li
     for g in range(G):
         
         if piece_len[g,0]>0: 
-            if piece_len[g,-1]<0:
-              height_id = list((piece_len[g,:]>0)*1).index(0)-1
-              height = ntip_y[height_id]
-            else: 
-              height_id = frames-1
-              height = ntip_y[height_id] + extra_area/piece_len[g,-1]
-            
+
+            height = tip_y_f[g,-1]-1
             apf[g] = height/( arf[g]/height )
             
         
@@ -128,7 +111,9 @@ for batch_id in range(num_batch):
     aseq_asse = np.asarray(f['angles'])
     frac_asse = np.asarray(f['fractions'])
     tip_y_asse = np.asarray(f['y_t'])
+    tip_y_f_asse = np.asarray(f['tip_y_f'])  
     extra_area_asse = np.asarray(f['extra_area'])
+    total_area_asse = np.asarray(f['total_area'])   
   #angles_asse = np.asarray(f['angles'])
   #number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
   #print(number_list[6])
@@ -150,9 +135,11 @@ for batch_id in range(num_batch):
 
         interval = np.asarray(aseq/10,dtype=int)
         assert np.all(interval>=0) and np.all(interval<9)
-        #print('angle sequence', interval)
         extra_area = (extra_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
-        ROM_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,apr_list)
+        total_area = (total_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
+        tip_y_f    = (tip_y_f_asse   [run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')        
+        #print('angle sequence', interval)
+        ROM_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0,areaf,apr_list)
 
     Ni0=Ni0/batch
     Nif=Nif/batch
