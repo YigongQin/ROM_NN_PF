@@ -6,13 +6,13 @@ Created on Wed Sep 15 22:12:11 2021
 @author: yigongqin
 """
 
-batch = 20
+batch = 25
 num_batch = 100
 num_runs = batch*num_batch
-valid_ratio = 1/11
+valid_ratio = 1/5
 num_train_all = int((1-valid_ratio)*num_runs)
 num_test = num_runs-num_train_all
-num_train = num_batch*20 #num_train_all
+num_train = num_batch*5 #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
@@ -31,16 +31,18 @@ param_len = G + 3   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
-hidden_dim = 32
-LSTM_layer = 3
+hidden_dim = 16
+LSTM_layer = (4, 4)
 kernel_size = (3,)
 
 num_epochs = 40
-learning_rate=5e-4
+learning_rate=50e-4
 area_scale = 0.1
 
 seed = 1   
 #data_dir = '../../G_E/*'
 #data_dir = '../../G_E/*'
+#data_dir = '../../fixed_size/*G01.*'
 data_dir = '../../fixed_size/*'
+#data_dir = '../../ML_PF8_train1000_test100_Mt24002_grains8_frames25_anis0.050_G050.000_Rmax1.000_seed0_rank0.h5'
 skip_check = False
