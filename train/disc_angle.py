@@ -386,7 +386,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -397,8 +397,10 @@ else:
 
     seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
     param_dat[:,-1] = dt
-    frac_new_vec = tohost( ini_model(todevice(seq_1), todevice(param_dat) )[0] ) 
-    seq_dat = np.concatenate((seq_1,frac_new_vec),axis=1)
+    output_model = ini_model(todevice(seq_1), todevice(param_dat) )
+    dfrac_new = tohost( output_model[0] ) 
+    frac_new = tohost(output_model[1])
+    seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays

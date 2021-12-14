@@ -54,29 +54,21 @@ def split_grain(param_dat, seq_dat, G, G_all):
             frac_sliced =  G_all/G*seq_dat[:,:,2*i:G+2*i]
 
             ## here requires cut/add to make sure unity
+            fsum = np.cumsum(frac_sliced, axis=-1)
+            psum = np.cumsum(param_sliced, axis=-1)
 
-            if i==0: 
-                ## modify right
-                frac_sliced[:,:,-1] = zeros - np.sum(frac_sliced[:,:,:-1], axis=-1)
-                param_sliced[:,-1] = ones - np.sum(param_sliced[:,:-1], axis=-1)
+            
+            frac_sliced -= np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0)
+            param_sliced -= np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0)
 
-            elif i==expand-1:
-                ## modify left
-                frac_sliced[:,:,0] = zeros - np.sum(frac_sliced[:,:,1:], axis=-1)
-                param_sliced[:,0] = ones - np.sum(param_sliced[:,1:], axis=-1)
+            frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
+            param_sliced[:,-1] = ones - np.sum(param_sliced[:,:-1], axis=-1)
 
-            else: 
-                gap = zeros - np.sum(frac_sliced[:,:,1:-1], axis=-1)
-                frac_sliced[:,:,0] = gap/2
-                frac_sliced[:,:,-1] = gap/2
-                gap = ones - np.sum(param_sliced[:,1:-1], axis=-1)
-                param_sliced[:,0] = gap/2
-                param_sliced[:,-1] = gap/2
 
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones ) <1e-5
-            assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - zeros ) <1e-5
+            assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - ones ) <1e-5
             #assert np.all(param_sliced>=0)
-            print(np.where(param_sliced<0))
+            #print(np.where(param_sliced<0))
             new_seq[i*size_b:(i+1)*size_b,:,:-1]  = frac_sliced
             new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
 

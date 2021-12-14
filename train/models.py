@@ -414,7 +414,7 @@ class ConvLSTM_start(nn.Module):
         self.w = w
         self.out_win = out_win
         #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer)
+        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1], device)
         self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
         self.project_y = nn.Linear(hidden_dim*w, 1)
     
@@ -431,21 +431,27 @@ class ConvLSTM_start(nn.Module):
         b, t, _  = input_seq.size()
         
         output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
-        area_sum   = torch.zeros(b, self.w, dtype=torch.float64).to(self.device)
+        frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :self.w]
         
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      .expand(-1,-1, -1, self.w)
-        ini      = frac_ini                       .view(b,1,1,self.w) .expand(-1, t, -1, -1)
-        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) .expand(-1, t, -1, -1)
-        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     .expand(-1, t, -1, self.w)
+        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
+        ini      = frac_ini                       .view(b,1,1,self.w) 
+        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
+        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
         
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
-        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), yt, ini, pf, param],dim=2)   
+        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
+                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
+                               yt.expand(-1,-1, -1, self.w), \
+                               ini.expand(-1, t, -1, -1), \
+                               pf.expand(-1, t, -1, -1), \
+                               param.expand(-1, t, -1, self.w)], dim=2) 
+
         seq_1 = input_seq[:,-1,:,:]    # the last frame
+        
 
         
-        frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - self.dt, self.dt ) # fraction at t-1
         
         for i in range(self.out_win):
             
@@ -453,26 +459,22 @@ class ConvLSTM_start(nn.Module):
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
-            frac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
-            frac = F.relu(frac+frac_ini)         # frac_ini here is necessary to keep
+            dfrac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
+            frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
-            ## at this moment, frac is the actual fraction which can be used to calculate area
-            area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
-            frac_old = frac
-            
-            frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
-            
-            output_seq[:,i, :self.w] = frac
+            dfrac = (frac - seq_1[:,0,:])/frac_norm 
+ 
+            output_seq[:,i, :self.w] = dfrac
             output_seq[:,i, self.w:] = dy
-            
+            frac_seq[:,i,:] = frac
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([frac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,2:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
+            seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
+                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
-        return output_seq, area_sum
+        return output_seq, frac_seq
 
 
 
