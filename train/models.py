@@ -68,18 +68,14 @@ class self_attention(nn.Module):
 
         P = torch.empty((self.w, self.w, self.heads), dtype = torch.float64, device = self.device)
 
-        idx  = torch.arange(self.w, dtype = torch.float64, device = self.device)
-        idx0 = idx.view(self.w,1).expand(self.w,self.w)
-        idx1 = idx.view(1,self.w).expand(self.w,self.w)
+        idx = torch.arange(self.w, dtype = torch.float64, device = self.device)
+        hid = torch.arange(self.heads, dtype = torch.float64, device = self.device) - self.heads//2
+        i = idx.view(self.w,1,1)
+        j = idx.view(1,self.w,1)
+        h = hid.view(1,1,self.heads)
 
-        center = -self.ds*(idx0-idx1)**2
-        P[:,:,self.heads//2] = center
-
-        if self.heads == 3:
-            ones = torch.ones((self.w, self.w), dtype = torch.float64, device = self.device)
-            P[:,:,self.heads//2+1] = self.ds*( (idx0-idx1) - self.w*torch.tril(ones, diagonal=-1) + self.w*torch.triu(ones, diagonal=1) )  ## diag = -4
-            P[:,:,self.heads//2-1] = - P[:,:,self.heads//2+1]
-            
+        P = - self.ds*torch.absolute(i-j+h) + self.w*( h*(i-j+h)<=0 )
+     
         print(torch.softmax(P,dim=1))
         return P
 
