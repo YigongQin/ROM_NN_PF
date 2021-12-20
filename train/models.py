@@ -74,8 +74,8 @@ class self_attention(nn.Module):
         j = idx.view(1,self.w,1)
         h = hid.view(1,1,self.heads)
 
-        P = self.ds*( -torch.abs(i-j+h) + self.w*( h*(i-j+h)<0 ) )
-     
+        P = self.ds*( -torch.abs(i-j+h) + self.w*( h*(i-j+h)<=0 ) )
+        print(P)
         print(torch.softmax(P,dim=1))
         return P
 
@@ -89,7 +89,7 @@ class self_attention(nn.Module):
         active = ((input[:,0,:]>1e-6)*1.0).double()
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
-        I = -self.ds*(self.w+2)*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
+        I = -2*self.ds*self.w*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
 
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         M = torch.ones((1,w,w), dtype = torch.float64, device = self.device) - torch.diag_embed(1.0-active)
