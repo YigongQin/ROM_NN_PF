@@ -74,7 +74,7 @@ class self_attention(nn.Module):
         j = idx.view(1,self.w,1)
         h = hid.view(1,1,self.heads)
 
-        P = - self.ds*torch.absolute(i-j+h) + self.w*( h*(i-j+h)<=0 )
+        P = - self.ds*torch.abs(i-j+h) + self.w*( h*(i-j+h)<=0 )
      
         print(torch.softmax(P,dim=1))
         return P
