@@ -49,7 +49,7 @@ class self_attention(nn.Module):
 
         self.weight = Parameter(torch.empty((self.out_channels, self.in_channels, self.heads), dtype = torch.float64, device = device))
         self.bias = Parameter(torch.empty(out_channels,dtype = torch.float64, device = device))
-        self.P = self.distance()
+        self.P = self.position()
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
@@ -64,9 +64,9 @@ class self_attention(nn.Module):
                 init.uniform_(self.bias, -bound, bound)
 
 
-    def distance(self):
+    def position(self):
 
-        P = torch.empty((self.w, self.w, self.heads), dtype = torch.float64, device = self.device)
+        #P = torch.empty((self.w, self.w, self.heads), dtype = torch.float64, device = self.device)
 
         idx = torch.arange(self.w, dtype = torch.float64, device = self.device)
         hid = torch.arange(self.heads, dtype = torch.float64, device = self.device) - self.heads//2
@@ -79,6 +79,31 @@ class self_attention(nn.Module):
         print(torch.softmax(P,dim=1))
         return P
 
+
+
+    def position_2D(self):
+
+        #P = torch.empty((self.w, self.w, self.heads), dtype = torch.float64, device = self.device)
+        w_1d = int(math.sqrt(self.w))  # assume a square domain
+        h_1d = int(math.sqrt(self.heads))
+
+        idx = torch.arange(self.w, dtype = torch.float64, device = self.device)
+        hid = torch.arange(self.heads, dtype = torch.float64, device = self.device)
+
+
+
+        i = idx.view(self.w,1,1)
+        j = idx.view(1,self.w,1)
+        h = hid.view(1,1,self.heads)
+        dist2 = lambda i, j, h: (i%w_1d - j%w_1d + h%h_1d - h_1d//2)**2 + (i//w_1d - j//w_1d + h//h_1d - h_1d//2)**2
+        domain = ( (i%w_1d - j%w_1d + h%h_1d - h_1d//2)*(h%h_1d - h_1d//2)<=0 )*( (i//w_1d - j//w_1d + h//h_1d - h_1d//2)*(h//h_1d - h_1d//2)<=0 )
+
+        P = self.ds*( -torch.sqrt(dist2(i,j,h)) + 2*w_1d*domain )
+
+
+        return P
+
+
     def forward(self, input):
         '''
         input  for B, C_in, W 
@@ -89,7 +114,7 @@ class self_attention(nn.Module):
         active = ((input[:,0,:]>1e-6)*1.0).double()
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
-        I = -2*self.ds*self.w*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
+        I = -self.ds*(self.w+2)*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
 
         #A = torch.eye(w, dtype =torch.float64, device = self.device).view(1,w,w,1).expand(b,w,w,self.heads)
         M = torch.ones((1,w,w), dtype = torch.float64, device = self.device) - torch.diag_embed(1.0-active)
