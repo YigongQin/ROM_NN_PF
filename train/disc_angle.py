@@ -283,31 +283,48 @@ def train(model, num_epochs, train_loader, test_loader):
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 30, 40, 50], gamma=0.5, last_epoch=-1)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
  #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
-  #  outputs = []
-    for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
-        
+
+    train_loss = 0
+    count = 0
+    for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
+        count += I_train.shape[0]
+        recon, area_train = model(I_train, P_train)
+        train_loss += I_train.shape[0]*float(criterion(recon, O_train)) #+ 0.01*out_win/dt*criterion(area_train, A_train)
+    train_loss/=count
+
+    test_loss = 0
+    count = 0
+    for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):      
+        count += I_test.shape[0]
         pred, area_test = model(I_test, P_test)
-        #test_loss = criterion(model(I_test, P_test), O_test)
-        #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
-        test_loss = criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
-        #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
-        #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
-    print('Epoch:{}, valid loss:{:.6f}'.format(0, float(test_loss)))
+        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+    test_loss/=count
+
+    print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(0, float(train_loss), float(test_loss)))
+    train_list.append(float(train_loss))
+    test_list.append(float(test_loss))  
+
     for epoch in range(num_epochs):
       #if epoch < 100:
       # optimizer = torch.optim.Adam(model.parameters(),
       #                               lr=learning_rate)
       if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      train_loss = 0
+      count = 0
       for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
+         count += I_train.shape[0]
          #print(I_train.shape[0])
          recon, area_train = model(I_train, P_train)
         # loss = criterion(model(I_train, P_train), O_train)
          loss = criterion(recon, O_train) #+ 0.01*out_win/dt*criterion(area_train, A_train)
-         #loss = scaled_loss(recon, O_train, num_train, pred_frames, scaler_train)
+
          optimizer.zero_grad()
          loss.backward()
          optimizer.step()
+         
+         train_loss += I_train.shape[0]*float(loss)
         # exit() 
+      train_loss/=count
       test_loss = 0
       count = 0
       for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
@@ -316,15 +333,15 @@ def train(model, num_epochs, train_loader, test_loader):
         pred, area_test = model(I_test, P_test)
         #test_loss = criterion(model(I_test, P_test), O_test)
         #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
-        test_loss += I_test.shape[0]*criterion(pred, O_test) #+ 0.01*out_win/dt*criterion(area_test, A_test)
-        #test_loss = scaled_loss(pred, O_test, num_test, pred_frames, scaler_test)
-        #print(recon.shape,O_train.shape,pred.shape, O_test.shape)
+        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+ 
       test_loss/=count
-      print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(loss), float(test_loss)))
-        # outputs.append((epoch, data, recon),)
+      print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(train_loss), float(test_loss)))
+ 
       train_list.append(float(loss))
       test_list.append(float(test_loss))       
       scheduler.step()
+
     return model 
 
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
