@@ -63,12 +63,12 @@ def redo_divide(frac_train, weird_sim, param_train, G, frames):
 def check_data_quality(frac_all,param_all,y_all,G,frames):
 
     ### C1 check the fraction jump
-    weird_sim = find_weird(frac_all, 0.1)
+    weird_sim = find_weird(frac_all, 0.15)
     refine_count=0
     while len(weird_sim)>0:
         refine_count  +=1
         redo_divide(frac_all, weird_sim, param_all, G, frames)
-        weird_sim = find_weird(frac_all, 0.1)
+        weird_sim = find_weird(frac_all, 0.15)
         if refine_count ==5: break
     print(weird_sim)
     #print(param_all[weird_sim,-2:])
