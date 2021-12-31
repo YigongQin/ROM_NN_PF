@@ -96,7 +96,7 @@ def check_data_quality(frac_all,param_all,y_all,G,frames):
     ### C5 check y_all for small values
     last_y = y_all[:,-1]
     print('mean and std of last y',np.mean(last_y),np.std(last_y))
-    weird_y_loc = np.where(last_y<np.mean(last_y)-3*np.std(last_y))
+    weird_y_loc = np.where(last_y<np.mean(last_y)-6*np.std(last_y))
     print('where they is small ', weird_y_loc)
     print('weird values ', last_y[weird_y_loc])
     print('weird y traj',y_all[weird_y_loc,:])
