@@ -19,7 +19,7 @@ def find_weird(frac_train, thre):
     weird_sim = weird_p[0]
     weird_sim = list(set(list(weird_sim))) 
     print('weird values',diff_arr[np.where(diff_arr>thre)])
-    diff_arr[diff_arr==0.0]=np.nan
+    #diff_arr[diff_arr==0.0]=np.nan
     print('the mean of the difference',np.nanmean(diff_arr))
     print('number of weird sim',len(weird_sim)) 
       
