@@ -101,9 +101,10 @@ for batch_id in range(num_batch):
     param_all[run*num_batch+batch_id,:G] = Color
     param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
     param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
+    param_all[run*num_batch+batch_id,G+2] = float(number_list[8])
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
-sio.savemat('ini_data.mat',{'frac':frac_all[:,0,:],'y':y_all,'param':param_all})
+
 if skip_check == False:
  weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
 else: weird_sim=[]
@@ -169,7 +170,7 @@ class PrepareData(Dataset):
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
 
-y_norm = 0.5
+y_norm = 0.5*2
 y_all  = y_all[idx_all,:]
 dy_all  = np.diff(y_all, axis=1) 
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
@@ -193,7 +194,7 @@ seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis] )
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
-assert param_all.shape[1] == (2*G+3)
+assert param_all.shape[1] == (2*G+4)
 
 
 
@@ -347,8 +348,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(9, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(9, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -403,7 +404,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(8, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(9, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -455,8 +456,6 @@ y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 #print((y_out[0,:]))
 #assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
 
-sio.savemat('evolving_dat.mat',{'frac_out':frac_out,'y_out':y_out,'e_list':np.array(e_list,dtype=float),'G_list':np.array(G_list,dtype=float)})
-
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
 
@@ -485,7 +484,7 @@ for batch_id in range(num_batch):
    #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
    # get the parameters from dataset name
    G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
-   Rmax = 1 
+   Rmax = np.float(R_list[batch_id]) 
    anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
    #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id, pf_angles)
@@ -499,8 +498,18 @@ fig, ax = plt.subplots()
 
 x = np.array(e_list,dtype=float)
 y = np.array(G_list,dtype=float)
-z = np.array(miss_rate_param,dtype=float)
+z = np.array(R_list,dtype=float)
+u = np.array(miss_rate_param,dtype=float)
 
+print(x)
+print(y)
+print(z)
+print(u)
+
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':R,'err':u,\
+  'seq_all':seq_all,'param_all':param_all})
+
+'''
 xi = np.linspace(np.min(x), np.max(x), 1000)
 yi = np.linspace(np.min(y), np.max(y), 1000)
 X,Y= np.meshgrid(xi,yi)
@@ -518,6 +527,5 @@ plt.xlabel(r'$\epsilon_k$')
 plt.ylabel(r'$G\ (K/ \mu m)$')
 plt.title('misclassification rate')
 plt.savefig('miss_rate_trunc'+str(trunc)+mode+'.png',dpi=600)
+'''
 
-#sio.savemat(sys.argv[3]+'.mat',{'e':x,'G':y,'err':z})
-#print(miss_rate_param)

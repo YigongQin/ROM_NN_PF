@@ -27,7 +27,7 @@ dt = 1.0/(frames-1)
 
 G = 8     # G is the number of grains
 G_small = 8
-param_len = G + 3   # how many parameters, color plus 3 physical
+param_len = G + 4   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
