@@ -19,7 +19,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_funcs import plot_reconst, plot_real, plot_IO, miss_rate
+from plot_funcs import plot_IO, miss_rate
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
@@ -30,7 +30,7 @@ from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
 mode = sys.argv[1]
-if mode == 'train': from G_E import *
+if mode == 'train': from G_E_R import *
 elif mode == 'test': from G_E_test import *
 elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
@@ -506,7 +506,7 @@ print(y)
 print(z)
 print(u)
 
-sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':R,'err':u,\
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
   'seq_all':seq_all,'param_all':param_all})
 
 '''
