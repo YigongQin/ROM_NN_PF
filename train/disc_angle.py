@@ -48,7 +48,7 @@ param_list = ['anis','G0','Rmax']
 print('(input data) train, test', num_train, num_test)
 
 datasets = sorted(glob.glob(data_dir))
-print('dataset list',datasets,' and size',len(datasets))
+print('dataset dir',data_dir,' and size',len(datasets))
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
@@ -73,14 +73,14 @@ e_list = []
 
 
 for batch_id in range(num_batch):
-  fname =datasets[batch_id]; print(fname)
+  fname =datasets[batch_id]; #print(fname)
   f = h5py.File(str(fname), 'r') 
   #aseq_asse = np.asarray(f['sequence'])
   aseq_asse = np.asarray(f['angles'])
   frac_asse = np.asarray(f['fractions'])
   tip_y_asse = np.asarray(f['y_t'])
   number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
-  print(number_list[6],number_list[7],number_list[8])
+  #print(number_list[6],number_list[7],number_list[8])
   e_list.append(number_list[6])
   G_list.append(number_list[7])
   R_list.append(number_list[8])
