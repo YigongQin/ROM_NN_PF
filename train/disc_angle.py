@@ -183,7 +183,7 @@ assert area_all.shape[1]==frames-1
 
 frac_ini = frac_all[:,0,:]
 
-dfrac_all = np.diff(frac_all, axis=1)/frac_norm
+dfrac_all = np.diff(frac_all, axis=1)/frac_norm   ## frac norm is fixed in the code
 dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate dfrac at t=0
 
 ## scale the frac according to the time frame 
@@ -505,6 +505,7 @@ print(x)
 print(y)
 print(z)
 print(u)
+print(np.mean(u))
 
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
   'seq_all':seq_all,'param_all':param_all})
