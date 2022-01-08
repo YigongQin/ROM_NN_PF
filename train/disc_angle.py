@@ -238,7 +238,7 @@ for run in range(num_all):
     for t in range(window, end_frame):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
-        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
+        output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,G:2*G],lstm_snapshot[t:t+out_win,-1:]),axis=-1)
         
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
         input_param[sample,-1] = t*dt 
