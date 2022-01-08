@@ -421,7 +421,7 @@ class ConvLSTM_seq(nn.Module):
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
             seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), darea.unsqueeze(dim=1), \
-                    dy.expand(-1,self.w).view(b,1,self.w), seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
+                    dy.expand(-1,self.w).view(b,1,self.w), seq_1[:,4:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, frac_seq
