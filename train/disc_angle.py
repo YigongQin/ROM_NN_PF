@@ -465,42 +465,44 @@ y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
 
-for batch_id in range(num_batch): 
- fname = datasets[batch_id] 
- f = h5py.File(fname, 'r')
- aseq_asse = np.asarray(f['sequence'])
- angles_asse = np.asarray(f['angles'])
- frac_asse = np.asarray(f['fractions'])
- tip_y_asse = np.asarray(f['y_t'])
- sum_miss = 0
- for plot_idx in range( run_per_param ):  # in test dataset
+valid_train = False
+if valid_train:
+  for batch_id in range(num_batch): 
+   fname = datasets[batch_id] 
+   f = h5py.File(fname, 'r')
+   aseq_asse = np.asarray(f['sequence'])
+   angles_asse = np.asarray(f['angles'])
+   frac_asse = np.asarray(f['fractions'])
+   tip_y_asse = np.asarray(f['y_t'])
+   sum_miss = 0
+   for plot_idx in range( run_per_param ):  # in test dataset
 
-   data_id = plot_idx*num_batch+batch_id
-   #print('seq', param_test[data_id,:])
-   #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
-   frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
-   
-   alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
-   aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
-   pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
-   pf_angles = pf_angles*180/pi + 90
-   tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
-   #print((tip_y))
-   #plot_real(x,y,alpha_true,plot_idx)
-   #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
-   # get the parameters from dataset name
-   G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
-   Rmax = np.float(R_list[batch_id]) 
-   anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
-   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-   #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id, pf_angles)
-   miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles)
-   sum_miss = sum_miss + miss
-   print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
- miss_rate_param[batch_id] = sum_miss/run_per_param
+     data_id = plot_idx*num_batch+batch_id
+     #print('seq', param_test[data_id,:])
+     #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
+     frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
+     
+     alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
+     aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
+     pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
+     pf_angles = pf_angles*180/pi + 90
+     tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
+     #print((tip_y))
+     #plot_real(x,y,alpha_true,plot_idx)
+     #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
+     # get the parameters from dataset name
+     G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
+     Rmax = np.float(R_list[batch_id]) 
+     anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
+     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
+     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id, pf_angles)
+     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles)
+     sum_miss = sum_miss + miss
+     print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
+   miss_rate_param[batch_id] = sum_miss/run_per_param
 
 
-fig, ax = plt.subplots() 
+#fig, ax = plt.subplots() 
 
 x = np.array(e_list,dtype=float)
 y = np.array(G_list,dtype=float)
