@@ -67,6 +67,7 @@ print('nx,ny', nx,ny)
 frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
 param_all = np.zeros((num_runs,param_len))
 y_all = np.zeros((num_runs,frames))
+area_all = np.zeros((num_runs,frames,G))
 G_list = []
 R_list = []
 e_list = []
@@ -78,6 +79,7 @@ for batch_id in range(num_batch):
   #aseq_asse = np.asarray(f['sequence'])
   aseq_asse = np.asarray(f['angles'])
   frac_asse = np.asarray(f['fractions'])
+  area_asse = np.asarray(f['extra_area'])
   tip_y_asse = np.asarray(f['y_t'])
   number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
   #print(number_list[6],number_list[7],number_list[8])
@@ -93,11 +95,12 @@ for batch_id in range(num_batch):
     #Color = (aseq-5.5)/4.5
     Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
     #print('angle sequence', Color)
-    frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
-    frac = frac.T
+    frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
+    area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
     #if run<1: print(frac) 
     frac_all[run*num_batch+batch_id,:,:] = frac
     y_all[run*num_batch+batch_id,:] = tip_y 
+    area_all[run*num_batch+batch_id,:,:] = area
     param_all[run*num_batch+batch_id,:G] = Color
     param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
     param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
@@ -177,8 +180,11 @@ dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
 ## add area 
-area_all = 0.5*dy_all[:,1:,np.newaxis]*( frac_all[:,:-1,:] + frac_all[:,1:,:] )
-assert area_all.shape[1]==frames-1
+area_norm = 1000
+area_all  = area_all[idx_all,:]
+darea_all = np.diff(area_all, axis=1)/area_norm   ## frac norm is fixed in the code
+darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
+
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_ini = frac_all[:,0,:]
@@ -190,12 +196,12 @@ dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate 
 
 #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( frac_all, dfrac_all[:,:,:], dy_all[:,:,np.newaxis] ), axis=-1) 
+seq_all = np.concatenate( ( frac_all, dfrac_all, darea_all, dy_all[:,:,np.newaxis] ), axis=-1) 
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
 assert param_all.shape[1] == (2*G+4)
-
+assert seq_all.shape[2] == (3*G+1)
 
 
 # Shape the inputs and outputs
@@ -205,7 +211,7 @@ sam_per_run-=trunc
 num_all_traj = int(1*num_train)
 all_samp = num_all*sam_per_run + num_all_traj*trunc
 
-input_seq = np.zeros((all_samp, window, 2*G+1))
+input_seq = np.zeros((all_samp, window, 3*G+1))
 input_param = np.zeros((all_samp, param_len))
 output_seq = np.zeros((all_samp, out_win, G+1))
 output_area = np.zeros((all_samp, G))
