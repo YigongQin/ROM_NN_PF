@@ -354,8 +354,8 @@ def train(model, num_epochs, train_loader, test_loader):
 #decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
 #model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
 #model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(9, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(9, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+if mode=='ini': model = ConvLSTM_start(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 
 model = model.double()
 if device=='cuda':
@@ -410,7 +410,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(9, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
