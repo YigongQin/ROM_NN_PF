@@ -371,7 +371,7 @@ class ConvLSTM_seq(nn.Module):
         ## b,t, input_len -> b,t,c,w 
         b, t, _  = input_seq.size()
         
-        output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :self.w]
