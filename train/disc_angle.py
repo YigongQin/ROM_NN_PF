@@ -213,7 +213,7 @@ all_samp = num_all*sam_per_run + num_all_traj*trunc
 
 input_seq = np.zeros((all_samp, window, 3*G+1))
 input_param = np.zeros((all_samp, param_len))
-output_seq = np.zeros((all_samp, out_win, G+1))
+output_seq = np.zeros((all_samp, out_win, 2*G+1))
 output_area = np.zeros((all_samp, G))
 assert input_param.shape[1]==param_all.shape[1]
 
@@ -238,8 +238,8 @@ for run in range(num_all):
     for t in range(window, end_frame):
         
         input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
-        output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,G:2*G],lstm_snapshot[t:t+out_win,-1:]),axis=-1)
-        
+        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
+        #output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,G:2*G],lstm_snapshot[t:t+out_win,-1:]),axis=-1)        
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
         input_param[sample,-1] = t*dt 
         output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
@@ -397,6 +397,7 @@ else:
 evolve_runs = num_batch*int(batch*valid_ratio) #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
+darea_out = np.zeros((evolve_runs,frames,G))
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
@@ -447,11 +448,12 @@ for i in range(0,pred_frames,out_win):
     if i>=pack:
         #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
         #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
-        frac_out[:,-alone:,:], dy_out[:,-alone:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], G_small, G, expand)
+        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], G_small, G, expand)
     else: 
         #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
-        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win] = merge_grain(frac_new, dfrac_new[:,:,-1], G_small, G, expand)
+        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
+        = merge_grain(frac_new, dfrac_new[:,:,-1], G_small, G, expand)
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
     
@@ -459,13 +461,18 @@ for i in range(0,pred_frames,out_win):
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
+
+darea_out = darea_out*area_norm
+darea_out[:,0,:] = 0
+area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
-#assert np.all(frac_test[:evolve_runs,0,:]==param_dat[:,:G])
+
 
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
 
-valid_train = False
+if mode == 'test': valid_train = True
+else valid = False
 if valid_train:
   for batch_id in range(num_batch): 
    fname = datasets[batch_id] 
@@ -474,6 +481,7 @@ if valid_train:
    angles_asse = np.asarray(f['angles'])
    frac_asse = np.asarray(f['fractions'])
    tip_y_asse = np.asarray(f['y_t'])
+   area_asse = np.asarray(f['extra_area'])
    sum_miss = 0
    for plot_idx in range( run_per_param ):  # in test dataset
 
@@ -487,6 +495,7 @@ if valid_train:
      pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
      pf_angles = pf_angles*180/pi + 90
      tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
+     extra_area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))[-1,:]
      #print((tip_y))
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
@@ -496,7 +505,7 @@ if valid_train:
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,1,data_id, pf_angles)
-     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles)
+     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[dta_id,-1,:])
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
    miss_rate_param[batch_id] = sum_miss/run_per_param

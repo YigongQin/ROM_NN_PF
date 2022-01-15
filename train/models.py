@@ -416,7 +416,8 @@ class ConvLSTM_seq(nn.Module):
             #frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = dfrac
-            output_seq[:,i, self.w:] = dy
+            output_seq[:,i, self.w:2*self.w] = darea
+            output_seq[:,i, -1:] = dy
             frac_seq[:,i,:] = frac
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             

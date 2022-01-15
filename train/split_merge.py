@@ -119,16 +119,20 @@ def merge_grain(frac, y, G, G_all, expand):
 
 
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
+        new_area = np.zeros((new_size_b, size_t, new_size_v))
         ## first give the first and last data
         new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
         new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
+
+        new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l]
+        new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:]
 
         y_null = np.zeros((expand, new_size_b, size_t))
         ## add the two middle grains to the data
         for i in range(1, expand-1):
  
             new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
-        
+            new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid]
 
         new_frac *= G/G_all
 
@@ -145,7 +149,7 @@ def merge_grain(frac, y, G, G_all, expand):
 
         print('evaluation merge grain strategy', eval1, eval2)
 
-        return new_frac, new_y
+        return new_frac, new_y, new_area
             
     else: raise ValueError("number of grain is wrong")    
 

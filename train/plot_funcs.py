@@ -149,7 +149,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,pf_ang
     return
 
 
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles):
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles, area_true, area):
     
 
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -189,10 +189,15 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
             field[i,j] = aseq[g]
             if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]): miss+=1
             
-    ## need to count for the error of y
+    ## count for the error of y
     nymax = int(ymax/dx)
     if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-    miss_rate = miss/(nx*ntip_y[final-1]);
+
+    ## count for the error of area
+    for g in range(G):
+      miss += np.absolute(area-area_true)
+
+    miss_rate = miss/( nx*nymax + np.sum(area_true) );
  
     return miss_rate
 
