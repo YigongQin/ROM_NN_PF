@@ -112,7 +112,7 @@ def merge_grain(frac, y, area, G, G_all, expand):
 
 
     if G==G_all: 
-        return frac, y
+        return frac, y, area
           
         
     elif G_all>G:
