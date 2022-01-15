@@ -34,7 +34,7 @@ def subplot_rountine(fig, ax, cs, idx):
       if idx==1:
         axins = inset_axes(ax,width="3%",height="50%",loc='lower left')
         cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
-        cbar.set_label(r'$\theta_0$', color=fg_color)
+        cbar.set_label(r'$\alpha_0$', color=fg_color)
         cbar.ax.yaxis.set_tick_params(color=fg_color)
         cbar.outline.set_edgecolor(fg_color)
         plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
@@ -42,7 +42,7 @@ def subplot_rountine(fig, ax, cs, idx):
     
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,pf_angles):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles, area_true, area):
 
     print('angle sequence', aseq)
     #print(frac) 
@@ -115,11 +115,35 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,pf_ang
             if (i>nx-1 or j>ny-1): break         
             ini_field[i,j] = aseq[g]
 
+#=========================start fill the extra field=================
+    for g in range(G):
+
+      height = area//temp_piece[g]
+
+      for j in range(ntip_y[-1], ntip_y[-1]+height):
+
+        if g==0:
+          for i in range( temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break
+            field[i,j] = aseq[g]
+
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break         
+            field[i,j] = aseq[g]
+
+
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
-    miss_rate = miss/(nx*ntip_y[-1]);
-    print('miss rate', miss_rate)
-    
+    ## count for the error of y
+    nymax = int(ymax/dx)
+    if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
+
+    ## count for the error of area
+    for g in range(G):
+      miss += np.absolute(area-area_true)
+
+    miss_rate = miss/( nx*nymax + np.sum(area_true) );
 
    # error=field-alpha_true[1:-1,1:-1]
     plot_flag=True
