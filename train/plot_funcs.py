@@ -219,7 +219,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
 
     ## count for the error of area
     for g in range(G):
-      miss += np.absolute(area-area_true)
+      miss += np.absolute(area[g]-area_true[g])
 
     miss_rate = miss/( nx*nymax + np.sum(area_true) );
  
