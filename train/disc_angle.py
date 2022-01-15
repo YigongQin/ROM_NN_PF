@@ -472,7 +472,7 @@ miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
 
 if mode == 'test': valid_train = True
-else valid = False
+else: valid = False
 if valid_train:
   for batch_id in range(num_batch): 
    fname = datasets[batch_id] 
