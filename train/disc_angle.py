@@ -453,7 +453,7 @@ for i in range(0,pred_frames,out_win):
         #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:alone,G:2*G], G_small, G, expand)
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G:2*G], G_small, G, expand)
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
     
