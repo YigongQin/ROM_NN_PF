@@ -205,7 +205,7 @@ assert seq_all.shape[2] == (3*G+1)
 
 
 # Shape the inputs and outputs
-trunc = int(sys.argv[2])
+trunc = 0
 print('truncate train len', trunc)
 sam_per_run-=trunc
 num_all_traj = int(1*num_train)
@@ -368,10 +368,10 @@ print('total number of trained parameters ', pytorch_total_params)
 
 if model_exist:
   if mode == 'train' or mode== 'test':
-    model.load_state_dict(torch.load('./lstmmodel'))
+    model.load_state_dict(torch.load('./lstmmodel'+sys.argv[2]))
     model.eval()  
   if mode == 'ini':  
-    model.load_state_dict(torch.load('./ini_lstmmodel'))
+    model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
     model.eval() 
 else: 
   train_list=[]
@@ -380,8 +380,8 @@ else:
   model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
-  if mode == 'train': torch.save(model.state_dict(), './lstmmodel')
-  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel')
+  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+sys.argv[2])
+  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+sys.argv[2])
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
@@ -417,7 +417,7 @@ else:
        ini_model.cuda()
     init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
     print('total number of trained parameters for initialize model', init_total_params)
-    ini_model.load_state_dict(torch.load('./ini_lstmmodel'))
+    ini_model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
     ini_model.eval()
 
     seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
@@ -522,7 +522,7 @@ print(x)
 print(y)
 print(z)
 print(u)
-print(np.mean(u))
+print('for model ', int(sys.argv[2]), 'the mean error', np.mean(u))
 
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
   'seq_all':seq_all,'param_all':param_all})
