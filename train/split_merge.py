@@ -39,7 +39,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
         new_param = np.zeros((expand*size_b, new_size_p))
         new_seq = np.zeros((expand*size_b, size_t, new_size_v))
 
-        ones = np.ones((size_b))
+        ones = np.ones((size_b, size_t))
+        ones_p = np.ones((size_b))
         zeros = np.zeros((size_b, size_t))
 
         for i in range(expand):
