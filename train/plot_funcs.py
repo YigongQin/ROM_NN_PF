@@ -44,7 +44,7 @@ def subplot_rountine(fig, ax, cs, idx):
 
 def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles, area_true, area):
 
-    print('angle sequence', aseq)
+    #print('angle sequence', aseq)
     #print(frac) 
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ytop = y[-2]
