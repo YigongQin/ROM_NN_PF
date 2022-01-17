@@ -47,7 +47,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     print('angle sequence', aseq)
     #print(frac) 
     xmin = x[1]; xmax = x[-2]
-    ymin = y[1]; ymax = y[-2]
+    ymin = y[1]; ytop = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
     nt=len(tip_y)
@@ -152,17 +152,17 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
       fig.text(.5, .2, txt, ha='center')
       ax1 = fig.add_subplot(131)
-      cs1 = ax1.imshow(pf_angles[ini_field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
+      cs1 = ax1.imshow(pf_angles[ini_field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax1, cs1, 1)
       #ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
       ax1.set_title('initial condition',color=bg_color,fontsize=8)
       ax2 = fig.add_subplot(132)
-      cs2 = ax2.imshow(pf_angles[alpha_true[1:-1,1:-1]].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
+      cs2 = ax2.imshow(pf_angles[alpha_true[1:-1,1:-1]].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax2, cs2, 2)
       ax2.set_title('final:PDE_solver', color=bg_color,fontsize=8)
       
       ax3 = fig.add_subplot(133)
-      cs3 = ax3.imshow(pf_angles[field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ymax))
+      cs3 = ax3.imshow(pf_angles[field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
       ax3.set_title('final:NN_predict_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
       
