@@ -456,7 +456,8 @@ for i in range(0,pred_frames,out_win):
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand)
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
-    
+
+frac_out = frac_out/np.sum(frac_out, axis=-1)[:,:,np.newaxis]    
 #frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
