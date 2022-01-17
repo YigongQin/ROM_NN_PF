@@ -19,9 +19,9 @@ def split_grain(param_dat, seq_dat, G, G_all):
     check_dat = False
     size_b = seq_dat.shape[0]
     size_t = seq_dat.shape[1]
-    size_v = seq_dat.shape[2]
+    size_v = seq_dat.shape[2]  # should be 3*G_all+1
 
-    size_p = param_dat.shape[1]
+    size_p = param_dat.shape[1] # should be 2G_all+4
 
 
     Gi = np.arange(G)
@@ -50,8 +50,10 @@ def split_grain(param_dat, seq_dat, G, G_all):
             new_param[i*size_b:(i+1)*size_b,:] = param_dat[:,slice_param]
             new_seq[i*size_b:(i+1)*size_b,:,-1] = seq_dat[:,:,-1]
 
-            param_sliced = G_all/G*param_dat[:,2*i:G+2*i]
-            frac_sliced =  G_all/G*seq_dat[:,:,2*i:G+2*i]
+            param_sliced = G_all/G*param_dat[:,2*i:G+2*i]  ## initial
+            frac_sliced =  G_all/G*seq_dat[:,:,2*i:G+2*i]  ## frac
+            dfrac_sliced = G_all/G*seq_dat[:,:,2*i+G_all:G+2*i+G_all] # dfrac
+            darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
 
             ## here requires cut/add to make sure unity
             fsum = np.cumsum(frac_sliced, axis=-1)
@@ -59,17 +61,22 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             
             frac_sliced -= np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0)
-            param_sliced -= np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0)
+         
+            param_sliced -= np.diff((psum>1)*(psum-1),axis=-1,prepend=0)
 
             frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
+            dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
             param_sliced[:,-1] = ones - np.sum(param_sliced[:,:-1], axis=-1)
 
 
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - ones ) <1e-5
+            assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - zeros ) <1e-5
             #assert np.all(param_sliced>=0)
             #print(np.where(param_sliced<0))
-            new_seq[i*size_b:(i+1)*size_b,:,:-1]  = frac_sliced
+            new_seq[i*size_b:(i+1)*size_b,:,:G]  = frac_sliced
+            new_seq[i*size_b:(i+1)*size_b,:,G:2*G] = dfrac_sliced
+            new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced
             new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
 
         if check_dat == True:
