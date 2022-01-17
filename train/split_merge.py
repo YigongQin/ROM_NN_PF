@@ -67,10 +67,10 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
             dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
-            param_sliced[:,-1] = ones - np.sum(param_sliced[:,:-1], axis=-1)
+            param_sliced[:,-1] = ones_p - np.sum(param_sliced[:,:-1], axis=-1)
 
 
-            assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones ) <1e-5
+            assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones_p ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - ones ) <1e-5
             assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - zeros ) <1e-5
             #assert np.all(param_sliced>=0)
