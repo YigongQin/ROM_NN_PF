@@ -151,11 +151,11 @@ def merge_grain(frac, y, area, G, G_all, expand):
         new_y = np.mean(y_null, axis = 0)
         
         ## evaluation (a) sum frac, (b) std of y
+        diff_1 = np.absolute( np.sum(new_frac,axis=-1) - np.ones_like(new_y)  )
+        max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
+        max_y = np.max( np.std (y_null, axis = 0) )
 
-        eval1 = np.max( np.sum(new_frac,axis=-1) - np.ones_like(new_y) )
-        eval2 = np.max( np.std (y_null, axis = 0) )
-
-        print('evaluation merge grain strategy', eval1, eval2)
+        print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
 
         return new_frac, new_y, new_area
             
