@@ -118,7 +118,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
 #=========================start fill the extra field=================
     for g in range(G):
 
-      height = area[g]//temp_piece[g]
+      height = int(area[g]/temp_piece[g])
 
       for j in range(ntip_y[-1], ntip_y[-1]+height):
 
