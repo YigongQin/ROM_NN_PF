@@ -27,7 +27,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
     Gi = np.arange(G)
     Pi = np.arange(size_p-2*G_all)
 
-    new_size_v = size_v -   G_all + G
+    new_size_v = size_v - 3*G_all + 3*G
     new_size_p = size_p - 2*G_all + 2*G
     
     if G==G_all: 
