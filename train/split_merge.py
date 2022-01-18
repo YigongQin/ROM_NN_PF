@@ -55,7 +55,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             frac_sliced =  G_all/G*seq_dat[:,:,2*i:G+2*i]  ## frac
             dfrac_sliced = G_all/G*seq_dat[:,:,2*i+G_all:G+2*i+G_all] # dfrac
             darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
-
+            '''
             ## here requires cut/add to make sure unity
             fsum = np.cumsum(frac_sliced, axis=-1)
             psum = np.cumsum(param_sliced, axis=-1)
@@ -68,7 +68,31 @@ def split_grain(param_dat, seq_dat, G, G_all):
             frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
             dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
             param_sliced[:,-1] = ones_p - np.sum(param_sliced[:,:-1], axis=-1)
+            '''
+            diff_frac = ones - np.sum(frac_sliced, axis=-1)
+            diff_param = ones_p - np.sum(param_sliced, axis=-1)
+            diff_dfrac = - np.sum(dfrac_sliced, axis=-1)
+            if i==0: 
+                ## modify right
+                frac_sliced[:,:,-1] += diff_frac
+                param_sliced[:,-1] += diff_param
+                dfrac_sliced[:,:,-1] += diff_dfrac
 
+            elif i==expand-1:
+                ## modify left
+                frac_sliced[:,:,0] += diff_frac
+                param_sliced[:,0] += diff_param
+                dfrac_sliced[:,:,0] += diff_dfrac
+
+            else: 
+
+                frac_sliced[:,:,-1] += diff_frac/2
+                param_sliced[:,-1] += diff_param/2
+                dfrac_sliced[:,:,-1] += diff_dfrac/2
+
+                frac_sliced[:,:,0] += diff_frac/2
+                param_sliced[:,0] += diff_param/2
+                dfrac_sliced[:,:,0] += diff_dfrac/2
 
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones_p ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - ones ) <1e-5
