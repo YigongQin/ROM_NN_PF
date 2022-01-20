@@ -64,7 +64,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     ini_field = np.zeros((nx,ny),dtype=int)
 
 #=========================start fill the final field=================
-    
+    nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
     miss=0
     for j in range(ntip_y[-1]):
@@ -83,13 +83,13 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
         else:
           for i in range(temp_piece[g-1], temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]): miss+=1
+            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
             
 
 #=========================start fill the initial field=================
@@ -136,7 +136,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
     ## count for the error of y
-    nymax = int(ymax/dx)
+    
     if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
 
     ## count for the error of area
@@ -187,7 +187,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
 
 
 #=========================start fill the final field=================
-    
+    nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
     miss=0
     for j in range(ntip_y[final-1]):
@@ -205,16 +205,16 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
           for i in range( temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
             field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]): miss+=1
+            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
         else:
           for i in range(temp_piece[g-1], temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]): miss+=1
+            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
             
     ## count for the error of y
-    nymax = int(ymax/dx)
+    
     if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
 
     ## count for the error of area
