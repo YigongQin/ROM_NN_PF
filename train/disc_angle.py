@@ -173,7 +173,7 @@ class PrepareData(Dataset):
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
 
-y_norm = 0.5*2
+y_norm = 1
 y_all  = y_all[idx_all,:]
 dy_all  = np.diff(y_all, axis=1) 
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
@@ -184,7 +184,7 @@ area_norm = 1000
 area_all  = area_all[idx_all,:]
 darea_all = np.diff(area_all, axis=1)/area_norm   ## frac norm is fixed in the code
 darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
-
+area_coeff = y_norm*fnx/dx/area_norm
 ## subtract the initial part of the sequence, so we can focus on the change
 
 frac_ini = frac_all[:,0,:]
@@ -448,16 +448,16 @@ for i in range(0,pred_frames,out_win):
     if i>=pack:
         #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
         #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
-        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand)
+        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, area_coeff)
     else: 
         #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
         #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand)
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, area_coeff)
     #print(frac_new_vec)
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
-frac_out = frac_out/(np.sum(frac_out, axis=-1)[:,:,np.newaxis])    
+#frac_out = frac_out/(np.sum(frac_out, axis=-1)[:,:,np.newaxis])    
 #frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0

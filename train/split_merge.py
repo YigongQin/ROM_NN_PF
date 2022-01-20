@@ -126,7 +126,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-def merge_grain(frac, y, area, G, G_all, expand):
+def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
     
     
     '''
@@ -171,18 +171,22 @@ def merge_grain(frac, y, area, G, G_all, expand):
 
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
-        ## first give the first and last data
-        new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
-        new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
 
-        new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l]
-        new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:]
 
         ## add the two middle grains to the data
-        for i in range(1, expand-1):
- 
-            new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
-            new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid]
+        for i in range(expand):
+        ## first give the first and last data
+            if i==0:
+                new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
+                new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l] + area_coeff*new_frac[:,:,:BC_l]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
+            elif i==expand-1:
+                new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
+                new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:] + area_coeff*new_frac[:,:,-BC_l:]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
+            else:
+                new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
+                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] \
+                + area_coeff*new_frac[:,:,BC_l+2*i-2:BC_l+2*i]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
+            else:
 
         new_frac *= G/G_all
 
