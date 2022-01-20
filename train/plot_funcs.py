@@ -227,6 +227,6 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
     all_area = nx*nymax + np.sum(area_true) 
     miss_rate = miss/all_area
  
-    print('component: frac', miss_frac/all_area, ', y', nx*(nymax-ntip_y[final-1])/all_area, ', area', miss_area/all_area)
+    print('component: frac', miss_frac/miss, ', y', nx*(nymax-ntip_y[final-1])/miss, ', area', miss_area/miss)
     return miss_rate
 
