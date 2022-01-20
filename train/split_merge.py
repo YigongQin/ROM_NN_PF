@@ -126,7 +126,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-def merge_grain(frac, y, area, G, G_all, expand, fnx):
+def merge_grain(frac, y, area, G, G_all, expand):
     
     
     '''
