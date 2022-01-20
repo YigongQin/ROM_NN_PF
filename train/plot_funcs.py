@@ -214,14 +214,19 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
             if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
             
     ## count for the error of y
-    
+    miss_frac = miss
+
     if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
 
     ## count for the error of area
+    miss_area = 0
     for g in range(G):
       miss += np.absolute(area[g]-area_true[g])
+      miss_area += np.absolute(area[g]-area_true[g])
 
-    miss_rate = miss/( nx*nymax + np.sum(area_true) );
+    all_area = nx*nymax + np.sum(area_true) 
+    miss_rate = miss/all_area
  
+    print('component: frac', miss_frac/all_area, ', y', nx*(nymax-ntip_y[final-1])/all_area, ', area', miss_area/all_area)
     return miss_rate
 
