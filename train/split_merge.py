@@ -126,7 +126,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-def merge_grain(frac, y, area, G, G_all, expand):
+def merge_grain(frac, y, area, G, G_all, expand, fnx):
     
     
     '''
@@ -158,6 +158,16 @@ def merge_grain(frac, y, area, G, G_all, expand):
         
     elif G_all>G:
 
+        y_null = np.zeros((expand, new_size_b, size_t))
+
+
+        for i in range(expand):
+
+            y_null[i,:,:] = y[new_size_b*i:new_size_b*(i+1),:]
+
+       # new_y = np.mean(y_null, axis = 0)
+        new_y = np.min(y_null, axis = 0)
+
 
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
@@ -168,7 +178,6 @@ def merge_grain(frac, y, area, G, G_all, expand):
         new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l]
         new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:]
 
-        y_null = np.zeros((expand, new_size_b, size_t))
         ## add the two middle grains to the data
         for i in range(1, expand-1):
  
@@ -177,12 +186,6 @@ def merge_grain(frac, y, area, G, G_all, expand):
 
         new_frac *= G/G_all
 
-        for i in range(expand):
-
-            y_null[i,:,:] = y[new_size_b*i:new_size_b*(i+1),:]
-
-        new_y = np.mean(y_null, axis = 0)
-        
         ## evaluation (a) sum frac, (b) std of y
         diff_1 = np.absolute( np.sum(new_frac,axis=-1) - np.ones_like(new_y)  )
         max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
