@@ -186,7 +186,7 @@ def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
                 new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
                 new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] \
                 + area_coeff*new_frac[:,:,BC_l+2*i-2:BC_l+2*i]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
-            else:
+ 
 
         new_frac *= G/G_all
 
