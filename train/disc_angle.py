@@ -463,7 +463,7 @@ dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 
-darea_out = darea_out*area_norm
+area_out = darea_out*area_norm
 #darea_out[:,0,:] = 0
 #area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
