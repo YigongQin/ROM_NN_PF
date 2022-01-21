@@ -182,8 +182,8 @@ dy_all = dy_all/y_norm
 ## add area 
 area_norm = 1000
 area_all  = area_all[idx_all,:]
-darea_all = np.diff(area_all, axis=1)/area_norm   ## frac norm is fixed in the code
-darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
+darea_all = area_all/area_norm   ## frac norm is fixed in the code
+#darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
 area_coeff = y_norm*fnx/dx/area_norm
 ## subtract the initial part of the sequence, so we can focus on the change
 
@@ -464,8 +464,8 @@ dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
 
 darea_out = darea_out*area_norm
-darea_out[:,0,:] = 0
-area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
+#darea_out[:,0,:] = 0
+#area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
 
 
