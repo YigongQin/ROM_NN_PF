@@ -180,7 +180,7 @@ dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
 ## add area 
-area_norm = 1000
+area_norm = 10000
 area_all  = area_all[idx_all,:]
 darea_all = area_all/area_norm   ## frac norm is fixed in the code
 #darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
