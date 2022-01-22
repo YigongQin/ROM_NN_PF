@@ -141,7 +141,7 @@ num_train -= len(weird_sim)
 #frac_test = frac_all[idx[num_train_all:],:,:]
 #param_train = param_all[idx[:num_train],:]
 #param_test = param_all[idx[num_train_all:],:]
-print('nan', np.where(np.isnan(frac_all)))
+print('nan', np.where(np.isnan(frac_train)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 print('throw away simulations',weird_sim)
 #### delete the data in the actual training fractions and parameters
