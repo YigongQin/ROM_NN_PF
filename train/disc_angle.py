@@ -109,12 +109,12 @@ def get_data(num_runs, num_batch, datasets):
       return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
-frac_test, param_test, y_test, area_test, _ = get_data(num_train, num_train, sorted(glob.glob(valid_dir)))
+frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_train, num_train, sorted(glob.glob(valid_dir)))
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 
 if skip_check == False:
- weird_sim = check_data_quality(frac_all, param_all, y_all, G, frames)
+ weird_sim = check_data_quality(frac_train, param_train, y_train, G, frames)
 else: weird_sim=[]
 ### divide train and validation
 
