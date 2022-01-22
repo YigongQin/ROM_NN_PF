@@ -109,7 +109,8 @@ def get_data(num_runs, num_batch, datasets):
   return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
-frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_test, sorted(glob.glob(valid_dir)))
+testsets = sorted(glob.glob(valid_dir))
+frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_test, testsets)
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 
@@ -121,26 +122,7 @@ else: weird_sim=[]
 idx =  np.arange(num_runs) # you can permute the order of train here
 np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
-#print(idx)
-'''
-## select num_train from num_train_all to frac_train, param_train
-frac_train = frac_all[idx[:num_train],:,:]
-frac_test = frac_all[idx[num_train_all:],:,:]
-param_train = param_all[idx[:num_train],:]
-param_test = param_all[idx[num_train_all:],:]
-print('nan', np.where(np.isnan(frac_all)))
-weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
-print('throw away simulations',weird_sim)
-#### delete the data in the actual training fractions and parameters
-frac_train = np.delete(frac_train,weird_sim,0)
-param_train = np.delete(param_train,weird_sim,0)
-idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
-num_train -= len(weird_sim) 
-'''
-#frac_train = frac_all[idx[:num_train],:,:]
-#frac_test = frac_all[idx[num_train_all:],:,:]
-#param_train = param_all[idx[:num_train],:]
-#param_test = param_all[idx[num_train_all:],:]
+
 print('nan', np.where(np.isnan(frac_train)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 print('throw away simulations',weird_sim)
@@ -494,9 +476,10 @@ run_per_param = int(evolve_runs/num_batch)
 
 if mode == 'test': valid_train = True
 else: valid = False
+valid_train = True
 if valid_train:
-  for batch_id in range(num_batch): 
-   fname = datasets[batch_id] 
+  for batch_id in range(num_test): 
+   fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
    aseq_asse = np.asarray(f['sequence'])
    angles_asse = np.asarray(f['angles'])
