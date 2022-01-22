@@ -413,7 +413,7 @@ else:
   plt.savefig('mul_batch_loss.png')
   
 ## plot to check if the construction is reasonable
-evolve_runs = num_batch*int(batch*valid_ratio) #num_test
+evolve_runs = num_test #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
 darea_out = np.zeros((evolve_runs,frames,G))
