@@ -73,7 +73,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             darea_sliced -= (frac_sliced>0)*frac_change/frac_sliced*darea_sliced
 
             frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
-            darea_sliced[:,:,-1] += (frac_sliced>0)*( ones - np.sum(frac_sliced, axis=-1) )/frac_sliced*darea_sliced
+            darea_sliced[:,:,-1] += (frac_sliced[:,:,-1]>0)*( ones - np.sum(frac_sliced, axis=-1) )/frac_sliced[:,:,-1]*darea_sliced[:,:,-1]
             dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
             param_sliced[:,-1] = ones_p - np.sum(param_sliced[:,:-1], axis=-1)
 
