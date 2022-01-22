@@ -106,7 +106,7 @@ def get_data(num_runs, num_batch, datasets):
       param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
       param_all[run*num_batch+batch_id,G+2] = float(number_list[8])
 
-      return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
+  return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
 frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_test, sorted(glob.glob(valid_dir)))
