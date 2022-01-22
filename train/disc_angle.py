@@ -152,7 +152,7 @@ num_train -= len(weird_sim)
 
 assert num_train==frac_train.shape[0]==param_train.shape[0]
 assert num_test==frac_test.shape[0]==param_test.shape[0]
-assert param_all.shape[1]==param_len
+assert param_train.shape[1]==param_len
 num_all = num_train + num_test
 
 print('actual num_train',num_train)
