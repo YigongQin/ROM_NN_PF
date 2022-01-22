@@ -191,6 +191,10 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
     ntip_y = np.asarray(tip_y/dx,dtype=int)   
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
     piece_len = np.cumsum(piece_len,axis=0)
+    correction = piece_len[-1, :] - fnx
+    for g in range(G//2, G):
+      piece_len[g,:] -= correction
+    
     piece0 = piece_len[:,0]
     field = np.zeros((nx,ny),dtype=int)
 
