@@ -63,48 +63,53 @@ print('nx,ny', nx,ny)
 
 ## =======load data and parameters from the every simulation======
 
+def get_data(num_runs, num_batch, datasets):
+  frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
+  param_all = np.zeros((num_runs,param_len))
+  y_all = np.zeros((num_runs,frames))
+  area_all = np.zeros((num_runs,frames,G))
+  G_list = []
+  R_list = []
+  e_list = []
 
-frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
-param_all = np.zeros((num_runs,param_len))
-y_all = np.zeros((num_runs,frames))
-area_all = np.zeros((num_runs,frames,G))
-G_list = []
-R_list = []
-e_list = []
 
+  for batch_id in range(num_batch):
+    fname =datasets[batch_id]; #print(fname)
+    f = h5py.File(str(fname), 'r') 
+    #aseq_asse = np.asarray(f['sequence'])
+    aseq_asse = np.asarray(f['angles'])
+    frac_asse = np.asarray(f['fractions'])
+    area_asse = np.asarray(f['extra_area'])
+    tip_y_asse = np.asarray(f['y_t'])
+    number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
+    #print(number_list[6],number_list[7],number_list[8])
+    e_list.append(number_list[6])
+    G_list.append(number_list[7])
+    R_list.append(number_list[8])
+    
+    # compile all the datasets interleave
+    for run in range(batch):
+      aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
+      tip_y = tip_y_asse[run*frames:(run+1)*frames]
+  #    Color = (aseq-3)/2        # normalize C to [-1,1]
+      #Color = (aseq-5.5)/4.5
+      Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
+      #print('angle sequence', Color)
+      frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
+      area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
+      #if run<1: print(frac) 
+      frac_all[run*num_batch+batch_id,:,:] = frac
+      y_all[run*num_batch+batch_id,:] = tip_y 
+      area_all[run*num_batch+batch_id,:,:] = area
+      param_all[run*num_batch+batch_id,:G] = Color
+      param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
+      param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
+      param_all[run*num_batch+batch_id,G+2] = float(number_list[8])
 
-for batch_id in range(num_batch):
-  fname =datasets[batch_id]; #print(fname)
-  f = h5py.File(str(fname), 'r') 
-  #aseq_asse = np.asarray(f['sequence'])
-  aseq_asse = np.asarray(f['angles'])
-  frac_asse = np.asarray(f['fractions'])
-  area_asse = np.asarray(f['extra_area'])
-  tip_y_asse = np.asarray(f['y_t'])
-  number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
-  #print(number_list[6],number_list[7],number_list[8])
-  e_list.append(number_list[6])
-  G_list.append(number_list[7])
-  R_list.append(number_list[8])
-  
-  # compile all the datasets interleave
-  for run in range(batch):
-    aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
-    tip_y = tip_y_asse[run*frames:(run+1)*frames]
-#    Color = (aseq-3)/2        # normalize C to [-1,1]
-    #Color = (aseq-5.5)/4.5
-    Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
-    #print('angle sequence', Color)
-    frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
-    area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
-    #if run<1: print(frac) 
-    frac_all[run*num_batch+batch_id,:,:] = frac
-    y_all[run*num_batch+batch_id,:] = tip_y 
-    area_all[run*num_batch+batch_id,:,:] = area
-    param_all[run*num_batch+batch_id,:G] = Color
-    param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
-    param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
-    param_all[run*num_batch+batch_id,G+2] = float(number_list[8])
+      return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
+
+frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
+frac_test, param_test, y_test, area_test, _ = get_data(num_train, num_train, sorted(glob.glob(valid_dir)))
 #print(tip_y_asse[frames::frames])
 # trained dataset need to be randomly selected:
 
@@ -117,7 +122,7 @@ idx =  np.arange(num_runs) # you can permute the order of train here
 np.random.seed(seed)
 #np.random.shuffle(idx[:-1])
 #print(idx)
-
+'''
 ## select num_train from num_train_all to frac_train, param_train
 frac_train = frac_all[idx[:num_train],:,:]
 frac_test = frac_all[idx[num_train_all:],:,:]
@@ -131,6 +136,20 @@ frac_train = np.delete(frac_train,weird_sim,0)
 param_train = np.delete(param_train,weird_sim,0)
 idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
 num_train -= len(weird_sim) 
+'''
+#frac_train = frac_all[idx[:num_train],:,:]
+#frac_test = frac_all[idx[num_train_all:],:,:]
+#param_train = param_all[idx[:num_train],:]
+#param_test = param_all[idx[num_train_all:],:]
+print('nan', np.where(np.isnan(frac_all)))
+weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
+print('throw away simulations',weird_sim)
+#### delete the data in the actual training fractions and parameters
+frac_train = np.delete(frac_train,weird_sim,0)
+param_train = np.delete(param_train,weird_sim,0)
+#idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
+num_train -= len(weird_sim) 
+
 assert num_train==frac_train.shape[0]==param_train.shape[0]
 assert num_test==frac_test.shape[0]==param_test.shape[0]
 assert param_all.shape[1]==param_len
@@ -174,14 +193,14 @@ frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
 
 y_norm = 1
-y_all  = y_all[idx_all,:]
+y_all  = np.concatenate( (y_train, y_test), axis=0)
 dy_all  = np.diff(y_all, axis=1) 
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
 ## add area 
 area_norm = 10000
-area_all  = area_all[idx_all,:]
+area_all  = np.concatenate( (area_train, area_test), axis=0)
 darea_all = area_all/area_norm   ## frac norm is fixed in the code
 #darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
 area_coeff = y_norm*fnx/dx/area_norm
@@ -250,7 +269,7 @@ assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
-torch.manual_seed(35)
+torch.manual_seed(seed)
 
 
 def con_samlpe(a, b):
@@ -431,6 +450,7 @@ else:
 ## write initial windowed data to out arrays
 frac_out[:,:window,:] = seq_dat[:,:,:G]
 dy_out[:,:window] = seq_dat[:,:,-1]
+darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
 
 param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
 print('the sub simulations', expand)
