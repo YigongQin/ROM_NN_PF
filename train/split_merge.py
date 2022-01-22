@@ -56,7 +56,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             dfrac_sliced = G_all/G*seq_dat[:,:,2*i+G_all:G+2*i+G_all] # dfrac
             darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
             
-            if i==expand-1:
+            if i>=expand//2:
 
                 param_sliced = np.flip(param_sliced, axis = -1)
                 frac_sliced = np.flip(frac_sliced, axis = -1)
@@ -72,7 +72,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
             param_sliced[:,-1] = ones_p - np.sum(param_sliced[:,:-1], axis=-1)
 
-            if i==expand-1:
+            if i>=expand//2:
 
                 param_sliced = np.flip(param_sliced, axis = -1)
                 frac_sliced = np.flip(frac_sliced, axis = -1)
