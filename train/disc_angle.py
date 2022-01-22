@@ -269,7 +269,7 @@ assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
-torch.manual_seed(seed)
+torch.manual_seed(35)
 
 
 def con_samlpe(a, b):
