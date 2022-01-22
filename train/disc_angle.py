@@ -473,6 +473,7 @@ area_out = darea_out*area_norm
 
 miss_rate_param = np.zeros(num_batch)
 run_per_param = int(evolve_runs/num_batch)
+if run_per_param <1: run_per_param = 1
 
 if mode == 'test': valid_train = True
 else: valid = False
@@ -497,7 +498,7 @@ if valid_train:
      alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
      aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
      pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
-     pf_angles = pf_angles*180/pi + 90
+     pf_angles[1:] = pf_angles[1:]*180/pi + 90
      tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
      extra_area = (area_asse[(num_train_b+frame_idx)*G*frames:(num_train_b+frame_idx+1)*G*frames]).reshape((frames,G))[-1,:]
      #print((tip_y))
