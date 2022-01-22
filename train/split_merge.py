@@ -61,12 +61,16 @@ def split_grain(param_dat, seq_dat, G, G_all):
                 param_sliced = np.flip(param_sliced, axis = -1)
                 frac_sliced = np.flip(frac_sliced, axis = -1)
                 dfrac_sliced = np.flip(dfrac_sliced, axis = -1)
+                darea_sliced = np.flip(darea_sliced, axis = -1)
             ## here requires cut/add to make sure unity
             fsum = np.cumsum(frac_sliced, axis=-1)
             psum = np.cumsum(param_sliced, axis=-1)
 
-            frac_sliced -= np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0)         
-            param_sliced -= np.diff((psum>1)*(psum-1),axis=-1,prepend=0)
+            frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
+            param_change = np.diff((psum>1)*(psum-1),axis=-1,prepend=0)
+            frac_sliced -= frac_change      
+            param_sliced -= param_change
+            
 
             frac_sliced[:,:,-1] = ones - np.sum(frac_sliced[:,:,:-1], axis=-1)
             dfrac_sliced[:,:,-1] = zeros - np.sum(dfrac_sliced[:,:,:-1], axis=-1)
@@ -77,6 +81,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
                 param_sliced = np.flip(param_sliced, axis = -1)
                 frac_sliced = np.flip(frac_sliced, axis = -1)
                 dfrac_sliced = np.flip(dfrac_sliced, axis = -1)
+                darea_sliced = np.flip(darea_sliced, axis = -1)
             '''
             diff_frac = ones - np.sum(frac_sliced, axis=-1)
             diff_param = ones_p - np.sum(param_sliced, axis=-1)
