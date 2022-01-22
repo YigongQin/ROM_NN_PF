@@ -115,7 +115,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             #print(np.where(param_sliced<0))
             new_seq[i*size_b:(i+1)*size_b,:,:G]  = frac_sliced
             new_seq[i*size_b:(i+1)*size_b,:,G:2*G] = dfrac_sliced
-            new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced
+            new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced*(frac_sliced>0)
             new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
 
         if check_dat == True:
