@@ -63,6 +63,33 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     field = np.zeros((nx,ny),dtype=int)
     ini_field = np.zeros((nx,ny),dtype=int)
 
+
+            
+
+#=========================start fill the initial field=================
+
+    temp_piece = np.zeros(G, dtype=int)
+    for j in range(ntip_y[window-1]):
+     #  start with temp_piece
+       for g in range(G):
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          else:
+            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            new_f = fint(j)
+            temp_piece[g] = np.asarray(new_f,dtype=int)
+
+       for g in range(G):
+        if g==0:
+          for i in range( temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break
+            ini_field[i,j] = aseq[g]
+
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break         
+            ini_field[i,j] = aseq[g]
+
+
 #=========================start fill the final field=================
     nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
@@ -90,37 +117,14 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
            # print(loc)
             field[i,j] = aseq[g]
             if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
-            
 
-#=========================start fill the initial field=================
-
-    temp_piece = np.zeros(G, dtype=int)
-    for j in range(ntip_y[window-1]):
-     #  start with temp_piece
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
-
-       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            ini_field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break         
-            ini_field[i,j] = aseq[g]
 
 #=========================start fill the extra field=================
     for g in range(G):
 
       if p_len[g, -1] ==0: height =0 
       else: height = int(area[g]/p_len[g, -1])
-      print(height)
+      #print(height)
       for j in range(ntip_y[-1], ntip_y[-1]+height):
 
         if g==0:
@@ -143,7 +147,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     ## count for the error of area
     for g in range(G):
       miss += np.absolute(area[g]-area_true[g])
-      print(area[g], area_true[g])
+      #print(area[g], area_true[g])
     miss_rate = miss/( nx*nymax + np.sum(area_true) );
 
    # error=field-alpha_true[1:-1,1:-1]
