@@ -56,8 +56,8 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
     
-    piece_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(piece_len,axis=0)
+    p_len = np.asarray(np.round(frac*nx),dtype=int)
+    piece_len = np.cumsum(p_len,axis=0)
     piece0 = piece_len[:,0]
     #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
@@ -118,8 +118,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
 #=========================start fill the extra field=================
     for g in range(G):
 
-      height = int(area[g]/temp_piece[g])
-
+      if p_len[g, -1] ==0: height =0 
+      else: height = int(area[g]/p_len[g, -1])
+      print(height)
       for j in range(ntip_y[-1], ntip_y[-1]+height):
 
         if g==0:
@@ -142,7 +143,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     ## count for the error of area
     for g in range(G):
       miss += np.absolute(area[g]-area_true[g])
-
+      print(area[g], area_true[g])
     miss_rate = miss/( nx*nymax + np.sum(area_true) );
 
    # error=field-alpha_true[1:-1,1:-1]
