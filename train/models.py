@@ -402,7 +402,7 @@ class ConvLSTM_seq(nn.Module):
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
-            darea = F.relu(self.project_a(last_time))    # [b,1]
+            darea = (self.project_a(last_time))    # [b,1]
             dfrac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
             frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
@@ -416,7 +416,7 @@ class ConvLSTM_seq(nn.Module):
             #frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
             
             output_seq[:,i, :self.w] = dfrac
-            output_seq[:,i, self.w:2*self.w] = darea
+            output_seq[:,i, self.w:2*self.w] = F.relu(darea)
             output_seq[:,i, -1:] = dy
             frac_seq[:,i,:] = frac
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
