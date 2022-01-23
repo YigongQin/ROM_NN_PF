@@ -444,19 +444,15 @@ for i in range(0,pred_frames,out_win):
     output_model = model(todevice(seq_dat), todevice(param_dat) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
-    #print('timestep ',i)
-    #print('predict',frac_new_vec/scaler_lstm[window+i])
-    #print('true',frac_out_true[i,:]/scaler_lstm[window+i])
+
     if i>=pack:
-        #frac_out[:,-alone:,:] = frac_new_vec[:,:alone,:-1]
-        #dy_out[:,-alone:] = frac_new_vec[:,:alone,-1]
-        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, area_coeff)
+        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] \
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, area_coeff)
     else: 
-        #frac_out[:,window+i:window+i+out_win,:] = frac_new_vec[:,:,:-1]
-        #dy_out[:,window+i:window+i+out_win] = frac_new_vec[:,:,-1]
+
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, area_coeff)
-    #print(frac_new_vec)
+    
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 #frac_out = frac_out/(np.sum(frac_out, axis=-1)[:,:,np.newaxis])    
