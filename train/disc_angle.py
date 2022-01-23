@@ -509,8 +509,8 @@ if valid_train:
      Rmax = np.float(R_list[batch_id]) 
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,-1,:])
-     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,-1,:])
+     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
+     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
    miss_rate_param[batch_id] = sum_miss/run_per_param

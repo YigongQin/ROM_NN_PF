@@ -126,10 +126,10 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 #=========================start fill the extra field=================
     for g in range(G):
 
-      if p_len[g, -1] ==0: height =0 
-      else: height = int(area[g]/p_len[g, -1])
+      if p_len[g, final-1] ==0: height =0 
+      else: height = int(area[g]/p_len[g, final-1])
       #print(height)
-      for j in range(ntip_y[-1], ntip_y[-1]+height):
+      for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
         if g==0:
           for i in range( temp_piece[g]):
