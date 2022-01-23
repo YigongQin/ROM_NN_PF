@@ -500,7 +500,7 @@ if valid_train:
      pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90
      tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
-     extra_area = (area_asse[(num_train_b+frame_idx)*G*frames:(num_train_b+frame_idx+1)*G*frames]).reshape((frames,G))[-1,:]
+     extra_area = (area_asse[(num_train_b+frame_idx)*G*frames:(num_train_b+frame_idx+1)*G*frames]).reshape((frames,G))[train_frames-1,:]
      #print((tip_y))
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
