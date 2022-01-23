@@ -442,7 +442,8 @@ class ConvLSTM_start(nn.Module):
         self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1], device)
         self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
         self.project_y = nn.Linear(hidden_dim*w, 1)
-    
+        self.project_a = nn.Linear(hidden_dim*w, w)
+
         self.kernel_size = kernel_size
         self.bias = bias
         self.device = device
@@ -455,7 +456,7 @@ class ConvLSTM_start(nn.Module):
         ## b,t, input_len -> b,t,c,w 
         b, t, _  = input_seq.size()
         
-        output_seq = torch.zeros(b, self.out_win, self.w+1, dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :self.w]
@@ -468,6 +469,7 @@ class ConvLSTM_start(nn.Module):
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
         input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
                                input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
+                               input_seq[:,:,2*self.w:3*self.w].unsqueeze(dim=-2), \
                                yt.expand(-1,-1, -1, self.w), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
@@ -484,6 +486,7 @@ class ConvLSTM_start(nn.Module):
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
+            darea = (self.project_a(last_time))    # [b,1]
             dfrac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
             frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
@@ -491,12 +494,13 @@ class ConvLSTM_start(nn.Module):
             dfrac = (frac - seq_1[:,0,:])/frac_norm 
  
             output_seq[:,i, :self.w] = dfrac
-            output_seq[:,i, self.w:] = dy
+            output_seq[:,i, self.w:2*self.w] = F.relu(darea)
+            output_seq[:,i, -1:] = dy
             frac_seq[:,i,:] = frac
             ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]
             
-            seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), dy.expand(-1,self.w).view(b,1,self.w), \
-                               seq_1[:,3:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
+            seq_1 = torch.cat([frac.unsqueeze(dim=1), dfrac.unsqueeze(dim=1), darea.unsqueeze(dim=1), \
+                    dy.expand(-1,self.w).view(b,1,self.w), seq_1[:,4:-1,:], seq_1[:,-1:,:] + self.dt ],dim=1)
 
                         
         return output_seq, frac_seq
