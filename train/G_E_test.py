@@ -25,7 +25,7 @@ sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
 dt = 1.0/(frames-1)
 
-G = 8     # G is the number of grains
+G = 8    # G is the number of grains
 G_small = 8
 param_len = G + 4   # how many parameters, color plus 3 physical
 output_len = G
@@ -33,6 +33,7 @@ output_len = G
 ## architecture
 hidden_dim = 16
 LSTM_layer = (4, 4)
+LSTM_layer_ini = (4, 4)
 kernel_size = (3,)
 
 num_epochs = 40
@@ -42,4 +43,8 @@ area_scale = 0.1
 seed = 1  
  
 data_dir = '../../validation/*.h5'
+#valid_dir = '../../validation/*.h5'
+#data_dir = '../../double_grains/*.h5'
+#data_dir = '../../quadra_grains/*.h5'
+valid_dir = data_dir
 skip_check = False
