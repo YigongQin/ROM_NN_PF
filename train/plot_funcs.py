@@ -78,7 +78,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
           else:
-            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
             new_f = fint(j)
             temp_piece[g] = np.asarray(new_f,dtype=int)
 
@@ -103,7 +103,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
           else:
-            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
             new_f = fint(j)
             temp_piece[g] = np.asarray(new_f,dtype=int)
        #print(temp_piece)
@@ -208,7 +208,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
           else:
-            fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
             new_f = fint(j)
             temp_piece[g] = np.asarray(new_f,dtype=int)
        #print(temp_piece)
