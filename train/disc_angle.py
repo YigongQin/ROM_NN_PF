@@ -40,7 +40,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = False
+model_exist = True
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -412,7 +412,7 @@ if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
 else: 
-    ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer, G_small, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -427,7 +427,7 @@ else:
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
-    print(frac_new_vec.shape)
+    #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
 frac_out[:,:window,:] = seq_dat[:,:,:G]
@@ -509,7 +509,7 @@ if valid_train:
      Rmax = np.float(R_list[batch_id]) 
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
+     plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
      miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
