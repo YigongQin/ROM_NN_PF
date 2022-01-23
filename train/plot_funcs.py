@@ -42,7 +42,7 @@ def subplot_rountine(fig, ax, cs, idx):
     
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles, area_true, area):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area):
 
     #print('angle sequence', aseq)
     #print(frac) 
@@ -51,7 +51,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
     nt=len(tip_y)
-    input_frac = int((window-1)/(nt-1)*100)
+    #input_frac = int((window-1)/(nt-1)*100)
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
@@ -73,7 +73,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
 #=========================start fill the initial field=================
 
     temp_piece = np.zeros(G, dtype=int)
-    for j in range(ntip_y[window-1]):
+    for j in range(ntip_y[0]):
      #  start with temp_piece
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
@@ -98,7 +98,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
     nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
     miss=0
-    for j in range(ntip_y[-1]):
+    for j in range(ntip_y[final-1]):
      #  loc = 0
        for g in range(G):
           if j <= ntip_y[0]: temp_piece[g] = piece0[g]
@@ -175,14 +175,14 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,f
       subplot_rountine(fig, ax3, cs3, 3)
       ax3.set_title('final:NN_predict_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
       
-      plt.savefig(var + '_input_frac' + str("%d"%input_frac) + '_case' + str(plot_idx)+ '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
     return
 
 
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax,final,pf_angles, area_true, area):
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area):
     
 
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -194,7 +194,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac,window,plot_idx,ymax
     correction = piece_len[-1, :] - fnx
     for g in range(G//2, G):
       piece_len[g,:] -= correction
-    
+
     piece0 = piece_len[:,0]
     field = np.zeros((nx,ny),dtype=int)
 
