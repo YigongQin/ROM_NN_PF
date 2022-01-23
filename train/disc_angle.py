@@ -40,7 +40,7 @@ host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 #device=host
 print('device',device)
-model_exist = True
+model_exist = False
 if mode == 'test': model_exist = True
 noPDE = False
 param_list = ['anis','G0','Rmax']
@@ -505,7 +505,7 @@ if valid_train:
      Rmax = np.float(R_list[batch_id]) 
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-     plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
+     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
      miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
