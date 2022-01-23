@@ -32,7 +32,7 @@ def subplot_rountine(fig, ax, cs, idx):
       ax.yaxis.label.set_color(bg_color); ax.xaxis.label.set_color(bg_color)
       ax.tick_params(axis='x', colors=bg_color); ax.tick_params(axis='y', colors=bg_color);
       if idx==1:
-        axins = inset_axes(ax,width="3%",height="50%",loc='lower left')
+        axins = inset_axes(ax,width="3%",height="50%",loc='upper left')
         cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
         cbar.set_label(r'$\alpha_0$', color=fg_color)
         cbar.ax.yaxis.set_tick_params(color=fg_color)
