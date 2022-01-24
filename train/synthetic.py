@@ -182,7 +182,7 @@ y_out = np.cumsum(dy_out,axis=-1)+y0
 area_out = darea_out*area_norm
 
 
-sio.savemat('e'+sys.argv[1]+'G'+sys.argv[2]+'R'+sys.argv[3]+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'param':param_dat})
+sio.savemat('synthetic'+str(evolve_runs)+'_e'+sys.argv[1]+'G'+sys.argv[2]+'R'+sys.argv[3]+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'param':param_dat})
 
 
 
