@@ -38,7 +38,10 @@ print('device',device)
 
 param_list = ['anis','G0','Rmax']
 
-
+def todevice(data):
+    return torch.from_numpy(data).to(device)
+def tohost(data):
+    return data.detach().to(host).numpy()
 
 #============================
 
@@ -71,6 +74,7 @@ param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs
 ## sample frac 
 
 frac = grain_size + 0.35*grain_size*np.random.randn(evolve_runs, G)
+frac = frac/(G*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
 frac -= frac_change  
