@@ -15,6 +15,8 @@ import torch.nn.init as init
 from typing import Callable, List, Optional, Tuple
 #from G_E import *
 frac_norm = 0.06
+y_norm = 1
+area_norm = 10000
 def scale(t,dt): 
     # x = 1, return 1, x = 0, return frames*beta
     return (1 - t)/dt + 1

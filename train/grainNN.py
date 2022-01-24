@@ -174,14 +174,14 @@ class PrepareData(Dataset):
 frac_all = np.concatenate( (frac_train, frac_test), axis=0)
 param_all = np.concatenate( (param_train, param_test), axis=0)
 
-y_norm = 1
+
 y_all  = np.concatenate( (y_train, y_test), axis=0)
 dy_all  = np.diff(y_all, axis=1) 
 dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
 ## add area 
-area_norm = 10000
+
 area_all  = np.concatenate( (area_train, area_test), axis=0)
 darea_all = area_all/area_norm   ## frac norm is fixed in the code
 #darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
