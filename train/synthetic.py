@@ -78,8 +78,11 @@ frac = frac/(G*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
 frac -= frac_change  
+frac[:,-1] = np.ones(evolve_runs) - np.sum(frac[:,:-1], axis=-1)
 
-print('sample', frac[0,:])
+
+print('sample frac', frac[0,:])
+print('sample param', param_data[0,:])
 assert np.linalg.norm( np.sum(frac, axis=-1) - np.ones(evolve_runs) ) <1e-5
 
 param_dat[:,:G] = frac
