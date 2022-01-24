@@ -63,9 +63,9 @@ darea_out = np.zeros((evolve_runs,frames,G))
 param_dat = np.zeros((evolve_runs, 2*G+4))
 seq_1 = np.zeros((evolve_runs,1,3*G+1))
 
-param_dat[:,G] = 2*float(sys.argv[1])
-param_dat[:,G+1] = 1 - np.log10(float(sys.argv[2]))/np.log10(100) 
-param_dat[:,G+2] = float(sys.argv[3])
+param_dat[:,2*G] = 2*float(sys.argv[1])
+param_dat[:,2*G+1] = 1 - np.log10(float(sys.argv[2]))/np.log10(100) 
+param_dat[:,2*G+2] = float(sys.argv[3])
 
 ## sample orientation
 
@@ -124,7 +124,7 @@ ini_model.eval()
 #============================
 
 
-      #  evolve
+      #  evolve input seq_1, param_dat
 
 
 #==============================
@@ -164,7 +164,7 @@ for i in range(0,pred_frames,out_win):
     else: 
 
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, area_coeff)
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, 0)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
