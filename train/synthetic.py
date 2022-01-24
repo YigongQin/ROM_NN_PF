@@ -82,7 +82,7 @@ frac[:,-1] = np.ones(evolve_runs) - np.sum(frac[:,:-1], axis=-1)
 
 
 print('sample frac', frac[0,:])
-print('sample param', param_data[0,:])
+print('sample param', param_dat[0,:])
 assert np.linalg.norm( np.sum(frac, axis=-1) - np.ones(evolve_runs) ) <1e-5
 
 param_dat[:,:G] = frac
