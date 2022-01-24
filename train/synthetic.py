@@ -47,12 +47,18 @@ def tohost(data):
 
 
       #  synthetic
+      #  dfrac, area, dy = 0 at t = 0 
+      #  frac sample from normal distribution
+      #  angle sample from unifrom distribution
+      #  y0 = 2.25279999 because of the interface width
 
 
 #==============================
 
 
 grain_size = 2.5
+std = 0.35
+y0 = 2.25279999
 
 evolve_runs = 1000 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
@@ -73,7 +79,7 @@ param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs
 
 ## sample frac 
 
-frac = grain_size + 0.35*grain_size*np.random.randn(evolve_runs, G)
+frac = grain_size + std*grain_size*np.random.randn(evolve_runs, G)
 frac = frac/(G*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
@@ -171,7 +177,7 @@ for i in range(0,pred_frames,out_win):
 
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
-y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
+y_out = np.cumsum(dy_out,axis=-1)+y0
 
 area_out = darea_out*area_norm
 
