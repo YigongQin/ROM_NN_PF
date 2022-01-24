@@ -160,7 +160,7 @@ for i in range(0,pred_frames,out_win):
 
     if i>=pack:
         frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, area_coeff)
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, 0)
     else: 
 
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
