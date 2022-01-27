@@ -19,7 +19,7 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_funcs import plot_IO, miss_rate
+from plot_funcs import plot_synthetic
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
@@ -193,6 +193,15 @@ sio.savemat('synthetic'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_
 
 
 #==============================
+
+for data_id in range(1):
+    plot_synthetic(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:])
+
+
+
+
+
+
 
 
 
