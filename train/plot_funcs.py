@@ -146,8 +146,8 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
     ## count for the error of y
     
-    if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-
+    #if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
+    miss += np.absolute(nx*(nymax-ntip_y[final-1]))
     ## count for the error of area
     for g in range(G):
       miss += np.absolute(area[g]-area_true[g])
@@ -324,8 +324,8 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
     ## count for the error of y
     miss_frac = miss
 
-    if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-
+    #if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
+    miss += np.absolute(nx*(nymax-ntip_y[final-1]))
     ## count for the error of area
     miss_area = 0
     for g in range(G):
@@ -334,7 +334,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
 
     all_area = nx*nymax + np.sum(area_true) 
     miss_rate = miss/all_area
- 
-    print('component: frac', miss_frac/miss, ', y', nx*(nymax-ntip_y[final-1])/miss, ', area', miss_area/miss)
+    print(anis,G0,Rmax) 
+    print('component: frac', miss_frac/miss, ', y', np.absolute(nx*(nymax-ntip_y[final-1])/miss), ', area', miss_area/miss)
     return miss_rate
 
