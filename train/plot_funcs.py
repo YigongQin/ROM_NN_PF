@@ -182,6 +182,101 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return
 
 
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area):
+    
+    #print('angle sequence', aseq)
+    #print(frac) 
+    xmin = x[1]; xmax = x[-2]
+    ymin = y[1]; ytop = y[-2]
+    fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
+    dx = x[1]-x[0]
+    nt=len(tip_y)
+    #input_frac = int((window-1)/(nt-1)*100)
+    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
+
+    ntip_y = np.asarray(tip_y/dx,dtype=int)
+    
+    p_len = np.asarray(np.round(frac*nx),dtype=int)
+    piece_len = np.cumsum(p_len,axis=0)
+    correction = piece_len[-1, :] - fnx
+    for g in range(G//2, G):
+      piece_len[g,:] -= correction
+
+    piece0 = piece_len[:,0]
+    #print(piece_len[-1,:])
+    field = np.zeros((nx,ny),dtype=int)
+
+
+
+#=========================start fill the final field=================
+    
+    temp_piece = np.zeros(G, dtype=int)
+    miss=0
+    for j in range(ntip_y[final-1]):
+     #  loc = 0
+       for g in range(G):
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          else:
+            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+            new_f = fint(j)
+            temp_piece[g] = np.asarray(new_f,dtype=int)
+       #print(temp_piece)
+       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+       for g in range(G):
+        if g==0:
+          for i in range( temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break
+
+            field[i,j] = aseq[g]
+
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break
+    
+            field[i,j] = aseq[g]
+
+
+
+#=========================start fill the extra field=================
+    for g in range(G):
+
+      if p_len[g, final-1] ==0: height =0 
+      else: height = int(area[g]/p_len[g, final-1])
+      
+      for j in range(ntip_y[final-1], ntip_y[final-1]+height):
+
+        if g==0:
+          for i in range( temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break
+            field[i,j] = aseq[g]
+
+        else:
+          for i in range(temp_piece[g-1], temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break         
+            field[i,j] = aseq[g]
+
+
+#========================start plotting area, plot ini_field, alpha_true, and field======
+
+
+   # error=field-alpha_true[1:-1,1:-1]
+    plot_flag=True
+    if plot_flag==True:
+      fig = plt.figure()
+      txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
+      fig.text(.5, .2, txt, ha='center')
+      
+      ax3 = fig.add_subplot(111)
+      cs3 = ax3.imshow(pf_angles[field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
+      subplot_rountine(fig, ax3, cs3, 3)
+      ax3.set_title('final:NN_predict_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
+      
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.close()
+
+
+
+
 def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area):
     
 
