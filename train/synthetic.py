@@ -193,8 +193,20 @@ sio.savemat('synthetic'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_
 
 
 #==============================
+datasets = sorted(glob.glob(data_dir))
+print('dataset dir',data_dir,' and size',len(datasets))
+filename = datasets[0]
+#filename = filebase+str(2)+ '_rank0.h5'
+f = h5py.File(filename, 'r')
+x = np.asarray(f['x_coordinates'])
+y = np.asarray(f['y_coordinates'])
+
+pf_angles = np.zeros(G+1)
+aseq_test = np.arange(G) +1
 
 for data_id in range(1):
+
+    pf_angles[1:] = param_dat[data_id,G:2*G]
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:])
 
 
