@@ -74,6 +74,7 @@ param_dat[:,2*G+1] = 1 - np.log10(float(sys.argv[2]))/np.log10(100)
 param_dat[:,2*G+2] = float(sys.argv[3])
 
 ## sample orientation
+np.random.seed(0)
 
 param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs,G))
 
@@ -206,7 +207,7 @@ aseq_test = np.arange(G) +1
 
 for data_id in range(1):
 
-    pf_angles[1:] = param_dat[data_id,G:2*G]
+    pf_angles[1:] = (param_dat[data_id,G:2*G]+1)*45
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:])
 
 
