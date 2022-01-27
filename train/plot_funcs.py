@@ -192,7 +192,6 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
     dx = x[1]-x[0]
     nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
-    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
     
