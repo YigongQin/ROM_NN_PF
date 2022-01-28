@@ -33,6 +33,7 @@ output_len = G
 ## architecture
 hidden_dim = 16
 LSTM_layer = (4, 4)
+LSTM_layer_ini = (4,4)
 kernel_size = (3,)
 
 num_epochs = 60
@@ -52,4 +53,5 @@ data_dir = '../../twoD/*.h5'
 #data_dir = '../../all_qoi/*'
 #data_dir = '../../ML_PF8_train1000_test100_Mt24002_grains8_frames25_anis0.050_G050.000_Rmax1.000_seed0_rank0.h5'
 valid_dir = '../../validation/*.h5'
+#valid_dir = data_dir
 skip_check = False
