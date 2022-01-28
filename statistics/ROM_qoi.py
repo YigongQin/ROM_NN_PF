@@ -19,7 +19,7 @@ from scipy import stats
 plt.rcParams.update({'font.size': 12})
 
 eps = 1e-4
-
+noise = eps
 
 def true_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0,areaf,ap_list):
 
@@ -49,7 +49,9 @@ def true_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,N
         if piece_len[g,0]>eps: 
 
             height = tip_y_f[g,-1]-1
+            width = np.max(piece_len[g,:])
             apf[g] = height/( arf[g]/height )
+          #  apf[g] = height/width
             
         
    # step 4: attach every grain to the size list
@@ -99,16 +101,16 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,ap_li
     for g in range(G):
         
         if piece_len[g,0]>eps: 
-            if piece_len[g,-1]<eps:
-              height_id = list((piece_len[g,:]>eps)*1).index(0)-1
-              height = ntip_y[height_id]
+
+            if np.all(piece_len[g,:]>noise):
+                height = ntip_y[-1] + extra_area[g,-1]/piece_len[g,-1]
             else: 
-              height_id = frames-1
-              if piece_len[g,-1]>eps:
-                  height = ntip_y[height_id] + extra_area[g,-1]/piece_len[g,-1]
-              else: height = ntip_y[height_id]
+                height_id = list((piece_len[g,:]>noise)*1).index(0)-1
+                height = ntip_y[height_id]
+              
+            width = np.max(piece_len[g,:])
             apf[g] = height/( arf[g]/height )
-            
+           # apf[g] = height/width
         
    # step 4: attach every grain to the size list
     for g in range(G):
@@ -118,11 +120,7 @@ def ROM_qois(nx,ny,dx,G,angle_id,tip_y,frac,extra_area,Ni0,Nif,area0,areaf,ap_li
             area0.extend(list([ar0[g]]))
             areaf.extend(list([arf[g]]))
             ap_list.extend(list( [apf[g]]))
-        #print(area0[angle_id[g]])
-        #print(areaf[angle_id[g]])
-# plot a bar graph with initial and final grain information:
-# (1) the number of grains active on the S-L interface: total/num_simulations
-# (2) the average and standard deviation of the grain area: total/num_grains
+
 
 batch = 1000#2500
 num_batch = 8
@@ -133,15 +131,14 @@ G = 8
 bars = 100
 # targets
 
+mode = 'self'
+mode = 'synthetic'
 
-## start with loading data
-#datasets = glob.glob('../../mulbatch_train/*0.130*.h5')
-#datasets = glob.glob('../../t_ML_PF10_train1000_test100_Mt23274_grains8_frames25_anis*.h5')
 datasets = sorted(glob.glob('*PF8*154272*.h5'))
-#datasets = glob.glob('../../*test250_Mt70536*.h5')
-#datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
-#                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
+synthsets = sorted(glob.glob('synthetic*.mat'))
+
 print(datasets)
+print(synthsets)
 f0 = h5py.File(str(datasets[0]), 'r')
 x = np.asarray(f0['x_coordinates'])
 y = np.asarray(f0['y_coordinates'])
@@ -154,17 +151,21 @@ print('nx,ny', nx,ny)
 
 Ni0 = np.zeros(bars,dtype=int) 
 Nif = np.zeros(bars,dtype=int)    
-di0 = np.zeros((num_batch,bars))
+
 dif = np.zeros((num_batch,bars))
 dit = np.zeros((num_batch,bars))     
-di0_std = np.zeros((num_batch,bars))
-dif_std = np.zeros((num_batch,bars))    
+
+ 
 aprf = np.zeros((num_batch,bars)) 
 aprt = np.zeros((num_batch,bars)) 
 
 y_t = np.zeros((num_batch, frames))
 df_t = np.zeros((num_batch, frames-1))
 area_t = np.zeros((num_batch, frames))
+
+y_t_check = np.zeros((num_batch, frames))
+df_t_check = np.zeros((num_batch, frames-1))
+area_t_check = np.zeros((num_batch, frames))
 
 G0 = np.zeros(num_batch)
 anis = np.zeros(num_batch)
@@ -178,6 +179,12 @@ ks_d = np.zeros(num_batch)
 ks_a = np.zeros(num_batch)
 err_d = np.zeros(num_batch)
 err_a = np.zeros(num_batch)
+
+exp_d = np.zeros(num_batch)
+expectation_d = np.zeros(num_batch)
+exp_a = np.zeros(num_batch)
+expectation_a = np.zeros(num_batch)
+
 
 for batch_id in range(num_batch):
     fname =datasets[batch_id]; print(fname)
@@ -196,12 +203,15 @@ for batch_id in range(num_batch):
     y_t[batch_id,:] = np.mean(tip_y_asse[:frames*batch].reshape((batch,frames)), axis = 0)
     area_t[batch_id,:] = np.mean(np.mean( extra_area_asse[:frames*batch*G].reshape((batch,frames,G)), axis = 0), axis = -1)
     df_t[batch_id,:] = np.mean(np.mean( np.absolute(np.diff(frac_asse[:frames*batch*G].reshape((batch,frames,G)),axis=1 )) , axis = 0), axis = 1)
-  #angles_asse = np.asarray(f['angles'])
-  #number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
-  #print(number_list[6])
-  # compile all the datasets interleave
 
+
+    synth_dat = sio.loadmat(synthsets[batch_id],squeeze_me=True)
+    frac_s = synth_dat['frac']
+    assert frac_s.shape[0] == batch
+    y_s = synth_dat['y']
+    area_s = synth_dat['area']
     
+    print('y_average, true', y_t[batch_id,-1], np.mean(y_s, axis=0)[-1] )
     # create list of lists, both of them should have the same size 
     # size of each interval is Ni0, for each sublist, do mean and std
     area0 = []
@@ -219,49 +229,91 @@ for batch_id in range(num_batch):
         aseq = (aseq+pi/2)*180/pi
         frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')  # grains coalese, include frames
         tip_y = tip_y_asse[run*frames:(run+1)*frames]
+        extra_area = (extra_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
+    
+        if mode == 'self':
+            frac_rom = frac
+            tip_y_rom = tip_y
+            extra_area_rom = extra_area
 
+        elif mode == 'synthetic':
+
+            frac_rom = frac_s[run,:,:].T
+            tip_y_rom = y_s[run,:]
+            extra_area_rom = area_s[run,:,:].T
+        else: raise ValueError('mode not right')
         interval = np.asarray(aseq/10,dtype=int)
         assert np.all(interval>=0) and np.all(interval<9)
         #print('angle sequence', interval)
-        extra_area = (extra_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
+
         total_area = (total_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
         tip_y_f    = (tip_y_f_asse   [run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')        
-        ROM_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,                    Ni0,Nif,area0,areaf,apr_list)
+        ROM_qois(nx,ny,dx,G,interval,tip_y_rom,frac_rom,extra_area_rom,                    Ni0,Nif,area0,areaf,apr_list)
         true_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0_t,areaf_t,apr_list_t)
- 
-    di_f = np.sqrt(4.0*np.asarray(areaf)/pi)*dx 
+        
+        df_t_check[batch_id,:] += np.mean(np.absolute(np.diff(frac_rom, axis=1 )), axis = 0)
+        area_t_check[batch_id,:] += np.mean(extra_area_rom, axis = 0)
+        y_t_check[batch_id,:] += tip_y_rom
+        
+    df_t_check[batch_id,:] /= batch
+    y_t_check[batch_id,:] /= batch
+    area_t_check[batch_id,:] /= batch
+    
+    
+    di_f = np.sqrt(4.0*np.asarray(areaf)/pi)*dx
+    apr_list = np.asarray(apr_list)
     dif[batch_id,:], _ = np.histogram(di_f , bins, density=True)
     aprf[batch_id,:], _ = np.histogram(apr_list, bins, density=True)
 
     di_t = np.sqrt(4.0*np.asarray(areaf_t)/pi)*dx 
+    apr_list_t = np.asarray(apr_list_t)
     dit[batch_id,:], _ = np.histogram(di_t , bins, density=True)
     aprt[batch_id,:], _ = np.histogram(apr_list_t, bins, density=True)
 
     batchs[batch_id] = batch
 
-    ks_d[batch_id]= stats.kstest(dif[batch_id,:], dit[batch_id,:])[0]
-    ks_a[batch_id]= stats.kstest(aprf[batch_id,:], aprt[batch_id,:])[0]
 
-    expectation_d = np.sum( (bins[1:]-0.5)*dif[batch_id,:])
-    expectation_a = np.sum( (bins[1:]-0.5)*aprf[batch_id,:] )
-    exp_d = np.sum( (bins[1:]-0.5)*dit[batch_id,:] )
-    exp_a = np.sum( (bins[1:]-0.5)*aprt[batch_id,:])
-    err_d[batch_id] = np.absolute(exp_d - expectation_d )/exp_d
-    err_a[batch_id] = np.absolute(exp_a - expectation_a )/exp_a
+    ks_d[batch_id]= stats.ks_2samp(di_f, di_t)[0]
+    ks_a[batch_id]= stats.ks_2samp(apr_list, apr_list_t)[0]
 
+    expectation_d[batch_id] = np.mean(di_f)
+    expectation_a[batch_id] = np.mean(apr_list)
+    exp_d[batch_id] = np.mean(di_t)
+    exp_a[batch_id] = np.mean(apr_list_t)
+    err_d[batch_id] = np.absolute(exp_d[batch_id] - expectation_d[batch_id] )/exp_d[batch_id]
+    err_a[batch_id] = np.absolute(exp_a[batch_id] - expectation_a[batch_id] )/exp_a[batch_id]
+
+print('parameters')
 print(G0)
 print(anis)   
 print(Rmax) 
 
-
+print('errors')
 np.set_printoptions(precision=3)
-print(ks_d)
-print(ks_a)
-print(err_d)
-print(err_a)
+print('KSd',ks_d)
+print('KSa',ks_a)
+print('Errd',err_d)
+print('Erra',err_a)
+
+
+#######################
+
+   ## plotting area
+
+######################
+
+
 
 line_styles = ['b-','r--','c-','g--','bs','rs-','cs','gs-']
 t = np.linspace(0,90,25)
+
+
+rom_plot = False
+
+if rom_plot ==True: 
+    y_t = y_t_check
+    df_t = df_t_check
+    area_t = area_t_check
 
 fig,ax = plt.subplots(1,3,figsize=(20,5))
 case = ['a','b','c','d','e','f','g','h']
@@ -287,13 +339,19 @@ for i in range(num_batch):
     ax[2].set_ylabel(r'$S (\mu m^2)$')
 ax[2].legend()
 
-fig.savefig('y_w.pdf',dpi=600)
+if rom_plot == True:  fig.savefig('y_w_rom.pdf',dpi=600)
+else: fig.savefig('y_w.pdf',dpi=600)
+
+if rom_plot == False: 
+    dif = dit
+    aprf = aprt
+    expectation_a = exp_a
+    expectation_d = exp_d
 
 fig,ax = plt.subplots(1,2,figsize=(15,5))
 
 for i in range(num_batch):
-    expectation = np.sum( (bins[1:]-0.5)*dif[i,:] )
-    label=case[i]+': runs'+str(batchs[i])+'_mean'+str(round(expectation, 3))
+    label=case[i]+': runs'+str(batchs[i])+'_mean'+str(round(expectation_d[i], 3))
     ax[0].plot(dif[i,:], line_styles[i], label=label)
 ax[0].set_xlim(0,30)
 ax[0].set_xlabel(r'$d\ (\mu m)$')
@@ -302,14 +360,43 @@ ax[0].legend()
 
 
 for i in range(num_batch):
-    expectation = np.sum( (bins[1:]-0.5)*aprf[i,:] )
-    label=case[i]+': runs'+str(batchs[i])+'_mean'+str(round(expectation, 3))
+    label=case[i]+': runs'+str(batchs[i])+'_mean'+str(round(expectation_a[i], 3))
     ax[1].plot(aprf[i,:], line_styles[i], label=label)
+ax[1].set_xlim(0,30)    
+ax[1].set_xlabel(r'$Asp$')
+ax[1].set_ylabel(r'$P$')
+ax[1].legend()
+
+
+if rom_plot == True:  fig.savefig('qoi_rom.pdf',dpi=600)
+else: fig.savefig('qoi.pdf',dpi=600)
+
+
+
+'''
+#  CDF plot
+
+fig,ax = plt.subplots(1,2,figsize=(15,5))
+
+for i in range(4,5):
+    ax[0].plot(np.cumsum(dif[i,:]), line_styles[i], label='rom')
+    ax[0].plot(np.cumsum(dit[i,:]), line_styles[i+1], label='true')
+ax[0].set_xlim(0,30)
+ax[0].set_xlabel(r'$d\ (\mu m)$')
+ax[0].set_ylabel(r'$P$')
+ax[0].legend()
+
+
+for i in range(4,5):
+
+    ax[1].plot(np.cumsum(aprf[i,:]), line_styles[i], label='rom')
+    ax[1].plot(np.cumsum(aprt[i,:]), line_styles[i+1], label='true')
+
 ax[1].set_xlim(0,40)    
 ax[1].set_xlabel(r'$Asp$')
 ax[1].set_ylabel(r'$P$')
 ax[1].legend()
 
-fig.savefig('rom_qois.pdf',dpi=600)
+'''
 
 
