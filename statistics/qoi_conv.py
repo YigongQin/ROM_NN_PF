@@ -74,11 +74,14 @@ G = 8
 bars = 100
 # targets
 
-
+KSd = [0.049, 0.041, 0.086, 0.034 ,0.012, 0.016, 0.077 ,0.007]
+KSa =[0.105, 0.121, 0.115, 0.03 , 0.106, 0.101, 0.074 ,0.04 ]
+Errd = [0.006 ,0.002 ,0.044 ,0.003, 0.003 ,0.011 ,0.031, 0.001]
+Erra = [0.017 ,0.073 ,0.033, 0.034, 0.046 ,0.054 ,0.079 ,0.038]
 ## start with loading data
 #datasets = glob.glob('../../mulbatch_train/*0.130*.h5')
 #datasets = glob.glob('../../t_ML_PF10_train1000_test100_Mt23274_grains8_frames25_anis*.h5')
-datasets = sorted(glob.glob('*.h5'))
+datasets = sorted(glob.glob('*PF8*154272*.h5'))
 #datasets = glob.glob('../../*test250_Mt70536*.h5')
 #datasets = glob.glob('../../ML_PF10_train2250_test250_Mt70536_grains20_\
 #                     frames27_anis0.130_G05.000_Rmax1.000_seed*_rank0.h5')
@@ -150,11 +153,12 @@ for batch_id in range(num_batch):
         #print('angle sequence', interval)
         ROM_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0,areaf,apr_list)
 
-    di_f = np.sqrt(4.0*np.asarray(areaf)/pi)*dx 
-    dif_g, _ = np.histogram(di_f , bins, density=True)
-    apr_g, _ = np.histogram(apr_list, bins, density=True)
-    exp_d = np.sum( (bins[1:]-0.5)*dif_g )
-    exp_a = np.sum( (bins[1:]-0.5)*apr_g )
+    di_f_t = np.sqrt(4.0*np.asarray(areaf)/pi)*dx 
+    apr_list_t = np.asarray(apr_list)
+    #dif_g, _ = np.histogram(di_f , bins, density=True)
+    #apr_g, _ = np.histogram(apr_list, bins, density=True)
+    exp_d = np.mean(di_f_t)
+    exp_a = np.mean(apr_list_t)
 
     converged = False
     batch = 10
@@ -180,21 +184,25 @@ for batch_id in range(num_batch):
         total_area = (total_area_asse[run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')
         tip_y_f    = (tip_y_f_asse   [run*G*frames:(run+1)*G*frames]).reshape((G,frames), order='F')        
         #print('angle sequence', interval)
+      
         ROM_qois(nx,ny,dx,G,interval,tip_y,frac,extra_area,total_area,tip_y_f,Ni0,Nif,area0,areaf,apr_list)
 
-        di_f = np.sqrt(4.0*np.asarray(areaf)/pi)*dx 
-        dif_c, _ = np.histogram(di_f , bins, density=True)
-        apr_c, _ = np.histogram(apr_list, bins, density=True)
-        expectation_d = np.sum( (bins[1:]-0.5)*dif_c )
-        expectation_a = np.sum( (bins[1:]-0.5)*apr_c )
+      di_f = np.sqrt(4.0*np.asarray(areaf)/pi)*dx 
+      apr_list_r = np.asarray(apr_list)
+    
+      dif_c, _ = np.histogram(di_f , bins, density=True)
+      apr_c, _ = np.histogram(apr_list_r, bins, density=True)
+      expectation_d = np.mean(di_f)
+      expectation_a = np.mean(apr_list_r)
 
-        err_d = np.absolute(exp_d - expectation_d )/exp_d
-        err_a = np.absolute(exp_a - expectation_a )/exp_a
+      err_d = np.absolute(exp_d - expectation_d )/exp_d
+      err_a = np.absolute(exp_a - expectation_a )/exp_a
 
-        stats_1 = stats.kstest(dif_g, dif_c)[0]
-        stats_2 = stats.kstest(apr_g, apr_c)[0]
+      stats_1 = stats.ks_2samp(di_f_t, di_f)[0]
+      stats_2 = stats.ks_2samp(apr_list_t, apr_list_r)[0]
 
-        if stats_1<0.05 and stats_2<0.1 and err_d<0.01 and err_a<0.1: converged = True
+      if stats_1<KSd[batch_id] and stats_2<KSa[batch_id] and err_d<Errd[batch_id] and err_a<Erra[batch_id]: converged = True
+      print(stats_1,stats_2,err_d, err_a, batch)
 
     dif[batch_id,:] = dif_c
     aprf[batch_id,:] = apr_c
