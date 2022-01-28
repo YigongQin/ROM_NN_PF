@@ -177,7 +177,7 @@ param_all = np.concatenate( (param_train, param_test), axis=0)
 
 y_all  = np.concatenate( (y_train, y_test), axis=0)
 dy_all  = np.diff(y_all, axis=1) 
-dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)  ##extrapolate dy at t=0
+dy_all = np.concatenate((dy_all[:,[0]]*0,dy_all),axis=-1)  ##extrapolate dy at t=0
 dy_all = dy_all/y_norm
 
 ## add area 
@@ -191,7 +191,7 @@ area_coeff = y_norm*fnx/dx/area_norm
 frac_ini = frac_all[:,0,:]
 
 dfrac_all = np.diff(frac_all, axis=1)/frac_norm   ## frac norm is fixed in the code
-dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) ##extrapolate dfrac at t=0
+dfrac_all = np.concatenate((dfrac_all[:,[0],:]*0,dfrac_all),axis=1) ##extrapolate dfrac at t=0
 
 ## scale the frac according to the time frame 
 
