@@ -177,7 +177,9 @@ param_all = np.concatenate( (param_train, param_test), axis=0)
 
 y_all  = np.concatenate( (y_train, y_test), axis=0)
 dy_all  = np.diff(y_all, axis=1) 
-dy_all = np.concatenate((dy_all[:,[0]]*0,dy_all),axis=-1)  ##extrapolate dy at t=0
+if mode == 'ini':
+    dy_all = np.concatenate((dy_all[:,[0]]*0,dy_all),axis=-1)  ##extrapolate dy at t=0
+else: dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
 dy_all = dy_all/y_norm
 
 ## add area 
@@ -191,8 +193,9 @@ area_coeff = y_norm*fnx/dx/area_norm
 frac_ini = frac_all[:,0,:]
 
 dfrac_all = np.diff(frac_all, axis=1)/frac_norm   ## frac norm is fixed in the code
-dfrac_all = np.concatenate((dfrac_all[:,[0],:]*0,dfrac_all),axis=1) ##extrapolate dfrac at t=0
-
+if mode == 'ini':
+    dfrac_all = np.concatenate((dfrac_all[:,[0],:]*0,dfrac_all),axis=1) ##extrapolate dfrac at t=0
+else: dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) 
 ## scale the frac according to the time frame 
 
 #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
@@ -422,11 +425,16 @@ else:
     ini_model.eval()
 
     seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
+    seq_1[:,:,-1]=0
+    seq_1[:,:,G:2*G]=0
+    print('sample', seq_1[0,0,:])
     param_dat[:,-1] = dt
     output_model = ini_model(todevice(seq_1), todevice(param_dat) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+    seq_dat[:,0,-1] = seq_dat[:,1,-1]
+    seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
     #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
