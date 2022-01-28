@@ -42,7 +42,7 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
-noPDE = False
+noPDE = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -433,8 +433,9 @@ else:
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
-    seq_dat[:,0,-1] = seq_dat[:,1,-1]
-    seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+    if mode != 'ini':
+      seq_dat[:,0,-1] = seq_dat[:,1,-1]
+      seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
     #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
@@ -475,7 +476,7 @@ area_out = darea_out*area_norm
 #print((y_out[0,:]))
 
 
-miss_rate_param = np.zeros(num_batch)
+miss_rate_param = np.zeros(num_test)
 run_per_param = int(evolve_runs/num_batch)
 if run_per_param <1: run_per_param = 1
 
