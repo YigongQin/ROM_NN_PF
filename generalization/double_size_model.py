@@ -493,7 +493,7 @@ class ConvLSTM_start(nn.Module):
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
             darea = (self.project_a(last_time))    # [b,1]
-            dfrac = self.project(last_time)   # project last time output b,hidden_dim, to the desired shape [b,w]   
+            dfrac = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
             frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
