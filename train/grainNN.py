@@ -415,6 +415,7 @@ seq_test = seq_all[num_train:,:,:]
 frac_out[:,0,:] = seq_test[:,0,:G]
 dy_out[:,0] = seq_test[:,0,-1]
 darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
+left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
