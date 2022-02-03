@@ -31,7 +31,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
     new_size_p = size_p - 2*G_all + 2*G
     
     if G==G_all: 
-        return param_dat, seq_dat, 1
+        return param_dat, seq_dat, 1, np.zeros(size_b)
           
         
     elif G_all>G:
@@ -42,6 +42,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
         ones = np.ones((size_b, size_t))
         ones_p = np.ones((size_b))
         zeros = np.zeros((size_b, size_t))
+
+        left_coors = np.zeros((size_b, expand))
 
         for i in range(expand):
             
@@ -56,9 +58,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             dfrac_sliced = G_all/G*seq_dat[:,:,2*i+G_all:G+2*i+G_all] # dfrac
             darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
             
-            right = np.cumsum(frac_sliced[:,0,:], axis = -1)
-            left = np.cumsum()
-
+            if i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
 
             if i>=expand//2:
 
@@ -86,32 +86,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
                 frac_sliced = np.flip(frac_sliced, axis = -1)
                 dfrac_sliced = np.flip(dfrac_sliced, axis = -1)
                 darea_sliced = np.flip(darea_sliced, axis = -1)
-            '''
-            diff_frac = ones - np.sum(frac_sliced, axis=-1)
-            diff_param = ones_p - np.sum(param_sliced, axis=-1)
-            diff_dfrac = - np.sum(dfrac_sliced, axis=-1)
-            if i==0: 
-                ## modify right
-                frac_sliced[:,:,-1] += diff_frac
-                param_sliced[:,-1] += diff_param
-                dfrac_sliced[:,:,-1] += diff_dfrac
-
-            elif i==expand-1:
-                ## modify left
-                frac_sliced[:,:,0] += diff_frac
-                param_sliced[:,0] += diff_param
-                dfrac_sliced[:,:,0] += diff_dfrac
-
-            else: 
-
-                frac_sliced[:,:,-1] += diff_frac/2
-                param_sliced[:,-1] += diff_param/2
-                dfrac_sliced[:,:,-1] += diff_dfrac/2
-
-                frac_sliced[:,:,0] += diff_frac/2
-                param_sliced[:,0] += diff_param/2
-                dfrac_sliced[:,:,0] += diff_dfrac/2
-            '''
+  
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - ones_p ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - ones ) <1e-5
             assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - zeros ) <1e-5
@@ -121,6 +96,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             new_seq[i*size_b:(i+1)*size_b,:,G:2*G] = dfrac_sliced
             new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced*(frac_sliced>0)
             new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
+   
 
         if check_dat == True:
 
@@ -129,13 +105,13 @@ def split_grain(param_dat, seq_dat, G, G_all):
             print(param_dat[0,:])
             print(new_param[::size_b,:])
 
-        return new_param, new_seq, expand
+        return new_param, new_seq, expand, left_coors
             
     else: raise ValueError("number of grain is wrong")
 
 
 
-def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
+def merge_grain(frac, y, area, G, G_all, expand, left_coors):
     
     
     '''
@@ -162,13 +138,13 @@ def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
 
 
     if G==G_all: 
-        return frac, y, area
+        return frac, y, area, np.cumsum(frac, axis=-1) - frac
           
         
     elif G_all>G:
 
         y_null = np.zeros((expand, new_size_b, size_t))
-
+        left_coors_grains = np.zeros((new_size_b, size_t, G_all))
 
         for i in range(expand):
 
@@ -188,14 +164,16 @@ def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
             if i==0:
                 new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
                 new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l] #+ area_coeff*new_frac[:,:,:BC_l]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
+                left_coors_grains[:,:,:BC_l] = left_coors[:,[i],np.newaxis] + np.cumsum(frac[:new_size_b,:,:], axis=-1)[:,:,:BC_l] - frac[:new_size_b,:,:BC_l]
             elif i==expand-1:
                 new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
                 new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:] #+ area_coeff*new_frac[:,:,-BC_l:]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
+                left_coors_grains[:,:,-BC_l:] = left_coors[:,[i],np.newaxis] + np.cumsum(frac[-new_size_b:,:,:], axis=-1)[:,:,-BC_l:] - frac[-new_size_b:,:,-BC_l:]
             else:
                 new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
-                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] #\
-                #+ area_coeff*new_frac[:,:,BC_l+2*i-2:BC_l+2*i]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
- 
+                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] 
+                left_coors_grains[:,:,BC_l+2*i-2:BC_l+2*i] = \
+                left_coors[:,[i],np.newaxis] + np.cumsum(frac[new_size_b*i:new_size_b*(i+1),:,:], axis=-1)[:,:,mid] - frac[new_size_b*i:new_size_b*(i+1),:,mid]
 
         new_frac *= G/G_all
 
@@ -206,7 +184,8 @@ def merge_grain(frac, y, area, G, G_all, expand, area_coeff):
 
         print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
 
-        return new_frac, new_y, new_area
+        assert left_coors_grains.shape[2]==new_frac.shape[2]
+        return new_frac, new_y, new_area, left_coors_grains
             
     else: raise ValueError("number of grain is wrong")    
 
