@@ -284,7 +284,7 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
     ntip_y = np.asarray(tip_y/dx,dtype=int)   
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
-    left = np.asarray(np.round(left_grains*nx),dtype=int)
+    left_grains = np.asarray(np.round(left_grains*nx),dtype=int)
   #  piece_len = np.cumsum(piece_len,axis=0)
    # correction = piece_len[-1, :] - fnx
   #  for g in range(G//2, G):
@@ -297,15 +297,20 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
 #=========================start fill the final field=================
     nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
+    left = np.zeros(G, dtype=int)
     miss=0
     for j in range(ntip_y[final-1]):
      #  loc = 0
        for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]; left[g] = left_grains[g,0]
           else:
             fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
             new_f = fint(j)
             temp_piece[g] = np.asarray(new_f,dtype=int)
+
+            fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
+            new_f = fint(j)
+            left[g] = np.asarray(new_f,dtype=int)
        #print(temp_piece)
        #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
        for g in range(G):
