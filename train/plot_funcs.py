@@ -270,13 +270,13 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
       subplot_rountine(fig, ax3, cs3, 3)
     
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.png',dpi=800,facecolor="white", bbox_inches='tight')
-      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
+
       plt.close()
 
 
 
 
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area):
+def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains):
     
 
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
@@ -284,10 +284,11 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
     ntip_y = np.asarray(tip_y/dx,dtype=int)   
     piece_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(piece_len,axis=0)
-    correction = piece_len[-1, :] - fnx
-    for g in range(G//2, G):
-      piece_len[g,:] -= correction
+    left = np.asarray(np.round(left_grains*nx),dtype=int)
+  #  piece_len = np.cumsum(piece_len,axis=0)
+   # correction = piece_len[-1, :] - fnx
+  #  for g in range(G//2, G):
+  #    piece_len[g,:] -= correction
 
     piece0 = piece_len[:,0]
     field = np.zeros((nx,ny),dtype=int)
@@ -308,13 +309,8 @@ def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final
        #print(temp_piece)
        #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
        for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+
+          for i in range(left[g], left[g]+temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
