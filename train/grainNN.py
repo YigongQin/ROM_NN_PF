@@ -412,9 +412,9 @@ param_dat = param_test[:evolve_runs,:]
 
 seq_test = seq_all[num_train:,:,:]
 
-frac_out[:,0,:] = seq_dat[:,0,:G]
-dy_out[:,0] = seq_dat[:,0,-1]
-darea_out[:,0,:] = seq_dat[:,0,2*G:3*G]
+frac_out[:,0,:] = seq_test[:,0,:G]
+dy_out[:,0] = seq_test[:,0,-1]
+darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
 
 if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
@@ -434,7 +434,7 @@ else:
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
     ini_model.eval()
 
-    seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
+    seq_1 = seq_test[:,[0],:]   ## this can be generated randomly
     seq_1[:,:,-1]=0
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
