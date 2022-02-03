@@ -412,6 +412,10 @@ param_dat = param_test[:evolve_runs,:]
 
 seq_test = seq_all[num_train:,:,:]
 
+frac_out[:,0,:] = seq_dat[:,0,:G]
+dy_out[:,0] = seq_dat[:,0,-1]
+darea_out[:,0,:] = seq_dat[:,0,2*G:3*G]
+
 if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
