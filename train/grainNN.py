@@ -442,7 +442,7 @@ else:
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    frac_out[:,1:window,:], dy_out[:,1:window,:], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+    frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
 
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
