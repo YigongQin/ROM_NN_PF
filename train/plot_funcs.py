@@ -42,7 +42,7 @@ def subplot_rountine(fig, ax, cs, idx):
     
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area,left_grains):
 
     #print('angle sequence', aseq)
     #print(frac) 
@@ -57,10 +57,8 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     ntip_y = np.asarray(tip_y/dx,dtype=int)
     
     p_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(p_len,axis=0)
-    correction = piece_len[-1, :] - fnx
-    for g in range(G//2, G):
-      piece_len[g,:] -= correction
+    piece_len = p_len
+    left_grains = np.asarray(np.round(left_grains*nx),dtype=int)
 
     piece0 = piece_len[:,0]
     #print(piece_len[-1,:])
@@ -73,23 +71,13 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 #=========================start fill the initial field=================
 
     temp_piece = np.zeros(G, dtype=int)
+    left = np.zeros(G, dtype=int)
     for j in range(ntip_y[0]):
      #  start with temp_piece
        for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
+          temp_piece[g] = piece0[g]
 
-       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            ini_field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+          for i in range(left[g], left[g]+temp_piece[g]):
             if (i>nx-1 or j>ny-1): break         
             ini_field[i,j] = aseq[g]
 
@@ -97,30 +85,29 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 #=========================start fill the final field=================
     nymax = int(ymax/dx)
     temp_piece = np.zeros(G, dtype=int)
+    left = np.zeros(G, dtype=int)
     miss=0
     for j in range(ntip_y[final-1]):
      #  loc = 0
        for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+          if j <= ntip_y[0]: temp_piece[g] = piece0[g]; left[g] = left_grains[g,0]
           else:
             fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
             new_f = fint(j)
             temp_piece[g] = np.asarray(new_f,dtype=int)
+
+            fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
+            new_f = fint(j)
+            left[g] = np.asarray(new_f,dtype=int)
        #print(temp_piece)
        #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
        for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
+
+          for i in range(left[g], left[g]+temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
 
 
 #=========================start fill the extra field=================
@@ -131,13 +118,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       #print(height)
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+          for i in range(left[g], left[g]+temp_piece[g]):
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
