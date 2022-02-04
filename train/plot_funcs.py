@@ -218,8 +218,8 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
 #=========================start fill the final field=================
 
     field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
-    nymax = int(ymax/dx)
-    upper = max(nymax,ntip_y[final-1])
+
+    
     y_range = np.arange(ntip_y[0], ntip_y[final-1])
     temp_piece = np.zeros((G, ny), dtype=int)
     left = np.zeros((G, ny), dtype=int)
