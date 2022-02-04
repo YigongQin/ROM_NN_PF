@@ -143,6 +143,7 @@ ini_model.eval()
 alone = pred_frames%out_win
 pack = pred_frames-alone
 
+param_dat0 = param_dat
 param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
 param_dat[:,-1] = dt
@@ -213,7 +214,7 @@ aseq_test = np.arange(G) +1
 
 for data_id in range(1):
 
-    pf_angles[1:] = (param_dat[data_id,G:2*G]+1)*45
+    pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
 
 
