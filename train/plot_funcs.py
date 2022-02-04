@@ -86,7 +86,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
     field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
     nymax = int(ymax/dx)
-    upper = np.max(nymax,ntip_y[final-1])
+    upper = max(nymax,ntip_y[final-1])
     y_range = np.arange(ntip_y[0], ntip_y[final-1])
     temp_piece = np.zeros((G, ny), dtype=int)
     left = np.zeros((G, ny), dtype=int)
