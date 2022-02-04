@@ -164,19 +164,19 @@ def merge_grain(frac, y, area, G, G_all, expand, left_coors):
             if i==0:
                 new_frac[:,:,:BC_l]  = frac[:new_size_b, :,:BC_l]
                 new_area[:,:,:BC_l]  = area[:new_size_b, :,:BC_l] #+ area_coeff*new_frac[:,:,:BC_l]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
-                left_coors_grains[:,:,:BC_l] = left_coors[:,[i]][:,:,np.newaxis] + G/G_all*(np.cumsum(frac[:new_size_b,:,:], axis=-1)[:,:,:BC_l] - frac[:new_size_b,:,:BC_l])
+                left_coors_grains[:,:,:BC_l] = left_coors[:,[i]][:,:,np.newaxis] + np.cumsum(frac[:new_size_b,:,:], axis=-1)[:,:,:BC_l] - frac[:new_size_b,:,:BC_l]
             elif i==expand-1:
                 new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
                 new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:] #+ area_coeff*new_frac[:,:,-BC_l:]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
-                left_coors_grains[:,:,-BC_l:] = left_coors[:,[i]][:,:,np.newaxis] + G/G_all*(np.cumsum(frac[-new_size_b:,:,:], axis=-1)[:,:,-BC_l:] - frac[-new_size_b:,:,-BC_l:])
+                left_coors_grains[:,:,-BC_l:] = left_coors[:,[i]][:,:,np.newaxis] + np.cumsum(frac[-new_size_b:,:,:], axis=-1)[:,:,-BC_l:] - frac[-new_size_b:,:,-BC_l:]
             else:
                 new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
                 new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] 
                 left_coors_grains[:,:,BC_l+2*i-2:BC_l+2*i] = \
-                left_coors[:,[i]][:,:,np.newaxis] + G/G_all*(np.cumsum(frac[new_size_b*i:new_size_b*(i+1),:,:], axis=-1)[:,:,mid] - frac[new_size_b*i:new_size_b*(i+1),:,mid])
+                left_coors[:,[i]][:,:,np.newaxis] + np.cumsum(frac[new_size_b*i:new_size_b*(i+1),:,:], axis=-1)[:,:,mid] - frac[new_size_b*i:new_size_b*(i+1),:,mid]
 
         new_frac *= G/G_all
-
+        left_coors_grains *= G/G_all
         ## evaluation (a) sum frac, (b) std of y
         diff_1 = np.absolute( np.sum(new_frac,axis=-1) - np.ones_like(new_y)  )
         max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
