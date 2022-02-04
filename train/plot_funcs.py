@@ -65,7 +65,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     field = np.zeros((nx,ny),dtype=int)
     ini_field = np.zeros((nx,ny),dtype=int)
 
-
+    guess = np.absolute(pf_angles-45); print(guess)
             
 
 #=========================start fill the initial field=================
@@ -86,6 +86,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
     field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
     nymax = int(ymax/dx)
+    upper = np.max(nymax,ntip_y[final-1])
     y_range = np.arange(ntip_y[0], ntip_y[final-1])
     temp_piece = np.zeros((G, ny), dtype=int)
     left = np.zeros((G, ny), dtype=int)
@@ -107,11 +108,18 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
           for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break
-           
-            field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
 
+            if field[i,j]==0 or guess[g]>guess[g-1]: field[i,j] = aseq[g]
+            
 
+          while i<nx-1 and field[i+1,j]==0 :
+            if g==G-1: field[i+1,j] = aseq[g]
+            else: 
+              if guess[g]<guess[g+1]: field[i+1,j] = aseq[g+1]
+              else: field[i+1,j] = aseq[g]
+
+    #if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
+    miss = np.sum(alpha_true[1:-1, ntip_y[0]+1:upper+1]!=field[:,ntip_y[0]:upper])
 #=========================start fill the extra field=================
     for g in range(G):
 
