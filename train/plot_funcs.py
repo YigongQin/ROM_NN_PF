@@ -101,7 +101,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       new_f = fint(y_range)
       left[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
-    for j in range(y_range):
+    for j in y_range:
 
        for g in range(G):
 
