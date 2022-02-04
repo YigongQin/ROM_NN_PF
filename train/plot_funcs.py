@@ -65,7 +65,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     field = np.zeros((nx,ny),dtype=int)
     ini_field = np.zeros((nx,ny),dtype=int)
 
-    guess = np.absolute(pf_angles-45); print(guess)
+    guess = np.absolute(pf_angles-45)
             
 
 #=========================start fill the initial field=================
@@ -175,73 +175,89 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
 def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area):
     
-    #print('angle sequence', aseq)
-    #print(frac) 
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ytop = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
     nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
+    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
     
     p_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(p_len,axis=0)
-    correction = piece_len[-1, :] - fnx
-    for g in range(G//2, G):
-      piece_len[g,:] -= correction
+    piece_len = p_len
+    left_grains = np.asarray(np.round(left_grains*nx),dtype=int)
 
     piece0 = piece_len[:,0]
     #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
+    ini_field = np.zeros((nx,ny),dtype=int)
 
+    guess = np.absolute(pf_angles-45)
+            
+
+#=========================start fill the initial field=================
+
+    temp_piece = np.zeros(G, dtype=int)
+    left = np.zeros(G, dtype=int)
+    for j in range(ntip_y[0]):
+     #  start with temp_piece
+       for g in range(G):
+          temp_piece[g] = piece0[g]
+          left[g] = left_grains[g,0]
+          for i in range(left[g], left[g]+temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break         
+            ini_field[i,j] = aseq[g]
 
 
 #=========================start fill the final field=================
-    
-    temp_piece = np.zeros(G, dtype=int)
+
+    field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
+    nymax = int(ymax/dx)
+    upper = max(nymax,ntip_y[final-1])
+    y_range = np.arange(ntip_y[0], ntip_y[final-1])
+    temp_piece = np.zeros((G, ny), dtype=int)
+    left = np.zeros((G, ny), dtype=int)
     miss=0
-    for j in range(ntip_y[final-1]):
-     #  loc = 0
+
+
+    for g in range(G):
+      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+      new_f = fint(y_range)
+      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+      fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
+      new_f = fint(y_range)
+      left[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+    for j in y_range:
+
        for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
-       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
+
+          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break
 
-            field[i,j] = aseq[g]
+            if field[i,j]==0 or guess[g]>guess[g-1]: field[i,j] = aseq[g]
+            
 
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-    
-            field[i,j] = aseq[g]
+          while i<nx-1 and field[i+1,j]==0 :
+            if g==G-1: field[i+1,j] = aseq[g]
+            else: 
+              if guess[g]<guess[g+1]: field[i+1,j] = aseq[g+1]
+              else: field[i+1,j] = aseq[g]
 
-
-
+    #if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
+    miss = np.sum(alpha_true[1:-1, ntip_y[0]+1:upper+1]!=field[:,ntip_y[0]:upper])
 #=========================start fill the extra field=================
     for g in range(G):
 
       if p_len[g, final-1] ==0: height =0 
       else: height = int(area[g]/p_len[g, final-1])
-      
+      #print(height)
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
@@ -270,47 +286,81 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
 def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains):
     
 
+    xmin = x[1]; xmax = x[-2]
+    ymin = y[1]; ytop = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
+    nt=len(tip_y)
+    #input_frac = int((window-1)/(nt-1)*100)
     alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
-    ntip_y = np.asarray(tip_y/dx,dtype=int)   
-    piece_len = np.asarray(np.round(frac*nx),dtype=int)
+
+    ntip_y = np.asarray(tip_y/dx,dtype=int)
+    
+    p_len = np.asarray(np.round(frac*nx),dtype=int)
+    piece_len = p_len
     left_grains = np.asarray(np.round(left_grains*nx),dtype=int)
-  #  piece_len = np.cumsum(piece_len,axis=0)
-   # correction = piece_len[-1, :] - fnx
-  #  for g in range(G//2, G):
-  #    piece_len[g,:] -= correction
 
     piece0 = piece_len[:,0]
+    #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
+    ini_field = np.zeros((nx,ny),dtype=int)
+
+    guess = np.absolute(pf_angles-45)
+            
+
+#=========================start fill the initial field=================
+
+    temp_piece = np.zeros(G, dtype=int)
+    left = np.zeros(G, dtype=int)
+    for j in range(ntip_y[0]):
+     #  start with temp_piece
+       for g in range(G):
+          temp_piece[g] = piece0[g]
+          left[g] = left_grains[g,0]
+          for i in range(left[g], left[g]+temp_piece[g]):
+            if (i>nx-1 or j>ny-1): break         
+            ini_field[i,j] = aseq[g]
 
 
 #=========================start fill the final field=================
+
+    field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
     nymax = int(ymax/dx)
-    temp_piece = np.zeros(G, dtype=int)
-    left = np.zeros(G, dtype=int)
+    upper = max(nymax,ntip_y[final-1])
+    y_range = np.arange(ntip_y[0], ntip_y[final-1])
+    temp_piece = np.zeros((G, ny), dtype=int)
+    left = np.zeros((G, ny), dtype=int)
     miss=0
-    for j in range(ntip_y[final-1]):
-     #  loc = 0
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]; left[g] = left_grains[g,0]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
 
-            fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
-            new_f = fint(j)
-            left[g] = np.asarray(new_f,dtype=int)
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+
+    for g in range(G):
+      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+      new_f = fint(y_range)
+      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+      fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
+      new_f = fint(y_range)
+      left[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+    for j in y_range:
+
        for g in range(G):
 
-          for i in range(left[g], left[g]+temp_piece[g]):
+          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
+
+            if field[i,j]==0 or guess[g]>guess[g-1]: field[i,j] = aseq[g]
+            
+
+          while i<nx-1 and field[i+1,j]==0 :
+            if g==G-1: field[i+1,j] = aseq[g]
+            else: 
+              if guess[g]<guess[g+1]: field[i+1,j] = aseq[g+1]
+              else: field[i+1,j] = aseq[g]
+
+    #if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
+    miss = np.sum(alpha_true[1:-1, ntip_y[0]+1:upper+1]!=field[:,ntip_y[0]:upper])
+
             
     ## count for the error of y
     miss_frac = miss
