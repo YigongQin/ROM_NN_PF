@@ -177,7 +177,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return
 
 
-def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area):
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area,left_grains):
     
     xmin = x[1]; xmax = x[-2]
     ymin = y[1]; ytop = y[-2]

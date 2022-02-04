@@ -64,7 +64,7 @@ evolve_runs = 1000 #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
 darea_out = np.zeros((evolve_runs,frames,G))
-
+left_grains = np.zeros((evolve_runs,frames,G))
 
 param_dat = np.zeros((evolve_runs, 2*G+4))
 seq_1 = np.zeros((evolve_runs,1,3*G+1))
@@ -104,7 +104,10 @@ print('sample param', param_dat[0,:])
 
 #==============================
 
-
+frac_out[:,0,:] = seq_1[:,0,:G]
+dy_out[:,0] = seq_1[:,0,-1]
+darea_out[:,0,:] = seq_1[:,0,2*G:3*G]
+left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 
 model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
@@ -140,21 +143,24 @@ ini_model.eval()
 alone = pred_frames%out_win
 pack = pred_frames-alone
 
-
+param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
 param_dat[:,-1] = dt
 output_model = ini_model(todevice(seq_1), todevice(param_dat) )
 dfrac_new = tohost( output_model[0] ) 
 frac_new = tohost(output_model[1])
+
+frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+    = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+
 seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
 
 
 ## write initial windowed data to out arrays
-frac_out[:,:window,:] = seq_dat[:,:,:G]
-dy_out[:,:window] = seq_dat[:,:,-1]
-darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
 
-param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
+
+
+
 print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
@@ -166,12 +172,12 @@ for i in range(0,pred_frames,out_win):
     frac_new = tohost(output_model[1])
 
     if i>=pack:
-        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, 0)
+        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, left_coors)
     else: 
 
-        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, 0)
+        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
@@ -208,7 +214,7 @@ aseq_test = np.arange(G) +1
 for data_id in range(1):
 
     pf_angles[1:] = (param_dat[data_id,G:2*G]+1)*45
-    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:])
+    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
 
 
 
