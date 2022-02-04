@@ -76,36 +76,38 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
      #  start with temp_piece
        for g in range(G):
           temp_piece[g] = piece0[g]
-
+          left[g] = left_grains[g,0]
           for i in range(left[g], left[g]+temp_piece[g]):
             if (i>nx-1 or j>ny-1): break         
             ini_field[i,j] = aseq[g]
 
 
 #=========================start fill the final field=================
+
+    field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
     nymax = int(ymax/dx)
-    temp_piece = np.zeros(G, dtype=int)
-    left = np.zeros(G, dtype=int)
+    y_range = np.arange(ntip_y[0], ntip_y[final-1])
+    temp_piece = np.zeros((G, ny), dtype=int)
+    left = np.zeros((G, ny), dtype=int)
     miss=0
-    for j in range(ntip_y[final-1]):
-     #  loc = 0
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]; left[g] = left_grains[g,0]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
 
-            fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
-            new_f = fint(j)
-            left[g] = np.asarray(new_f,dtype=int)
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+
+    for g in range(G):
+      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+      new_f = fint(y_range)
+      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+      fint = interp1d(ntip_y[:final], left_grains[g,:final],kind='linear')
+      new_f = fint(y_range)
+      left[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+    for j in range(y_range):
+
        for g in range(G):
 
-          for i in range(left[g], left[g]+temp_piece[g]):
+          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break
-           # print(loc)
+           
             field[i,j] = aseq[g]
             if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
 
@@ -118,7 +120,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       #print(height)
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
-          for i in range(left[g], left[g]+temp_piece[g]):
+          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
