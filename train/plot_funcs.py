@@ -112,13 +112,12 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
             if field[i,j]==0 or guess[g]>guess[g-1]: field[i,j] = aseq[g]
             
 
-          
           if g==G-1:
-            while i<nx-1 and field[i+1,j]==0 : 
+            while i<nx-1: 
                field[i+1,j] = aseq[g]
                i=i+1
           else: 
-            while i<left[g+1,j] and i<nx-1 and field[i+1,j]==0 : 
+            while i<left[g+1,j] and i<nx-1: 
                if guess[g]<guess[g+1]: field[i+1,j] = aseq[g+1]
                else: field[i+1,j] = aseq[g]
                i=i+1
