@@ -185,7 +185,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
     dx = x[1]-x[0]
     nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
-    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
+  
 
     ntip_y = np.asarray(tip_y/dx,dtype=int)
     
@@ -255,8 +255,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
                else: field[i+1,j] = aseq[g]
                i=i+1
 
-    #if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
-    miss = np.sum(alpha_true[1:-1, ntip_y[0]+1:upper+1]!=field[:,ntip_y[0]:upper])
+
 #=========================start fill the extra field=================
     for g in range(G):
 
