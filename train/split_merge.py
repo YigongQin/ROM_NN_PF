@@ -59,9 +59,9 @@ def split_grain(param_dat, seq_dat, G, G_all):
             darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
             
 
-            if i>(expand-1)//2: left_coors[:,i] = 1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1] 
-            if i>0 and i<=(expand-1)//2: left_coors[:,i] = np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
-
+            if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
+            elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
+            else: pass
 
             if i>(expand-1)//2:
 
@@ -160,7 +160,7 @@ def merge_grain(frac, y, area, G, G_all, expand, left_coors):
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
 
-        frac *= G/G_all
+        #frac *= G/G_all
         ## add the two middle grains to the data
         for i in range(expand):
         ## first give the first and last data
@@ -171,17 +171,18 @@ def merge_grain(frac, y, area, G, G_all, expand, left_coors):
             elif i==expand-1:
                 new_frac[:,:,-BC_l:] = frac[-new_size_b:,:,-BC_l:]
                 new_area[:,:,-BC_l:] = area[-new_size_b:,:,-BC_l:] #+ area_coeff*new_frac[:,:,-BC_l:]*( y_null[i,:,:] - new_y )[:,:,np.newaxis]
-                left_coors_grains[:,:,-BC_l:] = 1 - left_coors[:,[i]][:,:,np.newaxis] - np.flip(np.cumsum(np.flip(frac[-new_size_b:,:,:],axis=-1), axis=-1),axis=-1)[:,:,-BC_l:] 
+                left_coors_grains[:,:,-BC_l:] = G_all/G - left_coors[:,[i]][:,:,np.newaxis] - np.flip(np.cumsum(np.flip(frac[-new_size_b:,:,:],axis=-1), axis=-1),axis=-1)[:,:,-BC_l:] 
             else:
                 new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[new_size_b*i:new_size_b*(i+1),:,mid]
                 new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[new_size_b*i:new_size_b*(i+1),:,mid] 
                 if i>(expand-1)//2:
                     left_coors_grains[:,:,BC_l+2*i-2:BC_l+2*i] = \
-                    1 - left_coors[:,[i]][:,:,np.newaxis] -  np.flip(np.cumsum(np.flip(frac[new_size_b*i:new_size_b*(i+1),:,:],axis=-1), axis=-1),axis=-1)[:,:,mid]                  
+                    G_all/G - left_coors[:,[i]][:,:,np.newaxis] -  np.flip(np.cumsum(np.flip(frac[new_size_b*i:new_size_b*(i+1),:,:],axis=-1), axis=-1),axis=-1)[:,:,mid]                  
                 else:
                     left_coors_grains[:,:,BC_l+2*i-2:BC_l+2*i] = \
                     left_coors[:,[i]][:,:,np.newaxis] + np.cumsum(frac[new_size_b*i:new_size_b*(i+1),:,:], axis=-1)[:,:,mid] - frac[new_size_b*i:new_size_b*(i+1),:,mid]
-
+        new_frac *= G/G_all
+        left_coors_grains *= G/G_all
         ## evaluation (a) sum frac, (b) std of y
         diff_1 = np.absolute( np.sum(new_frac,axis=-1) - np.ones_like(new_y)  )
         max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
