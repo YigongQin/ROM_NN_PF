@@ -60,8 +60,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
             
 
             if i>(expand-1)//2: left_coors[:,i] = 1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1] 
-            elif i>0: left_coors[:,i] = np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
-            else: pass
+            if i>0 and i<=(expand-1)//2: left_coors[:,i] = np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
+
 
             if i>(expand-1)//2:
 
