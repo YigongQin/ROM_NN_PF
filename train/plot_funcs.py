@@ -132,7 +132,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       #print(height)
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
-          for i in range(left[g,j], left[g,j]+temp_piece[g,j]):
+          for i in range(left[g,ntip_y[final-1]-1], left[g,ntip_y[final-1]-1]+temp_piece[g,ntip_y[final-1]-1]):
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
