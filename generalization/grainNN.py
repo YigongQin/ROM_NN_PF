@@ -23,7 +23,7 @@ from plot_funcs import plot_IO, miss_rate
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
-from double_size_model import *
+from models import *
 import matplotlib.tri as tri
 from split_merge import split_grain, merge_grain
 from scipy.interpolate import griddata

@@ -43,6 +43,7 @@ area_scale = 0.1
 seed = 1  
  
 data_dir = '../../validation/*.h5'
+size_scale = 1
 #valid_dir = '../../validation/*.h5'
 #data_dir = '../../double_grains/*.h5'
 #data_dir = '../../quadra_grains/*.h5'
