@@ -473,7 +473,7 @@ for i in range(0,pred_frames,out_win):
     ## you may resplit the grains here
 
     domain_factor = size_scale*np.ones((seq_dat.shape[0],1))
-    seq_1[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
+    seq_dat[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
 
     output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
