@@ -402,6 +402,7 @@ evolve_runs = num_test #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
 darea_out = np.zeros((evolve_runs,frames,G))
+left_grains = np.zeros((evolve_runs,frames,G))
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
@@ -411,9 +412,19 @@ param_dat = param_test[:evolve_runs,:]
 
 seq_test = seq_all[num_train:,:,:]
 
+frac_out[:,0,:] = seq_test[:,0,:G]
+dy_out[:,0] = seq_test[:,0,-1]
+darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
+left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
+
 if noPDE == False:
     seq_dat = seq_test[:evolve_runs,:window,:]
 
+    frac_out[:,:window,:] = seq_dat[:,:,:G]
+    dy_out[:,:window] = seq_dat[:,:,-1]
+    darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
+
+    param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 else: 
     ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
@@ -424,14 +435,21 @@ else:
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
     ini_model.eval()
 
-    seq_1 = seq_test[:evolve_runs,[0],:]   ## this can be generated randomly
+    seq_1 = seq_test[:,[0],:]   ## this can be generated randomly
     seq_1[:,:,-1]=0
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
+
+    param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
+
     param_dat[:,-1] = dt
     output_model = ini_model(todevice(seq_1), todevice(param_dat) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
+
+    frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
       seq_dat[:,0,-1] = seq_dat[:,1,-1]
@@ -439,11 +457,7 @@ else:
     #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
-frac_out[:,:window,:] = seq_dat[:,:,:G]
-dy_out[:,:window] = seq_dat[:,:,-1]
-darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
 
-param_dat, seq_dat, expand = split_grain(param_dat, seq_dat, G_small, G)
 print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
@@ -455,12 +469,12 @@ for i in range(0,pred_frames,out_win):
     frac_new = tohost(output_model[1])
 
     if i>=pack:
-        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, area_coeff)
+        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, left_coors)
     else: 
 
-        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, area_coeff)
+        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
@@ -514,8 +528,8 @@ if valid_train:
      Rmax = np.float(R_list[batch_id]) 
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
      #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
-     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:])
+     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
+     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
    miss_rate_param[batch_id] = sum_miss/run_per_param
