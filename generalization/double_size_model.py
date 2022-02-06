@@ -14,11 +14,11 @@ from torch import Tensor
 import torch.nn.init as init
 from typing import Callable, List, Optional, Tuple
 #from G_E import *
-domain_factor = 2
+
 frac_norm = 0.06
 y_norm = 1
 area_norm = 10000
-area_norm *= domain_factor
+
 
 def scale(t,dt): 
     # x = 1, return 1, x = 0, return frames*beta
@@ -369,7 +369,7 @@ class ConvLSTM_seq(nn.Module):
         self.device = device
         self.dt = dt
         
-    def forward(self, input_seq, input_param):
+    def forward(self, input_seq, input_param, domain_factor):
         
 
         ## step 1 remap the input to the channel with gridDdim G
@@ -396,7 +396,6 @@ class ConvLSTM_seq(nn.Module):
                                param.expand(-1, t, -1, self.w)], dim=2) 
 
         seq_1 = input_seq[:,-1,:,:]    # the last frame
-        indicator = (seq_1[:,0,:]>1e-5)*1
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
@@ -455,7 +454,7 @@ class ConvLSTM_start(nn.Module):
         self.device = device
         self.dt = dt
         
-    def forward(self, input_seq, input_param):
+    def forward(self, input_seq, input_param, domain_factor):
         
 
         ## step 1 remap the input to the channel with gridDdim G

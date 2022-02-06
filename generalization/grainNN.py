@@ -443,9 +443,14 @@ else:
     param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
     param_dat[:,-1] = dt
-    output_model = ini_model(todevice(seq_1), todevice(param_dat) )
+    domain_factor = size_scale*np.ones((seq_1.shape[0],1))
+    seq_1[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
+
+    output_model = ini_model(todevice(seq_1), todevice(param_dat), todevice(domain_factor) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
+
+    dfrac_new[:,:,G_small:2*G_small] *= domain_factor[:,np.newaxis,:]
 
     frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
@@ -464,9 +469,18 @@ for i in range(0,pred_frames,out_win):
     
     param_dat[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
-    output_model = model(todevice(seq_dat), todevice(param_dat) )
+
+    ## you may resplit the grains here
+
+    domain_factor = size_scale*np.ones((seq_dat.shape[0],1))
+    seq_1[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
+
+    output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
+
+    dfrac_new[:,:,G_small:2*G_small] *= domain_factor[:,np.newaxis,:]
+
 
     if i>=pack:
         frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
