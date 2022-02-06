@@ -58,9 +58,9 @@ def split_grain(param_dat, seq_dat, G, G_all):
             df = np.sum( seq_dat[:,:,2*i:G+2*i], axis = -1 )
             domain_factor[i*size_b:(i+1)*size_b,:] = df
 
-            param_sliced = param_dat[:,2*i:G+2*i]/df[:,0,:]   ## initial
-            frac_sliced =  seq_dat[:,:,2*i:G+2*i]/df ## frac
-            dfrac_sliced = seq_dat[:,:,2*i+G_all:G+2*i+G_all]/df # dfrac
+            param_sliced = param_dat[:,2*i:G+2*i]/df  ## initial
+            frac_sliced =  seq_dat[:,:,2*i:G+2*i]/df[:,:,np.newaxis]  ## frac
+            dfrac_sliced = seq_dat[:,:,2*i+G_all:G+2*i+G_all]/df[:,:,np.newaxis]  # dfrac
 
 
             darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
