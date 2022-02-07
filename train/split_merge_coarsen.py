@@ -56,14 +56,14 @@ def split_grain(param_dat, seq_dat, G, G_all):
             new_seq[i*size_b:(i+1)*size_b,:,-1] = seq_dat[:,:,-1]
 
             df = np.sum( seq_dat[:,:,2*i:G+2*i], axis = -1 )
-            domain_factor[i*size_b:(i+1)*size_b,:] = df*(G_all/G)
+            domain_factor[i*size_b:(i+1)*size_b,:] = df*(G_all/G)  ##should be close enough to 1
 
             param_sliced = param_dat[:,2*i:G+2*i]/df  ## initial
             frac_sliced =  seq_dat[:,:,2*i:G+2*i]/df[:,:,np.newaxis]  ## frac
             dfrac_sliced = seq_dat[:,:,2*i+G_all:G+2*i+G_all]/df[:,:,np.newaxis]  # dfrac
 
 
-            darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]
+            darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]/domain_factor[i*size_b:(i+1)*size_b,:]
             
 
             if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
@@ -139,23 +139,23 @@ def merge_grain(frac, y, area, G, G_all, expand, domain_factor, left_coors):
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
 
-        domain_factor *= G/G_all
+
         ## add the two middle grains to the data
         for i in range(expand):
 
             subruns = np.arange(size_b)[new_size_b*i:new_size_b*(i+1)]
         ## first give the first and last data
             if i==0:
-                new_frac[:,:,:BC_l]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
-                new_area[:,:,:BC_l]  = area[subruns, :,:BC_l] 
+                new_frac[:,:,:BC_l]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                new_area[:,:,:BC_l]  = area[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
  
             elif i==expand-1:
-                new_frac[:,:,-BC_l:] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
-                new_area[:,:,-BC_l:] = area[subruns,:,-BC_l:] 
+                new_frac[:,:,-BC_l:] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                new_area[:,:,-BC_l:] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
   
             else:
-                new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
-                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[subruns,:,G//2-1:G//2+1] 
+                new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
 
 
         #new_frac *= G/G_all
