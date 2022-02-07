@@ -63,7 +63,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             dfrac_sliced = seq_dat[:,:,2*i+G_all:G+2*i+G_all]/df[:,:,np.newaxis]  # dfrac
 
 
-            darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]/domain_factor[i*size_b:(i+1)*size_b,:]
+            darea_sliced = seq_dat[:,:,2*i+2*G_all:G+2*i+2*G_all]/ ( df*(G_all/G) )[:,:,np.newaxis] 
             
 
             if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
