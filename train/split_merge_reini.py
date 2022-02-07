@@ -14,6 +14,8 @@ def list_subtract(family, child):
     for x in child:
        family.remove(x)
 
+    return family
+
 
 def map_grain(frac_layer, G, G_all):
       
