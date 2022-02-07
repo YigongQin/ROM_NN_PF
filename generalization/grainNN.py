@@ -25,7 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge import split_grain, merge_grain
+from split_merge_coarsen import split_grain, merge_grain
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
@@ -440,20 +440,20 @@ else:
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
 
-    param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
+    param_dat, seq_1, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
     param_dat[:,-1] = dt
-    domain_factor = size_scale*np.ones((seq_1.shape[0],1))
-    seq_1[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
+    domain_factor = size_scale*domain_factor
+    seq_1[:,:,2*G_small:3*G_small] /= size_scale
 
     output_model = ini_model(todevice(seq_1), todevice(param_dat), todevice(domain_factor) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    dfrac_new[:,:,G_small:2*G_small] *= domain_factor[:,np.newaxis,:]
+    dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
     frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
 
     seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
@@ -472,23 +472,23 @@ for i in range(0,pred_frames,out_win):
 
     ## you may resplit the grains here
 
-    domain_factor = size_scale*np.ones((seq_dat.shape[0],1))
-    seq_dat[:,:,2*G_small:3*G_small] /= domain_factor[:,np.newaxis,:]
+    #domain_factor = size_scale*np.ones((seq_dat.shape[0],1))
+    seq_dat[:,:,2*G_small:3*G_small] /= size_scale
 
     output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    dfrac_new[:,:,G_small:2*G_small] *= domain_factor[:,np.newaxis,:]
+    dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
 
     if i>=pack:
         frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, left_coors)
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
     else: 
 
         frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
