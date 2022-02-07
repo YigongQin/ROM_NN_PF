@@ -26,11 +26,10 @@ def map_grain(frac_layer, G, G_all):
 
     assert len(frac_layer)==G_all
     min_pixels = 2   ## at least have two pixels
-    pos_arg = np.where( frac_layer>min_pixels/ (400/G*G_all) )  ## numpy array
+    pos_arg = np.where( frac_layer>min_pixels/ (400/G*G_all) )[0]  ## numpy array
     pos_arg_list = list(pos_arg)
     num_act_grain = len(pos_arg)
     
-
     zero_arg_list = list_subtract( list(np.arange(G_all)), pos_arg_list )
 
     print(pos_arg_list, zero_arg_list)
@@ -38,14 +37,14 @@ def map_grain(frac_layer, G, G_all):
 
     ## num_act_grains range [1, G_all], it can be odd or even. t
 
-    if num_act_grain <= G:
+    if num_act_grain < G:
         ## only one subrun
         joint_list = sorted( pos_arg_list + zero_arg_list[:(G-num_act_grain)] ) 
         assert len(joint_list) == G
         return np.array( joint_list )
 
 
-    elif num_act_grain <= G + 2:
+    elif num_act_grain < G + 2:
         ## two simulations
 
         return np.stack(( pos_arg[:G], pos_arg[-G:]))
@@ -54,8 +53,9 @@ def map_grain(frac_layer, G, G_all):
     else: 
         ## general case, 
         ## ***note when pos_arg is odd*** 
-        pos_arg = np.array( sorted( pos_arg_list + zero_arg_list[:1] ) )
-
+        if len(pos_arg)%2==1:
+          pos_arg = np.array( sorted( pos_arg_list + zero_arg_list[:1] ) )
+        assert len(pos_arg)%2==0
         expand = (len(pos_arg)-G-2)//2 + 2
 
         args = -np.ones((expand,G), dtype=int)
@@ -112,16 +112,17 @@ def split_grain(param_dat, seq_dat, G, G_all):
             
             grain_id = args[i,:]
 
-
             ## ============== scaling region ============= ##
 
-
-            df = np.sum( seq_dat[run,:,grain_id], axis = -1 )  ## not sure what to do with it, just 1d with one number
+            #print(seq_dat[run,:,list(grain_id)].shape)
+            df = np.sum( seq_dat[run][:,grain_id], axis = -1 )  ## not sure what to do with it, just 1d with one number
 
             df_loc = df*(G_all/G)  ##should be close enough to 1
 
             param_sliced = param_dat[run,grain_id]/df  ## initial
+           # print(param_sliced, param_dat[run,grain_id], df)
             frac_sliced =  seq_dat[run,:,grain_id]/df[:,np.newaxis]  ## frac
+            print(frac_sliced, seq_dat[run,:,grain_id], df)
             dfrac_sliced = seq_dat[run,:,grain_id+G_all]/df[:,np.newaxis]  # dfrac
 
             darea_sliced = seq_dat[run,:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
