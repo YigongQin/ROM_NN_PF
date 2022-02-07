@@ -56,7 +56,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             new_seq[i*size_b:(i+1)*size_b,:,-1] = seq_dat[:,:,-1]
 
             df = np.sum( seq_dat[:,:,2*i:G+2*i], axis = -1 )
-            domain_factor[i*size_b:(i+1)*size_b,:] = df
+            domain_factor[i*size_b:(i+1)*size_b,:] = df*(G_all/G)
 
             param_sliced = param_dat[:,2*i:G+2*i]/df  ## initial
             frac_sliced =  seq_dat[:,:,2*i:G+2*i]/df[:,:,np.newaxis]  ## frac
@@ -112,7 +112,6 @@ def merge_grain(frac, y, area, G, G_all, expand, domain_factor, left_coors):
     assert size_b%expand == 0
     new_size_b = size_b//expand
 
-    mid = np.array([G//2-1, G//2])
     BC_l = G//2+1
 
     new_size_v = size_v +  G_all - G
@@ -140,7 +139,7 @@ def merge_grain(frac, y, area, G, G_all, expand, domain_factor, left_coors):
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
 
-        #frac *= G/G_all
+        domain_factor *= G/G_all
         ## add the two middle grains to the data
         for i in range(expand):
 
@@ -155,8 +154,8 @@ def merge_grain(frac, y, area, G, G_all, expand, domain_factor, left_coors):
                 new_area[:,:,-BC_l:] = area[subruns,:,-BC_l:] 
   
             else:
-                new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[subruns,:,mid]*domain_factor[subruns,:,np.newaxis]
-                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[subruns,:,mid] 
+                new_frac[:,:,BC_l+2*i-2:BC_l+2*i] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
+                new_area[:,:,BC_l+2*i-2:BC_l+2*i] = area[subruns,:,G//2-1:G//2+1] 
 
 
         #new_frac *= G/G_all
