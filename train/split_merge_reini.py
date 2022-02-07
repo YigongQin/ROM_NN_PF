@@ -164,7 +164,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
    
                 new_seq = np.concatenate((new_seq, seq_1[np.newaxis,:,:]), axis=0)
                 new_param = np.concatenate((new_param, param_1[np.newaxis,:]), axis=0)
-                domain_factor = np.concatenate((domain_factor, df_loc), axis=0)
+                domain_factor = np.concatenate((domain_factor, df_loc[np.newaxis,:]), axis=0)
 
 
 
