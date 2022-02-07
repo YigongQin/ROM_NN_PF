@@ -119,13 +119,13 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             df_loc = df*(G_all/G)  ##should be close enough to 1
 
-            param_sliced = param_dat[run,grain_id]/df  ## initial
+            param_sliced = param_dat[run][grain_id]/df  ## initial
            # print(param_sliced, param_dat[run,grain_id], df)
-            frac_sliced =  seq_dat[run,:,grain_id]/df[:,np.newaxis]  ## frac
-            print(frac_sliced, seq_dat[run,:,grain_id], df)
-            dfrac_sliced = seq_dat[run,:,grain_id+G_all]/df[:,np.newaxis]  # dfrac
+            frac_sliced =  seq_dat[run][:,grain_id]/df[:,np.newaxis]  ## frac
+           # print(frac_sliced, seq_dat[run][:,grain_id], df)
+            dfrac_sliced = seq_dat[run][:,grain_id+G_all]/df[:,np.newaxis]  # dfrac
 
-            darea_sliced = seq_dat[run,:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
+            darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
             
 
        #     if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
@@ -151,7 +151,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
            # new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced
 
 
-            seq_1 = np.concatenate(( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run,:,-1:]), axis = -1)
+            seq_1 = np.concatenate(( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run][:,-1:]), axis = -1)
             param_1 = np.concatenate(( param_sliced, param_dat[run,slice_param]), axis = -1)
 
             if run==0 and i==0:
