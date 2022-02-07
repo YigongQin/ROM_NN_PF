@@ -98,8 +98,6 @@ def split_grain(param_dat, seq_dat, G, G_all):
     elif G_all>G:
 
 
-        left_coors = np.zeros((size_b, expand))
-
         grain_arg_list = []  ## a list of variable-size array [num_subruns, G]
 
         for run in range(size_b):
@@ -169,7 +167,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-        return new_param, new_seq, grain_arg_list, domain_factor, left_coors
+        return new_param, new_seq, grain_arg_list, domain_factor, np.zeros((new_seq.shape[0],1))
             
     else: raise ValueError("number of grain is wrong")
 
