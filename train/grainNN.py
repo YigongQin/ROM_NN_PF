@@ -478,7 +478,7 @@ for i in range(0,pred_frames,out_win):
    # param_dat, seq_dat, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 
    # domain_factor = size_scale*domain_factor
-    seq_dat[:,:,2*G_small:3*G_small] /= size_scale
+    seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
 
     output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
