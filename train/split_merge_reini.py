@@ -248,8 +248,8 @@ def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coo
                     new_area[run][:,args[i,-BC_l:]] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
       
                 if i>0 and i<expand-1:
-                    new_frac[run][:,args[i,BC_l+2*i-2:BC_l+2*i]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
-                    new_area[run][:,args[i,BC_l+2*i-2:BC_l+2*i]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
+                    new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_area[run][:,args[i,G//2-1:G//2+1]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
 
             increment += expand
 
