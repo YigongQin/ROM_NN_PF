@@ -400,9 +400,12 @@ else:
 ## plot to check if the construction is reasonable
 evolve_runs = num_test #num_test
 frac_out = np.zeros((evolve_runs,frames,G)) ## final output
+dfrac_out = np.zeros((evolve_runs,frames,G)) ## final output
 dy_out = np.zeros((evolve_runs,frames))
 darea_out = np.zeros((evolve_runs,frames,G))
 left_grains = np.zeros((evolve_runs,frames,G))
+
+seq_out = np.concatenate( ( frac_out, dfrac_out, darea_out, dy_out[:,:,np.newaxis] ), axis=-1) 
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
@@ -440,13 +443,13 @@ else:
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
 
-    param_dat, seq_1, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
+    param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
-    param_dat[:,-1] = dt
+    param_dat_s[:,-1] = dt
     domain_factor = size_scale*domain_factor
-    seq_1[:,:,2*G_small:3*G_small] /= size_scale
+    seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
 
-    output_model = ini_model(todevice(seq_1), todevice(param_dat), todevice(domain_factor) )
+    output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
@@ -455,10 +458,10 @@ else:
     frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
 
-    seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+    seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
-      seq_dat[:,0,-1] = seq_dat[:,1,-1]
-      seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+      seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
+      seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G] 
     #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
@@ -477,7 +480,7 @@ for i in range(0,pred_frames,out_win):
    # domain_factor = size_scale*domain_factor
     seq_dat[:,:,2*G_small:3*G_small] /= size_scale
 
-    output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
+    output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
@@ -492,7 +495,7 @@ for i in range(0,pred_frames,out_win):
     frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
     = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
     
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 #frac_out = frac_out/(np.sum(frac_out, axis=-1)[:,:,np.newaxis])    
 #frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
