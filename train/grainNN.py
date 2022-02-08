@@ -25,7 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge_coarsen import split_grain, merge_grain
+from split_merge_reini import split_grain, merge_grain
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
@@ -472,7 +472,9 @@ for i in range(0,pred_frames,out_win):
 
     ## you may resplit the grains here
 
-    #domain_factor = size_scale*np.ones((seq_dat.shape[0],1))
+    param_dat, seq_dat, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+
+    domain_factor = size_scale*domain_factor
     seq_dat[:,:,2*G_small:3*G_small] /= size_scale
 
     output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
