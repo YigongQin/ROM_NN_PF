@@ -262,7 +262,7 @@ def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coo
 
         print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
 
-        assert left_coors_grains.shape[2]==new_frac.shape[2]
+      #  assert left_coors_grains.shape[2]==new_frac.shape[2]
         return new_frac, new_y, new_area, np.zeros((new_size_b, size_t, G_all))
             
     else: raise ValueError("number of grain is wrong")    
