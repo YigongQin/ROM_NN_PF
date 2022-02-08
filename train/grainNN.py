@@ -470,7 +470,7 @@ else:
 
 for i in range(0,pred_frames,out_win):
     
-    param_dat[:,-1] = (i+window)*dt ## the first output time
+    param_dat_s[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
 
     ## you may resplit the grains here
