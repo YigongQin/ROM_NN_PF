@@ -117,7 +117,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             ## ============== scaling region ============= ##
 
             #print(seq_dat[run,:,list(grain_id)].shape)
-            df = np.sum( seq_dat[run][:,grain_id], axis = -1 )  ## not sure what to do with it, just 1d with one number
+            df = np.sum( seq_dat[run][-1:,grain_id], axis = -1 )  ## not sure what to do with it, just 1d with one number
 
             df_loc = df*(G_all/G)  ##should be close enough to 1
 
