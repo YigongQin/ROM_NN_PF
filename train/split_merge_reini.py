@@ -57,7 +57,7 @@ def map_grain(frac_layer, G, G_all):
         ## only one subrun
         joint_list = sorted( pos_arg_list + zero_arg_list[:(G-num_act_grain)] ) 
         assert len(joint_list) == G
-        return np.array( joint_list )
+        return np.array( joint_list )[np.newaxis,:]
 
 
     elif num_act_grain < G + 2:
