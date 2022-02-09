@@ -95,7 +95,7 @@ def map_grain_fix(frac_layer, G, G_all):
 
         for i in range(expand):  ## replace for loop later
 
-            args[i,:] = pos_arg[2*i:G+2*i]
+            args[i,:] = np.arange(G_all)[2*i:G+2*i]
 
         assert np.all(args>-1)
 
@@ -135,7 +135,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
           frac_layer = seq_dat[run,-1,:G_all]  ## use the last time step to resplit
 
-          args = map_grain(frac_layer, G, G_all)
+          args = map_grain_fix(frac_layer, G, G_all)
 
           grain_arg_list.append(args)
 
