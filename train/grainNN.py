@@ -500,7 +500,7 @@ for i in range(0,pred_frames,out_win):
     
     seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
-frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq, G)
+frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
 
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
