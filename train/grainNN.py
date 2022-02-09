@@ -458,7 +458,7 @@ else:
 
     #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
     seq_out[:,1:window,:], left_grains[:,1:window,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
+        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
 
     seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
@@ -495,8 +495,8 @@ for i in range(0,pred_frames,out_win):
    # else: 
 
    # frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-    seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:]
-    = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
+    seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
     
     seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
