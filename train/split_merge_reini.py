@@ -148,9 +148,9 @@ def split_grain(param_dat, seq_dat, G, G_all):
        #     elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
         #    else: pass
   
-            assert np.linalg.norm( np.sum(param_sliced,axis=-1) - 1 ) <1e-5
-            assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - np.ones(size_t) ) <1e-5
-            assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
+           # assert np.linalg.norm( np.sum(param_sliced,axis=-1) - 1 ) <1e-5
+           # assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - np.ones(size_t) ) <1e-5
+           # assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
 
 
            ## ============== scaling region ============= ##

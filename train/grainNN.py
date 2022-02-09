@@ -460,10 +460,11 @@ else:
     seq_out[:,1:window,:], left_grains[:,1:window,:] \
         = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
 
-    seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+    seq_dat = seq_out[:,:window,:]
+    #seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
-      seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
-      seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G] 
+      seq_dat[:,0,-1] = seq_dat[:,1,-1]
+      seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
     #print(frac_new_vec.shape)
 
 ## write initial windowed data to out arrays
@@ -477,9 +478,9 @@ for i in range(0,pred_frames,out_win):
 
     ## you may resplit the grains here
 
-   # param_dat, seq_dat, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+    param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 
-   # domain_factor = size_scale*domain_factor
+    domain_factor = size_scale*domain_factor
     seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
 
     output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
@@ -498,7 +499,8 @@ for i in range(0,pred_frames,out_win):
     seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
     = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
     
-    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
+    #seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
 
