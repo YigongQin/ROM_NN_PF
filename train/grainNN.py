@@ -472,13 +472,15 @@ else:
 #print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
-    
-    param_dat_s[:,-1] = (i+window)*dt ## the first output time
-    print('nondim time', (i+window)*dt)
+
 
     ## you may resplit the grains here
 
     param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+
+
+    param_dat_s[:,-1] = (i+window)*dt ## the first output time
+    print('nondim time', (i+window)*dt)
 
     domain_factor = size_scale*domain_factor
     seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
