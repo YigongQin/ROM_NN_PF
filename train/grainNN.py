@@ -25,7 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge_reini import split_grain, merge_grain
+from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
@@ -200,7 +200,7 @@ else: dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1)
 
 #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
 
-seq_all = np.concatenate( ( frac_all, dfrac_all, darea_all, dy_all[:,:,np.newaxis] ), axis=-1) 
+seq_all = assemb_seq( frac_all, dfrac_all, darea_all, dy_all )
 param_all = np.concatenate( (frac_ini, param_all), axis=1)
 param_len = param_all.shape[1]
 assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
@@ -399,13 +399,13 @@ else:
   
 ## plot to check if the construction is reasonable
 evolve_runs = num_test #num_test
-frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-dfrac_out = np.zeros((evolve_runs,frames,G)) ## final output
-dy_out = np.zeros((evolve_runs,frames))
-darea_out = np.zeros((evolve_runs,frames,G))
+#frac_out = np.zeros((evolve_runs,frames,G)) ## final output
+#dfrac_out = np.zeros((evolve_runs,frames,G)) ## final output
+#dy_out = np.zeros((evolve_runs,frames))
+#darea_out = np.zeros((evolve_runs,frames,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
-seq_out = np.concatenate( ( frac_out, dfrac_out, darea_out, dy_out[:,:,np.newaxis] ), axis=-1) 
+seq_out = assemb_seq( frac_out, dfrac_out, darea_out, dy_out)
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
@@ -415,9 +415,10 @@ param_dat = param_test[:evolve_runs,:]
 
 seq_test = seq_all[num_train:,:,:]
 
-frac_out[:,0,:] = seq_test[:,0,:G]
-dy_out[:,0] = seq_test[:,0,-1]
-darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
+#frac_out[:,0,:] = seq_test[:,0,:G]
+#dy_out[:,0] = seq_test[:,0,-1]
+#darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
+seq_out[:,0,:] = seq_test[:,0,:]
 left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 if noPDE == False:
@@ -438,7 +439,7 @@ else:
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
     ini_model.eval()
 
-    seq_1 = seq_test[:,[0],:]   ## this can be generated randomly
+    seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
     seq_1[:,:,-1]=0
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
@@ -455,7 +456,8 @@ else:
 
     dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
-    frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+    #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+    seq_out[:,1:window,:], left_grains[:,1:window,:] \
         = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
 
     seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
@@ -492,13 +494,14 @@ for i in range(0,pred_frames,out_win):
     #    = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
    # else: 
 
-    frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+   # frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+    seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:]
     = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
     
     seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
-#frac_out = frac_out/(np.sum(frac_out, axis=-1)[:,:,np.newaxis])    
-#frac_out = frac_out/scaler_lstm[np.newaxis,:,np.newaxis] + frac_test[:evolve_runs,[0],:]
+frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq, G)
+
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]

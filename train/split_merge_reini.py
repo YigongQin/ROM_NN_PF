@@ -9,6 +9,20 @@ Created on Thu Jul 15 20:41:18 2021
 import numpy as np
 
 
+def assemb_seq(frac, dfrac, area, y):
+
+    if frac.ndim==3:
+       return np.concatenate((frac, dfrac, area, y[:,:,np.newaxis]), axis=-1)
+    if frac.ndim==2: ## batch size = 1
+       return np.concatenate((frac, dfrac, area, y[:,np.newaxis]), axis=-1)
+
+def divide_seq(seq, G):
+
+    if seq.ndim==3:
+       return seq[:,:,:G], seq[:,:,G:2*G], seq[:,:,2*G:3*G], seq[:,:,-1]
+    if seq.ndim==2:
+       return seq[:,:G], seq[:,G:2*G], seq[:,2*G:3*G], seq[:,-1]
+
 def list_subtract(family, child):
 
     for x in child:
@@ -144,16 +158,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
            # new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
             slice_param = np.concatenate(( grain_id+G_all, Pi+2*G_all ))
 
-           # new_param[i*size_b:(i+1)*size_b,:] = param_dat[:,slice_param]
-           # new_seq[i*size_b:(i+1)*size_b,:,-1] = seq_dat[:,:,-1]
 
-
-           # new_seq[i*size_b:(i+1)*size_b,:,:G]  = frac_sliced
-           # new_seq[i*size_b:(i+1)*size_b,:,G:2*G] = dfrac_sliced
-           # new_seq[i*size_b:(i+1)*size_b,:,2*G:3*G] = darea_sliced
-
-
-            seq_1 = np.concatenate(( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run][:,-1:]), axis = -1)
+            seq_1 = assemb_seq( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run][:,-1])
             param_1 = np.concatenate(( param_sliced, param_dat[run,slice_param]), axis = -1)
 
             if run==0 and i==0:
@@ -176,7 +182,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
 
 
-def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coors):
+def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors):
     
     
     '''
@@ -201,15 +207,18 @@ def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coo
 
 
     if G==G_all: 
-        return frac, y, area, np.cumsum(frac, axis=-1) - frac
+        return np.concatenate((frac, dseq), axis=-1), np.cumsum(frac, axis=-1) - frac
           
         
     elif G_all>G:
 
         increment = 0
-
+        dfrac = dseq[:,:,:G]
+        area = dseq[:,:,G:2*G]
+        y = dseq[:,:,-1]
         
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
+        new_dfrac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
         new_y = np.zeros((new_size_b, size_t))
         std_y = np.zeros((new_size_b, size_t))
@@ -241,14 +250,17 @@ def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coo
             
                 if i==0:
                     new_frac[run][:,args[i,:BC_l]]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_dfrac[run][:,args[i,:BC_l]]  = dfrac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]*G/G_all
                     new_area[run][:,args[i,:BC_l]]  = area[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
      
                 if i==expand-1:
                     new_frac[run][:,args[i,-BC_l:]] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_dfrac[run][:,args[i,-BC_l:]] = dfrac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]*G/G_all
                     new_area[run][:,args[i,-BC_l:]] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
       
                 if i>0 and i<expand-1:
                     new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_dfrac[run][:,args[i,G//2-1:G//2+1]] = dfrac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
                     new_area[run][:,args[i,G//2-1:G//2+1]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
 
             increment += expand
@@ -261,9 +273,9 @@ def merge_grain(frac, y, area, G, G_all, grain_arg_list, domain_factor, left_coo
         max_y = np.max( std_y )
 
         print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
-
+        new_seq = assemb_seq( new_frac, new_dfrac, new_area, new_y)
       #  assert left_coors_grains.shape[2]==new_frac.shape[2]
-        return new_frac, new_y, new_area, np.zeros((new_size_b, size_t, G_all))
+        return new_seq, np.zeros((new_size_b, size_t, G_all))
             
     else: raise ValueError("number of grain is wrong")    
 
