@@ -405,7 +405,7 @@ evolve_runs = num_test #num_test
 #darea_out = np.zeros((evolve_runs,frames,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
-seq_out = assemb_seq( frac_out, dfrac_out, darea_out, dy_out)
+seq_out = np.zeros((evolve_runs,frames,3*G+1))
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
