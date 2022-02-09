@@ -85,6 +85,21 @@ def map_grain(frac_layer, G, G_all):
 
         return args
 
+def map_grain_fix(frac_layer, G, G_all):
+      
+
+        expand = (G_all-G-2)//2 + 2
+
+        args = -np.ones((expand,G), dtype=int)
+
+
+        for i in range(expand):  ## replace for loop later
+
+            args[i,:] = pos_arg[2*i:G+2*i]
+
+        assert np.all(args>-1)
+
+        return args
 
 def split_grain(param_dat, seq_dat, G, G_all):
     
