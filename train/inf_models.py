@@ -367,7 +367,7 @@ def map_grain_fix(seq, frac_layer, G, G_all):
 
 def assem_grain(v, args, G, G_all):
 
-    new_v = torch.zeros(wa, dtype=torch.float64).to(v.device)
+    new_v = torch.zeros(G_all, dtype=torch.float64).to(v.device)
     BC_l = G//2+1
     expand = args.shape[0]
 
