@@ -459,15 +459,18 @@ class ConvLSTM_seq(nn.Module):
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
                 darea_s = (self.project_a(last_time))    # [b,w]
                 dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
-                
 
-                dfrac = assem_grain(dfrac_s, args, self.w, wa)
+                frac_s = F.relu(dfrac+seq_1_s[:,0,:])         # frac_ini here is necessary to keep
+                frac_s = torch.sum(seq_1_s[:,0,:],axsis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+
+
+                frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
                 dy = torch.mean(dy_s, axis=0)
 
 
-                frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
-                frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
+               # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
+               # frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
                 
                 #active = ((frac>1e-6)*1.0).double()
                 dfrac = (frac - last_frac)/frac_norm 
@@ -561,15 +564,18 @@ class ConvLSTM_start(nn.Module):
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
                 darea_s = (self.project_a(last_time))    # [b,w]
                 dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
-                
 
-                dfrac = assem_grain(dfrac_s, args, self.w, wa)
+                frac_s = F.relu(dfrac+seq_1_s[:,0,:])         # frac_ini here is necessary to keep
+                frac_s = torch.sum(seq_1_s[:,0,:],axsis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+
+
+                frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
                 dy = torch.mean(dy_s, axis=0)
 
 
-                frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
-                frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
+               # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
+               # frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
                 
                 #active = ((frac>1e-6)*1.0).double()
                 dfrac = (frac - last_frac)/frac_norm 
