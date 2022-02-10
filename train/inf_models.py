@@ -460,8 +460,8 @@ class ConvLSTM_seq(nn.Module):
                 darea_s = (self.project_a(last_time))    # [b,w]
                 dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
 
-                frac_s = F.relu(dfrac_s+seq_1_s[:,0,:])         # frac_ini here is necessary to keep
-                frac_s = torch.sum(seq_1_s[:,0,:],axsis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+                frac_s = F.relu(dfrac_s+seq_1_s[:,0,0,:])         # frac_ini here is necessary to keep
+                frac_s = torch.sum(seq_1_s[:,0,0,:],axis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
 
 
                 frac = assem_grain(frac_s, args, self.w, wa)
@@ -564,9 +564,9 @@ class ConvLSTM_start(nn.Module):
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
                 darea_s = (self.project_a(last_time))    # [b,w]
                 dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
-
-                frac_s = F.relu(dfrac_s+seq_1_s[:,0,:])         # frac_ini here is necessary to keep
-                frac_s = torch.sum(seq_1_s[:,0,:],axsis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+              #  print(dfrac_s.shape, seq_1_s[:,0,:].shape)
+                frac_s = F.relu(dfrac_s+seq_1_s[:,0,0,:])         # frac_ini here is necessary to keep
+                frac_s = torch.sum(seq_1_s[:,0,0,:],axis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
 
 
                 frac = assem_grain(frac_s, args, self.w, wa)
