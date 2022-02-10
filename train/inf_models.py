@@ -412,7 +412,7 @@ class ConvLSTM_seq(nn.Module):
         b, t, input_len  = input_seq.size()
 
         wa = (input_len-1)//3
-        print('all g',wa)
+       # print('all g',wa)
         
         output_seq = torch.zeros(b, self.out_win, 2*wa+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, wa,   dtype=torch.float64).to(self.device)
@@ -443,7 +443,7 @@ class ConvLSTM_seq(nn.Module):
             last_frac = seq_1[0,:]
 
             args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
-            print(args)
+            #print(args)
 
             seq_1_s = input_seq_s[:,-1:,:,:]    # the last frame
 
@@ -517,7 +517,7 @@ class ConvLSTM_start(nn.Module):
         b, t, input_len  = input_seq.size()
 
         wa = (input_len-1)//3
-        print('all g',wa)
+       # print('all g',wa)
         
         output_seq = torch.zeros(b, self.out_win, 2*wa+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, wa,   dtype=torch.float64).to(self.device)
@@ -547,7 +547,7 @@ class ConvLSTM_start(nn.Module):
             last_frac = seq_1[0,:]
 
             args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
-            print(args)
+         #   print(args)
 
             seq_1_s = input_seq_s[:,-1:,:,:]    # the last frame
             
