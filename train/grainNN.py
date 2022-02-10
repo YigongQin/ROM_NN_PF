@@ -463,8 +463,8 @@ else:
     seq_dat = seq_out[:,:window,:]
     seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
-     # seq_dat[:,0,-1] = seq_dat[:,1,-1]
-     # seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+      seq_dat[:,0,-1] = seq_dat[:,1,-1]
+      seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
       seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
       seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
     #print(frac_new_vec.shape)
