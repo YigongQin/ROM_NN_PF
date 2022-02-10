@@ -381,7 +381,7 @@ def assem_grain(v, args, G, G_all):
         if i>0 and i<expand-1:
             new_v[args[i,G//2-1:G//2+1]] = v[i,G//2-1:G//2+1]
 
-
+    return new_v
 
 
 class ConvLSTM_seq(nn.Module):
