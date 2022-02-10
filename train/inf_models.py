@@ -356,7 +356,7 @@ def map_grain_fix(seq, frac_layer, G, G_all):
 
     args = -torch.ones((expand,G), dtype=int)
 
-    seq_s = torch.zeros((expand,seq.shape[1],seq.shape[2],G), dtype=torch.float64).to(seq.device)
+    seq_s = torch.zeros((expand,seq.shape[0],seq.shape[1],G), dtype=torch.float64).to(seq.device)
 
     for i in range(expand):  ## replace for loop later
 
