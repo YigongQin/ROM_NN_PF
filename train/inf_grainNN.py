@@ -449,7 +449,7 @@ else:
     print('sample', seq_1[0,0,:])
 
    # param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
-
+    domain_factor = np.ones((seq_1.shape[0], 1))
     param_dat[:,-1] = dt
     domain_factor = size_scale*domain_factor
     seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
