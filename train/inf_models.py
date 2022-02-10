@@ -514,26 +514,29 @@ class ConvLSTM_start(nn.Module):
 
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        b, t, _  = input_seq.size()
+        b, t, input_len  = input_seq.size()
+
+        wa = (input_len-1)//3
+        print('all g',wa)
         
-        output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
-        frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, 2*wa+1, dtype=torch.float64).to(self.device)
+        frac_seq = torch.zeros(b, self.out_win, wa,   dtype=torch.float64).to(self.device)
              
-        frac_ini = input_param[:, :self.w]
+        frac_ini = input_param[:, :wa]
         
         yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
-        ini      = frac_ini                       .view(b,1,1,self.w) 
-        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
-        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
+        ini      = frac_ini                       .view(b,1,1,wa) 
+        pf       = input_param[:, wa:2*wa].view(b,1,1,wa) 
+        param    = input_param[:, 2*wa:]      .view(b,1,-1,1)     
         
         ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
-        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,2*self.w:3*self.w].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, self.w), \
+        input_seq = torch.cat([input_seq[:,:,:wa].unsqueeze(dim=-2), \
+                               input_seq[:,:,wa:2*wa].unsqueeze(dim=-2), \
+                               input_seq[:,:,2*wa:3*wa].unsqueeze(dim=-2), \
+                               yt.expand(-1,-1, -1, wa), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
-                               param.expand(-1, t, -1, self.w)], dim=2) 
+                               param.expand(-1, t, -1, wa)], dim=2) 
 
 
         for run in range(b):
