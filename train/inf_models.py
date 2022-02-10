@@ -440,7 +440,7 @@ class ConvLSTM_seq(nn.Module):
 
             seq_run = input_seq[run,:,:,:]    # the last frame
             seq_1 = seq_run[-1,:,:]
-            last_frac = seq_last[0,:]
+            last_frac = seq_1[0,:]
 
             args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
             print(args)
@@ -541,7 +541,7 @@ class ConvLSTM_start(nn.Module):
 
             seq_run = input_seq[run,:,:,:]    # the last frame
             seq_1 = seq_run[-1,:,:]
-            last_frac = seq_last[0,:]
+            last_frac = seq_1[0,:]
 
             args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
             print(args)
