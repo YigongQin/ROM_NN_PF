@@ -466,7 +466,7 @@ class ConvLSTM_seq(nn.Module):
                 dy = torch.mean(dy_s, axis=0)
 
 
-                frac = F.relu(dfrac+laset_frac)         # frac_ini here is necessary to keep
+                frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
                 frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
                 
                 #active = ((frac>1e-6)*1.0).double()
@@ -568,7 +568,7 @@ class ConvLSTM_start(nn.Module):
                 dy = torch.mean(dy_s, axis=0)
 
 
-                frac = F.relu(dfrac+laset_frac)         # frac_ini here is necessary to keep
+                frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
                 frac = wa/self.w*F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
                 
                 #active = ((frac>1e-6)*1.0).double()
