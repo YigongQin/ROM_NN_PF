@@ -379,7 +379,7 @@ def assem_grain(v, args, G, G_all):
         if i==expand-1:
             new_v[args[i,-BC_l:]] = v[i,-BC_l:]
         if i>0 and i<expand-1:
-            new_v[:,args[i,G//2-1:G//2+1]] = v[i,G//2-1:G//2+1]
+            new_v[args[i,G//2-1:G//2+1]] = v[i,G//2-1:G//2+1]
 
 
 
