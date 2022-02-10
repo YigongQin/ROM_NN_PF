@@ -483,7 +483,7 @@ class ConvLSTM_seq(nn.Module):
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
                         dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
-                args, seq_1_s = map_grain_fix(seq_1.view(1,-1,-1), last_frac, self.w, wa)
+                args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
         return output_seq, frac_seq
 
@@ -585,7 +585,7 @@ class ConvLSTM_start(nn.Module):
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
                         dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
-                args, seq_1_s = map_grain_fix(seq_1.view(1,-1,-1), last_frac, self.w, wa)
+                args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
                         
         return output_seq, frac_seq
