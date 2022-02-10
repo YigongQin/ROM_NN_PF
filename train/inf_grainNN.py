@@ -102,7 +102,7 @@ def get_data(num_runs, num_batch, datasets):
       frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
       area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
       #if run<1: print(frac) 
-      frac_all[run*num_batch+batch_id,:,:] = G_all/G*frac   ## frac normalized with the 8 grains setting
+      frac_all[run*num_batch+batch_id,:,:] = G/G_small*frac   ## frac normalized with the 8 grains setting
       y_all[run*num_batch+batch_id,:] = tip_y 
       area_all[run*num_batch+batch_id,:,:] = area
       param_all[run*num_batch+batch_id,:G] = Color
