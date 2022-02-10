@@ -452,13 +452,13 @@ else:
     domain_factor = np.ones((seq_1.shape[0], 1))
     param_dat[:,-1] = dt
     domain_factor = size_scale*domain_factor
-    seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
+    seq_1[:,:,2*G:3*G] /= size_scale
 
     output_model = ini_model(todevice(seq_1), todevice(param_dat), todevice(domain_factor) )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    dfrac_new[:,:,G_small:2*G_small] *= size_scale
+    dfrac_new[:,:,G:2*G] *= size_scale
 
     #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
     #seq_out[:,1:window,:], left_grains[:,1:window,:] \
@@ -489,13 +489,13 @@ for i in range(0,pred_frames,out_win):
     print('nondim time', (i+window)*dt)
 
     domain_factor = size_scale*domain_factor
-    seq_dat[:,:,2*G_small:3*G_small] /= size_scale
+    seq_dat[:,:,2*G:3*G] /= size_scale
 
     output_model = model(todevice(seq_dat), todevice(param_dat), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    dfrac_new[:,:,G_small:2*G_small] *= size_scale
+    dfrac_new[:,:,G:2*G] *= size_scale
 
 
     #if i>=pack:
