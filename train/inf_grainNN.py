@@ -512,6 +512,7 @@ for i in range(0,pred_frames,out_win):
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
 
+frac_out /= G/G_small
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
