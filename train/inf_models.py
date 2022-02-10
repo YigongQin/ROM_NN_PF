@@ -454,7 +454,7 @@ class ConvLSTM_seq(nn.Module):
             for i in range(self.out_win):
                 
                 encode_out, hidden_state = self.lstm_decoder(seq_1_s,hidden_state)
-                last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
+                last_time = encode_out[-1][:,-1,:,:].view(seq_1_s.shape[0], self.hidden_dim*self.w)
                 
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
                 darea_s = (self.project_a(last_time))    # [b,w]
@@ -556,7 +556,7 @@ class ConvLSTM_start(nn.Module):
             for i in range(self.out_win):
                 
                 encode_out, hidden_state = self.lstm_decoder(seq_1_s, None)
-                last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
+                last_time = encode_out[-1][:,-1,:,:].view(seq_1_s.shape[0], self.hidden_dim*self.w)
                 
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
                 darea_s = (self.project_a(last_time))    # [b,w]
