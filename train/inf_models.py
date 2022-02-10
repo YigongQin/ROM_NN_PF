@@ -481,7 +481,7 @@ class ConvLSTM_seq(nn.Module):
                 ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]  
 
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
-                        dy.expand(self.w).view(1,self.w), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
+                        dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
                 args, seq_1_s = map_grain_fix(seq_1.view(1,-1,-1), last_frac, self.w, wa)
 
@@ -583,7 +583,7 @@ class ConvLSTM_start(nn.Module):
                 ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]  
 
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
-                        dy.expand(self.w).view(1,self.w), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
+                        dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
                 args, seq_1_s = map_grain_fix(seq_1.view(1,-1,-1), last_frac, self.w, wa)
 
