@@ -409,7 +409,7 @@ evolve_runs = num_test #num_test
 #darea_out = np.zeros((evolve_runs,frames,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
-seq_out = np.zeros((evolve_runs,frames,3*G+1))
+seq_out = np.zeros((evolve_runs,frames,4*G))
 
 alone = pred_frames%out_win
 pack = pred_frames-alone
@@ -422,7 +422,8 @@ seq_test = seq_all[num_train:,:,:]
 #frac_out[:,0,:] = seq_test[:,0,:G]
 #dy_out[:,0] = seq_test[:,0,-1]
 #darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
-seq_out[:,0,:] = seq_test[:,0,:]
+seq_out[:,0,:] = np.concatenate((seq_test[:,0,:3*G], np.tile(seq_test[:,0,-1:], (G,1) )), axis=-1)
+assert seq_out.shape[1]==4*G
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 if noPDE == False:
@@ -510,7 +511,7 @@ for i in range(0,pred_frames,out_win):
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
     #seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
-frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
+frac_out, dfrac_out, darea_out, dy_out = seq_out[:,:,:G], seq_out[:,:,G:2*G], seq_out[:,:,2*G:3*G], np.mean(seq_out[:,:,3*G:4*G],axis=-1)
 
 frac_out /= G/G_small
 dy_out = dy_out*y_norm

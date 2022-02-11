@@ -411,15 +411,15 @@ class ConvLSTM_seq(nn.Module):
         ## b,t, input_len -> b,t,c,w 
         b, t, input_len  = input_seq.size()
 
-        wa = (input_len-1)//3
+        wa = input_len//4
        # print('all g',wa)
         
-        output_seq = torch.zeros(b, self.out_win, 2*wa+1, dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, 3*wa, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, wa,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :wa]
         
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
+      #  yt       = input_seq[:, :, 3*wa:4*wa]           .view(b,t,1,1)      
         ini      = frac_ini                       .view(b,1,1,wa) 
         pf       = input_param[:, wa:2*wa].view(b,1,1,wa) 
         param    = input_param[:, 2*wa:]      .view(b,1,-1,1)     
@@ -428,7 +428,7 @@ class ConvLSTM_seq(nn.Module):
         input_seq = torch.cat([input_seq[:,:,:wa].unsqueeze(dim=-2), \
                                input_seq[:,:,wa:2*wa].unsqueeze(dim=-2), \
                                input_seq[:,:,2*wa:3*wa].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, wa), \
+                               input_seq[:,:,3*wa:4*wa].unsqueeze(dim=-2), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
                                param.expand(-1, t, -1, wa)], dim=2) 
@@ -466,7 +466,7 @@ class ConvLSTM_seq(nn.Module):
 
                 frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
-                dy = torch.mean(dy_s, axis=0)
+                dy = assem_grain(dy_s, args, self.w, wa)
 
 
                # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
@@ -479,12 +479,12 @@ class ConvLSTM_seq(nn.Module):
                 
                 output_seq[run,i, :wa] = dfrac
                 output_seq[run,i, wa:2*wa] = F.relu(darea)
-                output_seq[run,i, -1:] = dy
+                output_seq[run,i, 2*wa:3*wa] = dy
                 frac_seq[run,i,:] = frac
                 ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]  
 
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
-                        dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
+                        dy.unsqueeze(dim=0), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
                 args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
@@ -519,15 +519,15 @@ class ConvLSTM_start(nn.Module):
         ## b,t, input_len -> b,t,c,w 
         b, t, input_len  = input_seq.size()
 
-        wa = (input_len-1)//3
+        wa = input_len//4
        # print('all g',wa)
         
-        output_seq = torch.zeros(b, self.out_win, 2*wa+1, dtype=torch.float64).to(self.device)
+        output_seq = torch.zeros(b, self.out_win, 3*wa, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, wa,   dtype=torch.float64).to(self.device)
              
         frac_ini = input_param[:, :wa]
         
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
+      #  yt       = input_seq[:, :, 3*wa:4*wa]           .view(b,t,1,1)      
         ini      = frac_ini                       .view(b,1,1,wa) 
         pf       = input_param[:, wa:2*wa].view(b,1,1,wa) 
         param    = input_param[:, 2*wa:]      .view(b,1,-1,1)     
@@ -536,7 +536,7 @@ class ConvLSTM_start(nn.Module):
         input_seq = torch.cat([input_seq[:,:,:wa].unsqueeze(dim=-2), \
                                input_seq[:,:,wa:2*wa].unsqueeze(dim=-2), \
                                input_seq[:,:,2*wa:3*wa].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, wa), \
+                               input_seq[:,:,3*wa:4*wa].unsqueeze(dim=-2), \
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
                                param.expand(-1, t, -1, wa)], dim=2) 
@@ -571,7 +571,7 @@ class ConvLSTM_start(nn.Module):
 
                 frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
-                dy = torch.mean(dy_s, axis=0)
+                dy = assem_grain(dy_s, args, self.w, wa)
 
 
                # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
@@ -584,12 +584,12 @@ class ConvLSTM_start(nn.Module):
                 
                 output_seq[run,i, :wa] = dfrac
                 output_seq[run,i, wa:2*wa] = F.relu(darea)
-                output_seq[run,i, -1:] = dy
+                output_seq[run,i, 2*wa:3*wa] = dy
                 frac_seq[run,i,:] = frac
                 ## assemble with new time-dependent variables for time t+dt: FRAC, Y, T  [b,c,w]  
 
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
-                        dy.expand(wa).view(1,wa), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
+                        dy.unsqueeze(dim=0), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
                 args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
