@@ -466,7 +466,7 @@ class ConvLSTM_seq(nn.Module):
 
                 frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
-                dy = assem_grain(dy_s, args, self.w, wa)
+                dy = assem_grain(dy_s.expand(-1,self.w), args, self.w, wa)
 
 
                # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep
@@ -571,7 +571,7 @@ class ConvLSTM_start(nn.Module):
 
                 frac = assem_grain(frac_s, args, self.w, wa)
                 darea = assem_grain(darea_s, args, self.w, wa)
-                dy = assem_grain(dy_s, args, self.w, wa)
+                dy = assem_grain(dy_s.expand(-1,self.w), args, self.w, wa)
 
 
                # frac = F.relu(dfrac+last_frac)         # frac_ini here is necessary to keep

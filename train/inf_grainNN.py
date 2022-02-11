@@ -422,8 +422,8 @@ seq_test = seq_all[num_train:,:,:]
 #frac_out[:,0,:] = seq_test[:,0,:G]
 #dy_out[:,0] = seq_test[:,0,-1]
 #darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
-seq_out[:,0,:] = np.concatenate((seq_test[:,0,:3*G], np.tile(seq_test[:,0,-1:], (G,1) )), axis=-1)
-assert seq_out.shape[1]==4*G
+seq_out[:,0,:] = np.concatenate((seq_test[:,0,:3*G], np.tile(seq_test[:,0,-1:], (1,G) )), axis=-1)
+
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 if noPDE == False:
@@ -445,7 +445,7 @@ else:
     ini_model.eval()
 
     seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
-    seq_1[:,:,-1]=0
+    seq_1[:,:,3*G:4*G]=0
     seq_1[:,:,G:2*G]=0
     print('sample', seq_1[0,0,:])
 
@@ -468,7 +468,7 @@ else:
     seq_dat = seq_out[:,:window,:]
   #  seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
     if mode != 'ini':
-      seq_dat[:,0,-1] = seq_dat[:,1,-1]
+      seq_dat[:,0,3*G:4*G] = seq_dat[:,1,3*G:4*G]
       seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
     #  seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
    #   seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
