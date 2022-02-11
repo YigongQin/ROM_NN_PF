@@ -366,8 +366,8 @@ def map_grain_fix(seq, frac_layer, G, G_all):
         scales[i,:] = torch.sum( seq_s[i,-1,0,:], dim=-1)
         seq_s[i,:,:5,:] /= scales[i,:].view(1,1,1)
 
-        assert seq[:,3,args[i,G//2-1:G//2]] == seq[:,3,args[i,G//2:G//2+1]]
-        seq_s[i,:,3,:] = seq[:,3,args[i,G//2-1:G//2]].expand(-1,-1,G)
+        assert torch.all(seq[:,3,args[i,G//2-1:G//2]] == seq[:,3,args[i,G//2:G//2+1]])
+        seq_s[i,:,3,:] = seq[:,3,2*i+G//2-1:2*i+G//2]
 
     return args, seq_s, scales
 
