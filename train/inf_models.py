@@ -362,6 +362,8 @@ def map_grain_fix(seq, frac_layer, G, G_all):
 
         args[i,:] = torch.arange(G_all)[2*i:G+2*i]
         seq_s[i,:,:,:] = seq[:,:,args[i,:]]
+        assert seq[:,3,args[i,G//2-1:G//2]] == seq[:,3,args[i,G//2:G//2+1]]
+        seq_s[i,:,3,:] = seq[:,3,args[i,G//2-1:G//2]].expand(-1,-1,G)
 
     return args, seq_s
 
