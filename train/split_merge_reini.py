@@ -283,7 +283,7 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
         #new_frac *= G/G_all
        # left_coors_grains *= G/G_all
         ## evaluation (a) sum frac, (b) std of y
-        diff_1 = np.absolute( np.sum(new_frac,axis=-1) - np.ones_like(new_y)  )
+        diff_1 = np.absolute( np.sum(new_frac,axis=-1)/G_all*G - np.ones_like(new_y)  )
         max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
         max_y = np.max( std_y )
 
