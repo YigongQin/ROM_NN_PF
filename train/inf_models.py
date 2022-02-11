@@ -354,18 +354,22 @@ def map_grain_fix(seq, frac_layer, G, G_all):
 
     expand = (G_all-G-2)//2 + 2
 
-    args = -torch.ones((expand,G), dtype=int)
-
+    args = -torch.ones((expand,G), dtype=int).to(seq.device)
+    scales = torch.ones((expand,1), dtype=torch.float64).to(seq.device)
     seq_s = torch.zeros((expand,seq.shape[0],seq.shape[1],G), dtype=torch.float64).to(seq.device)
 
     for i in range(expand):  ## replace for loop later
 
         args[i,:] = torch.arange(G_all)[2*i:G+2*i]
         seq_s[i,:,:,:] = seq[:,:,args[i,:]]
+
+        scales[i,:] = torch.sum( seq_s[i,-1,0,:], dim=-1)
+        seq_s[i,:,:5,:] /= scales[i,:].view(1,1,1)
+
         assert seq[:,3,args[i,G//2-1:G//2]] == seq[:,3,args[i,G//2:G//2+1]]
         seq_s[i,:,3,:] = seq[:,3,args[i,G//2-1:G//2]].expand(-1,-1,G)
 
-    return args, seq_s
+    return args, seq_s, scales
 
 def assem_grain(v, args, G, G_all):
 
@@ -444,7 +448,7 @@ class ConvLSTM_seq(nn.Module):
             seq_1 = seq_run[-1,:,:]
             last_frac = seq_1[0,:]
 
-            args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
+            args, input_seq_s, scales = map_grain_fix(seq_run, last_frac, self.w, wa)
             #print(args)
 
             seq_1_s = input_seq_s[:,-1:,:,:]    # the last frame
@@ -459,11 +463,11 @@ class ConvLSTM_seq(nn.Module):
                 last_time = encode_out[-1][:,-1,:,:].view(seq_1_s.shape[0], self.hidden_dim*self.w)
                 
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
-                darea_s = (self.project_a(last_time))    # [b,w]
-                dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
+                darea_s = scales*(self.project_a(last_time))    # [b,w]
+                dfrac_s = self.project(last_time)/scales   # project last time output b,hidden_dim, to the desired shape [b,w]   
 
                 frac_s = F.relu(dfrac_s+seq_1_s[:,0,0,:])         # frac_ini here is necessary to keep
-                frac_s = torch.sum(seq_1_s[:,0,0,:],axis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+                frac_s = scales*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
 
 
                 frac = assem_grain(frac_s, args, self.w, wa)
@@ -488,7 +492,7 @@ class ConvLSTM_seq(nn.Module):
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
                         dy.unsqueeze(dim=0), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
-                args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
+                args, seq_1_s, scales = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
         return output_seq, frac_seq
 
@@ -551,7 +555,7 @@ class ConvLSTM_start(nn.Module):
             seq_1 = seq_run[-1,:,:]
             last_frac = seq_1[0,:]
 
-            args, input_seq_s = map_grain_fix(seq_run, last_frac, self.w, wa)
+            args, input_seq_s, scales = map_grain_fix(seq_run, last_frac, self.w, wa)
          #   print(args)
 
             seq_1_s = input_seq_s[:,-1:,:,:]    # the last frame
@@ -564,11 +568,11 @@ class ConvLSTM_start(nn.Module):
                 last_time = encode_out[-1][:,-1,:,:].view(seq_1_s.shape[0], self.hidden_dim*self.w)
                 
                 dy_s = F.relu(self.project_y(last_time))    # [b,1]
-                darea_s = (self.project_a(last_time))    # [b,w]
-                dfrac_s = self.project(last_time)/domain_factor   # project last time output b,hidden_dim, to the desired shape [b,w]   
-              #  print(dfrac_s.shape, seq_1_s[:,0,:].shape)
+                darea_s = scales*(self.project_a(last_time))    # [b,w]
+                dfrac_s = self.project(last_time)/scales   # project last time output b,hidden_dim, to the desired shape [b,w]   
+
                 frac_s = F.relu(dfrac_s+seq_1_s[:,0,0,:])         # frac_ini here is necessary to keep
-                frac_s = torch.sum(seq_1_s[:,0,0,:],axis=-1).unsqueeze(dim=1)*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
+                frac_s = scales*F.normalize(frac_s, p=1, dim=-1)  # [b,w] normalize the fractions                
 
 
                 frac = assem_grain(frac_s, args, self.w, wa)
@@ -593,7 +597,7 @@ class ConvLSTM_start(nn.Module):
                 seq_1 = torch.cat([frac.unsqueeze(dim=0), dfrac.unsqueeze(dim=0), darea.unsqueeze(dim=0), \
                         dy.unsqueeze(dim=0), seq_1[4:-1,:], seq_1[-1:,:] + self.dt ],dim=0)
 
-                args, seq_1_s = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
+                args, seq_1_s, scales = map_grain_fix(seq_1.unsqueeze(dim=0), last_frac, self.w, wa)
 
                         
         return output_seq, frac_seq
