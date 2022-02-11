@@ -25,7 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
+from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq, split_grain_h
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
@@ -478,7 +478,7 @@ for i in range(0,pred_frames,out_win):
 
     ## you may resplit the grains here
 
-    #param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+    #param_dat_s, seq_dat_s, left_coors = split_grainh(param_dat, seq_dat, G_small, G, expand, domain_factor)
 
 
     param_dat_s[:,-1] = (i+window)*dt ## the first output time
