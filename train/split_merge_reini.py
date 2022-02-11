@@ -150,11 +150,11 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             df_loc = df*(G_all/G)  ##should be close enough to 1
 
-            param_sliced = param_dat[run][grain_id]/df  ## initial
+            param_sliced = param_dat[run][grain_id]/df_loc  ## initial
            # print(param_sliced, param_dat[run,grain_id], df)
-            frac_sliced =  seq_dat[run][:,grain_id]/df[:,np.newaxis]  ## frac
+            frac_sliced =  seq_dat[run][:,grain_id]/df_loc[:,np.newaxis]  ## frac
            # print(frac_sliced, seq_dat[run][:,grain_id], df)
-            dfrac_sliced = seq_dat[run][:,grain_id+G_all]/df[:,np.newaxis]  # dfrac
+            dfrac_sliced = seq_dat[run][:,grain_id+G_all]/df_loc[:,np.newaxis]  # dfrac
 
             darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
             
@@ -264,18 +264,18 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
                 subruns = increment + i
             
                 if i==0:
-                    new_frac[run][:,args[i,:BC_l]]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]*G/G_all
-                    new_dfrac[run][:,args[i,:BC_l]]  = dfrac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_frac[run][:,args[i,:BC_l]]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
+                    new_dfrac[run][:,args[i,:BC_l]]  = dfrac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,:BC_l]]  = area[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
      
                 if i==expand-1:
-                    new_frac[run][:,args[i,-BC_l:]] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]*G/G_all
-                    new_dfrac[run][:,args[i,-BC_l:]] = dfrac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_frac[run][:,args[i,-BC_l:]] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
+                    new_dfrac[run][:,args[i,-BC_l:]] = dfrac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,-BC_l:]] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
       
                 if i>0 and i<expand-1:
-                    new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
-                    new_dfrac[run][:,args[i,G//2-1:G//2+1]] = dfrac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]*G/G_all
+                    new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
+                    new_dfrac[run][:,args[i,G//2-1:G//2+1]] = dfrac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,G//2-1:G//2+1]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
 
             increment += expand

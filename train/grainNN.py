@@ -98,7 +98,7 @@ def get_data(num_runs, num_batch, datasets):
       frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
       area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
       #if run<1: print(frac) 
-      frac_all[run*num_batch+batch_id,:,:] = frac
+      frac_all[run*num_batch+batch_id,:,:] = frac*G/G_small
       y_all[run*num_batch+batch_id,:] = tip_y 
       area_all[run*num_batch+batch_id,:,:] = area
       param_all[run*num_batch+batch_id,:G] = Color
@@ -507,7 +507,7 @@ for i in range(0,pred_frames,out_win):
     seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-
+frac_out *= G_small/G
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
