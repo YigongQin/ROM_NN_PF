@@ -19,13 +19,13 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from plot_funcs import plot_IO, miss_rate
+from plot_funcs import plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq, split_grain_h
+from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
