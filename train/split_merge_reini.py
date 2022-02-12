@@ -158,15 +158,19 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
             
-            if i>(args.shape[0]-1)//2: frac_sliced[:,0] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
-            else: frac_sliced[:,-1] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
+            if i>(args.shape[0]-1)//2: 
+                frac_sliced[:,0] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
+                dfrac_sliced[:,0] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )
+            else: 
+                frac_sliced[:,-1] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
+                dfrac_sliced[:,0] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )                
        #     if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
        #     elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
         #    else: pass
   
            # assert np.linalg.norm( np.sum(param_sliced,axis=-1) - 1 ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - np.ones(size_t) ) <1e-5
-           # assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
+            assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
 
 
            ## ============== scaling region ============= ##
