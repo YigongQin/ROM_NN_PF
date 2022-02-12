@@ -158,8 +158,8 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
             
-            if i>(args.shape[0]-1)//2: frac_sliced[:,0] = np.ones(seq_dat.shape[1]) - np.sum( seq_dat[run][:,grain_id], axis = -1 )
-            else: frac_sliced[:,-1] = np.ones(seq_dat.shape[1]) - np.sum( seq_dat[run][:,grain_id], axis = -1 )
+            if i>(args.shape[0]-1)//2: frac_sliced[:,0] += np.ones(seq_dat.shape[1]) - np.sum( seq_dat[run][:,grain_id], axis = -1 )
+            else: frac_sliced[:,-1] += np.ones(seq_dat.shape[1]) - np.sum( seq_dat[run][:,grain_id], axis = -1 )
        #     if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
        #     elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
         #    else: pass
