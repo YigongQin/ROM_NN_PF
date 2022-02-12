@@ -478,8 +478,7 @@ for i in range(0,pred_frames,out_win):
 
     ## you may resplit the grains here
 
-    #param_dat_s, seq_dat_s, left_coors = split_grainh(param_dat, seq_dat, G_small, G, expand, domain_factor)
-
+    param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 
     param_dat_s[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
