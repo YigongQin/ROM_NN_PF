@@ -286,6 +286,8 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
 
             increment += expand
 
+
+        new_frac /= np.sum(new_frac, axis=-1)[:,:,np.newaxis] 
         #new_frac *= G/G_all
        # left_coors_grains *= G/G_all
         ## evaluation (a) sum frac, (b) std of y
