@@ -42,7 +42,7 @@ def subplot_rountine(fig, ax, cs, idx):
     
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains,plot_flag):
 
     #print('angle sequence', aseq)
     #print(frac) 
@@ -155,7 +155,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     miss_rate = miss/( nx*nymax + np.sum(area_true) );
 
    # error=field-alpha_true[1:-1,1:-1]
-    plot_flag=True
+    
     if plot_flag==True:
       fig = plt.figure()
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
@@ -179,7 +179,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       plt.close()
 
     
-    return
+    return miss_rate
 
 
 def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area, left_grains):
@@ -273,68 +273,4 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
  
       plt.close()
 
-
-
-
-def miss_rate(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains):
-    
-
-    fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
-    dx = x[1]-x[0]
-    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
-    ntip_y = np.asarray(tip_y/dx,dtype=int)   
-    piece_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(piece_len,axis=0)
-    correction = piece_len[-1, :] - fnx
-    for g in range(G//2, G):
-      piece_len[g,:] -= correction
-
-    piece0 = piece_len[:,0]
-    field = np.zeros((nx,ny),dtype=int)
-
-
-#=========================start fill the final field=================
-    nymax = int(ymax/dx)
-    temp_piece = np.zeros(G, dtype=int)
-    miss=0
-    for j in range(ntip_y[final-1]):
-     #  loc = 0
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
-       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-            if (pf_angles[alpha_true[i+1,j+1]]!=pf_angles[field[i,j]]) and j< nymax: miss+=1
-        
-        if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]    
-    ## count for the error of y
-    miss_frac = miss
-
-    #if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-    miss += np.absolute(nx*(nymax-ntip_y[final-1]))
-    ## count for the error of area
-    miss_area = 0
-    for g in range(G):
-      miss += np.absolute(area[g]-area_true[g])
-      miss_area += np.absolute(area[g]-area_true[g])
-
-    all_area = nx*nymax + np.sum(area_true) 
-    miss_rate = miss/all_area
-    print(anis,G0,Rmax) 
-    print('component: frac', miss_frac/miss, ', y', np.absolute(nx*(nymax-ntip_y[final-1])/miss), ', area', miss_area/miss)
-    return miss_rate
 

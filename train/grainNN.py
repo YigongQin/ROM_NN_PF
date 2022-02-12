@@ -43,6 +43,7 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
+plot_flag = False
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -554,10 +555,9 @@ if valid_train:
      G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
      Rmax = np.float(R_list[batch_id]) 
      anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
-     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,window,data_id)
-     #plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
-     miss = miss_rate(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id,tip_y[train_frames-1],train_frames, pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
-     sum_miss = sum_miss + miss
+
+     miss = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
+      pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag)
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
    miss_rate_param[batch_id] = sum_miss/run_per_param
 
@@ -578,23 +578,4 @@ print('for model ', int(sys.argv[2]), 'the mean error', np.mean(u))
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
   'seq_all':seq_all,'param_all':param_all})
 
-'''
-xi = np.linspace(np.min(x), np.max(x), 1000)
-yi = np.linspace(np.min(y), np.max(y), 1000)
-X,Y= np.meshgrid(xi,yi)
-Z = griddata((x, y), z, (X, Y),method='linear')
-
-
-cntr = ax.contourf(X, Y, Z, vmin = 0.04, vmax =0.12,levels=np.linspace(0.04,0.12,1000), cmap="RdBu_r")
-
-fig.colorbar(cntr, ax=ax)
-ax.plot(x, y, 'ko', ms=8)
-print(x, y, z)
-#ax.set_yscale('log')
-#ax.set_xscale('log')
-plt.xlabel(r'$\epsilon_k$')
-plt.ylabel(r'$G\ (K/ \mu m)$')
-plt.title('misclassification rate')
-plt.savefig('miss_rate_trunc'+str(trunc)+mode+'.png',dpi=600)
-'''
 
