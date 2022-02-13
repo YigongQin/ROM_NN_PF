@@ -135,7 +135,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
           frac_layer = np.mean(seq_dat[run,:,:G_all], axis=0)  ## use the last time step to resplit
 
-          args = map_grain_fix(frac_layer, G, G_all)
+          args = map_grain(frac_layer, G, G_all)
 
           grain_arg_list.append(args)
 
@@ -157,8 +157,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             dfrac_sliced = seq_dat[run][:,grain_id+G_all]/df_loc[:,np.newaxis]  # dfrac
 
             darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
-            assert np.all(seq_dat[run][:,grain_id[G//2]+3*G_all]==seq_dat[run][:,grain_id[G//2-1]+3*G_all])
-            y_sliced = seq_dat[run][:,grain_id[G//2]+3*G_all]
+            
             if i>(args.shape[0]-1)//2: 
                 frac_sliced[:,0] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
                 dfrac_sliced[:,0] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )
@@ -182,7 +181,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
             slice_param = np.concatenate(( grain_id+G_all, Pi+2*G_all ))
 
 
-            seq_1 = assemb_seq( frac_sliced, dfrac_sliced, darea_sliced, y_sliced)
+            seq_1 = assemb_seq( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run][:,-1])
             param_1 = np.concatenate(( param_sliced, param_dat[run,slice_param]), axis = -1)
 
             if run==0 and i==0:
@@ -242,7 +241,7 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
         new_frac = np.zeros((new_size_b, size_t, new_size_v))
         new_dfrac = np.zeros((new_size_b, size_t, new_size_v))
         new_area = np.zeros((new_size_b, size_t, new_size_v))
-        new_y = np.zeros((new_size_b, size_t, new_size_v))
+        new_y = np.zeros((new_size_b, size_t))
         std_y = np.zeros((new_size_b, size_t))
 
         for run in range(new_size_b):
@@ -256,7 +255,7 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
 
             y_null = y[increment:increment+expand,:]
 
-            #new_y[run,:] = np.mean(y_null, axis = 0)
+            new_y[run,:] = np.mean(y_null, axis = 0)
 
             std_y[run,:] = np.std(y_null, axis = 0)
            # new_y = np.min(y_null, axis = 0)
@@ -274,19 +273,16 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
                     new_frac[run][:,args[i,:BC_l]]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
                     new_dfrac[run][:,args[i,:BC_l]]  = dfrac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,:BC_l]]  = area[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
-                    new_y[run][:,args[i,:BC_l]]  = y[subruns, :, np.newaxis]
      
                 if i==expand-1:
                     new_frac[run][:,args[i,-BC_l:]] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
                     new_dfrac[run][:,args[i,-BC_l:]] = dfrac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,-BC_l:]] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
-                    new_y[run][:,args[i,-BC_l:]]  = y[subruns, :, np.newaxis]
       
                 if i>0 and i<expand-1:
                     new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
                     new_dfrac[run][:,args[i,G//2-1:G//2+1]] = dfrac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
                     new_area[run][:,args[i,G//2-1:G//2+1]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
-                    new_y[run][:,args[i,G//2-1:G//2+1]]  = y[subruns, :, np.newaxis]                    
 
             increment += expand
 
@@ -295,12 +291,12 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
         #new_frac *= G/G_all
        # left_coors_grains *= G/G_all
         ## evaluation (a) sum frac, (b) std of y
-        diff_1 = np.absolute( np.sum(new_frac,axis=-1)/G_all*G - np.ones_like(new_y[:,:,0])  )
+        diff_1 = np.absolute( np.sum(new_frac,axis=-1)/G_all*G - np.ones_like(new_y)  )
         max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
         max_y = np.max( std_y )
 
         print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
-        new_seq = np.concatenate( (new_frac, new_dfrac, new_area, new_y), axis=-1)
+        new_seq = assemb_seq( new_frac, new_dfrac, new_area, new_y)
       #  assert left_coors_grains.shape[2]==new_frac.shape[2]
         return new_seq, np.zeros((new_size_b, size_t, G_all))
             
