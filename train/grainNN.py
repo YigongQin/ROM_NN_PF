@@ -326,7 +326,7 @@ def train(model, num_epochs, train_loader, test_loader):
       for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
          count += I_train.shape[0]
          #print(I_train.shape[0])
-         recon, area_train = model(I_train, P_train)
+         recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
         # loss = criterion(model(I_train, P_train), O_train)
          loss = criterion(recon, O_train) #+ 0.01*out_win/dt*criterion(area_train, A_train)
 
@@ -342,7 +342,7 @@ def train(model, num_epochs, train_loader, test_loader):
       for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
         #print(I_test.shape[0])
         count += I_test.shape[0]
-        pred, area_test = model(I_test, P_test)
+        pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
         #test_loss = criterion(model(I_test, P_test), O_test)
         #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
         test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*out_win/dt*criterion(area_test, A_test)
