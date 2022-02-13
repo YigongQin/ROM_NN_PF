@@ -41,7 +41,7 @@ def map_grain(frac_layer, G, G_all):
     '''
 
     assert len(frac_layer)==G_all
-    min_pixels = 2   ## at least have two pixels
+    min_pixels = 1   ## at least have two pixels
     pos_arg = np.where( frac_layer>min_pixels/ (400/G*G_all) )[0]  ## numpy array
     pos_arg_list = list(pos_arg)
     num_act_grain = len(pos_arg)
@@ -133,7 +133,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
         for run in range(size_b):
 
-          frac_layer = seq_dat[run,-1,:G_all]  ## use the last time step to resplit
+          frac_layer = np.mean(seq_dat[run,:,:G_all], axis=0)  ## use the last time step to resplit
 
           args = map_grain_fix(frac_layer, G, G_all)
 
