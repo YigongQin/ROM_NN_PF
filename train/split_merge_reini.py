@@ -41,7 +41,7 @@ def map_grain(frac_layer, G, G_all):
     '''
 
     assert len(frac_layer)==G_all
-    min_pixels = 1   ## at least have two pixels
+    min_pixels = 0   ## at least have two pixels
     pos_arg = np.where( frac_layer>min_pixels/ (400/G*G_all) )[0]  ## numpy array
     pos_arg_list = list(pos_arg)
     num_act_grain = len(pos_arg)
