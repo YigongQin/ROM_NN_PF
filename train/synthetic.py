@@ -161,9 +161,8 @@ seq_out[:,1:window,:], left_grains[:,1:window,:] \
     = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
 
 seq_dat = seq_out[:,:window,:]
-if mode != 'ini':
-  seq_dat[:,0,-1] = seq_dat[:,1,-1]
-  seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+seq_dat[:,0,-1] = seq_dat[:,1,-1]
+seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
 
 ## write initial windowed data to out arrays
 
