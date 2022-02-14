@@ -150,7 +150,7 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
             df_loc = df#*(G_all/G)  ##should be close enough to 1
 
-           # param_sliced = param_dat[run][grain_id]/df_loc  ## initial
+            param_sliced = param_dat[run][grain_id]/df_loc  ## initial
            # print(param_sliced, param_dat[run,grain_id], df)
             frac_sliced =  seq_dat[run][:,grain_id]/df_loc[:,np.newaxis]  ## frac
            # print(frac_sliced, seq_dat[run][:,grain_id], df)
@@ -161,15 +161,15 @@ def split_grain(param_dat, seq_dat, G, G_all):
             if i>(args.shape[0]-1)//2: 
                 frac_sliced[:,0] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
                 dfrac_sliced[:,0] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )
-             #   param_sliced[0] += 1 - np.sum( param_sliced, axis = -1 )
+                param_sliced[0] += 1 - np.sum( param_sliced, axis = -1 )
             else: 
                 frac_sliced[:,-1] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
                 dfrac_sliced[:,-1] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )     
-             #   param_sliced[-1] += 1 - np.sum( param_sliced, axis = -1 )           
+                param_sliced[-1] += 1 - np.sum( param_sliced, axis = -1 )           
        #     if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
        #     elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
         #    else: pass
-            param_sliced = frac_sliced[0,:]
+  
             assert np.linalg.norm( np.sum(param_sliced,axis=-1) - 1 ) <1e-5
             assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - np.ones(size_t) ) <1e-5
             assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
