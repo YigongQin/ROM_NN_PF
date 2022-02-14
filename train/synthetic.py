@@ -25,7 +25,7 @@ import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
-from split_merge import split_grain, merge_grain
+from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
 from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
@@ -61,10 +61,11 @@ std = 0.35
 y0 = 2.25279999
 
 evolve_runs = 1000 #num_test
-frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-dy_out = np.zeros((evolve_runs,frames))
-darea_out = np.zeros((evolve_runs,frames,G))
-left_grains = np.zeros((evolve_runs,frames,G))
+#frac_out = np.zeros((evolve_runs,frames,G)) ## final output
+#dy_out = np.zeros((evolve_runs,frames))
+#darea_out = np.zeros((evolve_runs,frames,G))
+seq_out = np.zeros((evolve_runs,frames,3*G+1))
+#left_grains = np.zeros((evolve_runs,frames,G))
 
 param_dat = np.zeros((evolve_runs, 2*G+4))
 seq_1 = np.zeros((evolve_runs,1,3*G+1))
@@ -81,7 +82,7 @@ param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs
 ## sample frac 
 
 frac = grain_size + std*grain_size*np.random.randn(evolve_runs, G)
-frac = frac/(G*grain_size)
+frac = frac/(G_small*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
 frac -= frac_change  
@@ -104,11 +105,11 @@ print('sample param', param_dat[0,:])
 
 #==============================
 
-frac_out[:,0,:] = seq_1[:,0,:G]
-dy_out[:,0] = seq_1[:,0,-1]
-darea_out[:,0,:] = seq_1[:,0,2*G:3*G]
-left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
-
+#frac_out[:,0,:] = seq_1[:,0,:G]
+#dy_out[:,0] = seq_1[:,0,-1]
+#darea_out[:,0,:] = seq_1[:,0,2*G:3*G]
+#left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
+seq_out[:,0,:] = seq_1[:,0,:]
 
 model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 model = model.double()
@@ -144,18 +145,25 @@ alone = pred_frames%out_win
 pack = pred_frames-alone
 
 param_dat0 = param_dat
-param_dat, seq_1, expand, left_coors = split_grain(param_dat, seq_1, G_small, G)
+param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
 
-param_dat[:,-1] = dt
-output_model = ini_model(todevice(seq_1), todevice(param_dat) )
+param_dat_s[:,-1] = dt
+domain_factor = size_scale*domain_factor
+seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
+
+output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
 dfrac_new = tohost( output_model[0] ) 
 frac_new = tohost(output_model[1])
 
-frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
-    = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
-seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+seq_out[:,1:window,:], left_grains[:,1:window,:] \
+    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
 
+seq_dat = seq_out[:,:window,:]
+if mode != 'ini':
+  seq_dat[:,0,-1] = seq_dat[:,1,-1]
+  seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
 
 ## write initial windowed data to out arrays
 
@@ -165,24 +173,38 @@ seq_dat = np.concatenate((seq_1,np.concatenate((frac_new, dfrac_new), axis = -1)
 print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
-    
-    param_dat[:,-1] = (i+window)*dt ## the first output time
+
+
+    ## you may resplit the grains here
+
+    param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+
+    param_dat_s[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
-    output_model = model(todevice(seq_dat), todevice(param_dat) )
+
+    domain_factor = size_scale*domain_factor
+    seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
+
+    output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
     dfrac_new = tohost( output_model[0] ) 
     frac_new = tohost(output_model[1])
 
-    if i>=pack:
-        frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, left_coors)
-    else: 
+    dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
-        frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new[:,:,-1], dfrac_new[:,:,G_small:2*G_small], G_small, G, expand, left_coors)
+
+    #if i>=pack:
+     #   frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
+    #    = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
+   # else: 
+
+   # frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+    seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
     
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
 
-
+frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
+frac_out *= G_small/G
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y0
