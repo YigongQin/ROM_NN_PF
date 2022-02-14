@@ -484,7 +484,7 @@ else:
 ## write initial windowed data to out arrays
 
 #print('the sub simulations', expand)
-
+out_win=4
 for i in range(0,pred_frames,out_win):
 
 
@@ -512,10 +512,10 @@ for i in range(0,pred_frames,out_win):
 
    # frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
     seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+    = merge_grain(frac_new[:,:out_win,], dfrac_new[:,:out_win,:], G_small, G, expand, domain_factor, left_coors)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
-    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+   # seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
 frac_out *= G_small/G
