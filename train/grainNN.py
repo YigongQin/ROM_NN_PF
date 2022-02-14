@@ -254,6 +254,10 @@ for run in range(num_all):
 assert sample==input_seq.shape[0]==train_sam+test_sam
 assert np.all(np.absolute(input_param[:,G:])>1e-6)
 
+if mode=='ini': 
+    input_seq[:,:,G:2*G] = 0
+    input_seq[:,:,-1] = 0  
+    input_param[:,:G] = input_seq[:,0,:G]  
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
 torch.manual_seed(35)
 
