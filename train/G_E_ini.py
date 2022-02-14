@@ -21,7 +21,7 @@ out_win = 4
 frames = 25
 train_frames = window+out_win
 pred_frames = out_win
-sam_per_run = 1
+sam_per_run = frames - window - (out_win-1) 
 total_size = frames*num_runs
 dt = 1.0/(frames-1)
 
@@ -37,9 +37,9 @@ LSTM_layer_ini = (4,4)
 kernel_size = (3,)
 
 num_epochs = 60
-learning_rate=150e-4
+learning_rate=100e-4
 area_scale = 0.1
-
+size_scale = 1
 seed = 1   
 #data_dir = '../../G_E/*'
 #data_dir = '../../G_E/*'
