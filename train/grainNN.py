@@ -246,6 +246,7 @@ for run in range(num_all):
         output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
         #output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,G:2*G],lstm_snapshot[t:t+out_win,-1:]),axis=-1)        
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
+        input_param[sample,:G] = input_seq[sample,0,:G]
         input_param[sample,-1] = t*dt 
         output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
         
