@@ -60,7 +60,7 @@ grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
 
-evolve_runs = 1000 #num_test
+evolve_runs = 200 #num_test
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 #dy_out = np.zeros((evolve_runs,frames))
 #darea_out = np.zeros((evolve_runs,frames,G))
@@ -82,7 +82,7 @@ param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs
 ## sample frac 
 
 frac = grain_size + std*grain_size*np.random.randn(evolve_runs, G)
-frac = frac/(G_small*grain_size)
+frac = frac/(G*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
 frac -= frac_change  
@@ -91,6 +91,8 @@ frac[:,-1] = np.ones(evolve_runs) - np.sum(frac[:,:-1], axis=-1)
 
 
 assert np.linalg.norm( np.sum(frac, axis=-1) - np.ones(evolve_runs) ) <1e-5
+
+frac = frac*G/G_small
 
 param_dat[:,:G] = frac
 seq_1[:,0,:G] = frac
@@ -169,7 +171,7 @@ seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G]
 
 
 
-print('the sub simulations', expand)
+#print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
 
