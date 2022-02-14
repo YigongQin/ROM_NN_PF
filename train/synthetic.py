@@ -65,7 +65,7 @@ evolve_runs = 1000 #num_test
 #dy_out = np.zeros((evolve_runs,frames))
 #darea_out = np.zeros((evolve_runs,frames,G))
 seq_out = np.zeros((evolve_runs,frames,3*G+1))
-#left_grains = np.zeros((evolve_runs,frames,G))
+left_grains = np.zeros((evolve_runs,frames,G))
 
 param_dat = np.zeros((evolve_runs, 2*G+4))
 seq_1 = np.zeros((evolve_runs,1,3*G+1))
