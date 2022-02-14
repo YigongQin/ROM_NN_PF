@@ -263,7 +263,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
     if plot_flag==True:
       fig = plt.figure()
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
-      fig.text(.5, .2, txt, ha='center')
+     # fig.text(.5, .2, txt, ha='center')
       
       ax3 = fig.add_subplot(111)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
