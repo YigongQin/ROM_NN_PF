@@ -24,6 +24,15 @@ plt.rcParams.update({'font.size': 10})
 mathtext.FontConstantsBase.sub1 = 0.2  
 fg_color='white'; bg_color='black'
 
+
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+coolwarm = cm.get_cmap('coolwarm', 256)
+newcolors = coolwarm(np.linspace(0, 1, 256))
+ly = np.array([255/256, 255/256, 210/256, 1])
+newcolors[0, :] = ly
+newcmp = ListedColormap(newcolors)
+
 def subplot_rountine(fig, ax, cs, idx):
     
       ax.set_xlabel('$x\ (\mu m)$'); 
@@ -266,7 +275,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
      # fig.text(.5, .2, txt, ha='center')
       
       ax3 = fig.add_subplot(111)
-      cs3 = ax3.imshow(pf_angles[field].T,cmap=plt.get_cmap('jet'),origin='lower',extent= (xmin,xmax, ymin, ytop))
+      cs3 = ax3.imshow(pf_angles[field].T,cmap=new_cmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
     
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.png',dpi=800,facecolor="white", bbox_inches='tight')
