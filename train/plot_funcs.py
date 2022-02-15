@@ -275,7 +275,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
      # fig.text(.5, .2, txt, ha='center')
       
       ax3 = fig.add_subplot(111)
-      cs3 = ax3.imshow(pf_angles[field].T,cmap=new_cmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
+      cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
     
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.png',dpi=800,facecolor="white", bbox_inches='tight')
