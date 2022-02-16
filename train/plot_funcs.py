@@ -204,6 +204,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
 
     #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
+    angle_field = np.zeros((nx,ny))
 
 
 
@@ -211,6 +212,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
     subruns = p_len_a.shape[0]
     for run in range(subruns):
 
+      angles = pf_angles[run,:]
       tip_y = tip_y_a[run,:]
       ntip_y = np.asarray(tip_y/dx,dtype=int)
 
@@ -243,13 +245,13 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
             for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break
 
-              field[i,j] = aseq[g]
+              angle_field[i,j] = angles[aseq[g]]
 
           else:
             for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break
       
-              field[i,j] = aseq[g]
+              angle_field[i,j] = angles[aseq[g]]
 
 
 
@@ -265,12 +267,12 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
           if g==0:
             for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break
-              field[i,j] = aseq[g]
+              angle_field[i,j] = angles[aseq[g]]
 
           else:
             for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break         
-              field[i,j] = aseq[g]
+              angle_field[i,j] = angles[aseq[g]]
 
 
 #========================start plotting area, plot ini_field, alpha_true, and field======
@@ -284,7 +286,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
      # fig.text(.5, .2, txt, ha='center')
       
       ax3 = fig.add_subplot(111)
-      cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
+      cs3 = ax3.imshow(angle_field.T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
     
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.png',dpi=800,facecolor="white", bbox_inches='tight')
