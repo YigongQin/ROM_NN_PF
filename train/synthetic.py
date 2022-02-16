@@ -248,8 +248,8 @@ y = np.asarray(f['y_coordinates'])
 
 dx = x[1] - x[0]
 nx = len(x) -3
-nx_all = int(nx*G_all/G) + 3
-x = np.linspace(-dx, x[-2]*G_all/G+dx, nx_all)
+nx_all = int(nx*G_all/G) 
+x = np.linspace(-dx, x[-2]*G_all/G+dx, nx_all +3)
 
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
