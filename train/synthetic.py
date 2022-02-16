@@ -103,8 +103,14 @@ param_dat[:,2*G+2] = float(sys.argv[3])
 
 for i in range(batch_m):
     param_dat[i::batch_m,G:2*G] = rand_angles[:,i*G//2:i*G//2+G]
-    param_dat[i::batch_m,:G] = frac[:,i*G//2:i*G//2+G]
-    seq_1[i::batch_m,0,:G] = frac[:,i*G//2:i*G//2+G]
+    bfrac = frac[:,i*G//2:i*G//2+G]
+    fsum = np.cumsum(bfrac, axis=-1)
+    frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
+    bfrac -= frac_change  
+    bfrac[:,-1] = np.ones(batch_m) - np.sum(bfrac[:,:-1], axis=-1)
+
+    param_dat[i::batch_m,:G] = bfrac
+    seq_1[i::batch_m,0,:G] = bfrac
     left_domain[i::batch_m] = np.sum(frac[:,:i*G//2], axis=-1)*G_small/G_all
 
 print('sample frac', seq_1[0,0,:])
@@ -214,7 +220,7 @@ for i in range(0,pred_frames,out_win):
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-frac_out *= G_small/G_all
+frac_out *= G_small/G
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y0
@@ -251,8 +257,8 @@ aseq_test = np.arange(G) +1
 for plot_id in range(3):
     data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else plot_id
    # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
-    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, \
-        plot_id, train_frames, (param_dat0[data_id,G:2*G]+1)*45, area_out[data_id,train_frames-1,:], left_domain[data_id])
+    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:][0],frac_out[data_id,:,:][0].T, \
+        plot_id, train_frames, np.concatenate(([0],(param_dat0[data_id,G:2*G][0]+1)*45)), area_out[data_id,train_frames-1,:][0], left_domain[data_id])
 
 
 
