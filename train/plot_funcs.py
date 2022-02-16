@@ -191,7 +191,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return miss_rate
 
 
-def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles, area, left_grains):
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, frac, plot_idx,final,pf_angles, area, left_grains):
     
     #print('angle sequence', aseq)
     #print(frac) 
@@ -202,66 +202,72 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y, frac, plot_idx,final,pf_angles
     nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
 
-    ntip_y = np.asarray(tip_y/dx,dtype=int)
-    
-    p_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(p_len,axis=0)
-    correction = piece_len[-1, :] - fnx
-    for g in range(G//2, G):
-      piece_len[g,:] -= correction
-
-    piece0 = piece_len[:,0]
     #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
 
 
 
 #=========================start fill the final field=================
-    
-    temp_piece = np.zeros(G, dtype=int)
-    miss=0
-    for j in range(ntip_y[final-1]):
-     #  loc = 0
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+    for run in range(subruns):
+
+      tip_y = tip_y_a[run,:]
+      ntip_y = np.asarray(tip_y/dx,dtype=int)
+
+      piece_len = np.cumsum(p_len[run,:,:].T,axis=0)
+      correction = piece_len[-1, :] - fnx
+      for g in range(G//2, G):
+        piece_len[g,:] -= correction
+
+      piece0 = piece_len[:,0]
+
+      if run ==0: rangeG = np.arange(G)[:3*G//4]
+      elif run == subruns-1: rangeG=np.arange(G)[-3*G//4:]
+      else: rangeG = np.arange(G)[G//4:3*G//4]
+
+      temp_piece = np.zeros(G, dtype=int)
+      miss=0
+      for j in range(ntip_y[final-1]):
+       #  loc = 0
+         for g in rangeG:
+            if j <= ntip_y[0]: temp_piece[g] = piece0[g]
+            else:
+              fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+              new_f = fint(j)
+              temp_piece[g] = np.asarray(new_f,dtype=int)
+         #print(temp_piece)
+         #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+         for g in rangeG:
+          if g==0:
+            for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
+              if (i>nx-1 or j>ny-1): break
+
+              field[i,j] = aseq[g]
+
           else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
-       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-
-            field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-    
-            field[i,j] = aseq[g]
-
-
-
-#=========================start fill the extra field=================
-    for g in range(G):
-
-      if p_len[g, final-1] ==0: height =0 
-      else: height = int(area[g]/p_len[g, final-1])
+            for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
+              if (i>nx-1 or j>ny-1): break
       
-      for j in range(ntip_y[final-1], ntip_y[final-1]+height):
+              field[i,j] = aseq[g]
 
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
 
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break         
-            field[i,j] = aseq[g]
+
+  #=========================start fill the extra field=================
+      for g in rangeG:
+
+        if p_len[g, final-1] ==0: height =0 
+        else: height = int(area[g]/p_len[g, final-1])
+        
+        for j in range(ntip_y[final-1], ntip_y[final-1]+height):
+
+          if g==0:
+            for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
+              if (i>nx-1 or j>ny-1): break
+              field[i,j] = aseq[g]
+
+          else:
+            for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
+              if (i>nx-1 or j>ny-1): break         
+              field[i,j] = aseq[g]
 
 
 #========================start plotting area, plot ini_field, alpha_true, and field======

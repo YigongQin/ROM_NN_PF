@@ -111,7 +111,7 @@ for i in range(batch_m):
 
     param_dat[i::batch_m,:G] = bfrac*G/G_small
     seq_1[i::batch_m,0,:G] = bfrac*G/G_small
-    left_domain[i::batch_m] = np.sum(frac[:,:i*G//2], axis=-1)*G_small/G_all
+    left_domain[i::batch_m] = np.sum(frac[:,:i*G//2], axis=-1)*G_small/G
 
 print('sample frac', seq_1[0,0,:])
 print('sample param', param_dat[0,:])
@@ -257,8 +257,11 @@ aseq_test = np.arange(G) +1
 for plot_id in range(3):
     data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else plot_id
    # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
-    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:][0],frac_out[data_id,:,:][0].T, \
-        plot_id, train_frames, np.concatenate(([0],(param_dat0[data_id,G:2*G][0]+1)*45)), area_out[data_id,train_frames-1,:][0], left_domain[data_id])
+    p_len = np.asarray(np.round(frac_out[data_id,:,:]*nx),dtype=int)
+    left_grains = np.asarray(np.round(left_domain[data_id]*nx),dtype=int)
+    pf_angles = np.concatenate((np.zeros((len(data_id),1),dtype=int),(param_dat0[data_id,G:2*G]+1)*45), axis=-1)
+    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:], p_len, plot_id, train_frames, \
+    pf_angles, area_out[data_id,train_frames-1,:], left_grains)
 
 
 
