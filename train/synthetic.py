@@ -54,13 +54,13 @@ def tohost(data):
 
 
 #==============================
-
+G_test = G
 
 grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
-
-evolve_runs = 200 #num_test
+G = 32
+evolve_runs = 3 #num_test
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 #dy_out = np.zeros((evolve_runs,frames))
 #darea_out = np.zeros((evolve_runs,frames,G))
@@ -142,7 +142,6 @@ ini_model.eval()
 
 #==============================
 
-
 alone = pred_frames%out_win
 pack = pred_frames-alone
 
@@ -212,7 +211,6 @@ y_out = np.cumsum(dy_out,axis=-1)+y0
 
 area_out = darea_out*area_norm
 
-
 sio.savemat('synthetic'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_Rmax'+sys.argv[3]+'.mat',{'frac':frac_out,'y':y_out,'area':area_out,'param':param_dat})
 
 
@@ -232,13 +230,19 @@ f = h5py.File(filename, 'r')
 x = np.asarray(f['x_coordinates'])
 y = np.asarray(f['y_coordinates'])
 
+dx = x[1] - x[0]
+nx_test = len(x) -3
+nx = int(nx_test*G/G_test) + 1
+x = np.linspace(0, x[-2]*G/G_test+dx, nx)
+
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
 
-for data_id in range(1):
+for data_id in range(3):
 
     pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
+
 
 
 
