@@ -191,7 +191,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return miss_rate
 
 
-def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len, plot_idx,final,pf_angles, area, left_grains):
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_angles, area, left_grains):
     
     #print('angle sequence', aseq)
     #print(frac) 
@@ -208,13 +208,14 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len, plot_idx,final,pf_ang
 
 
 #=========================start fill the final field=================
-    subruns =p_lem.shape[0]
+    subruns = p_len_a.shape[0]
     for run in range(subruns):
 
       tip_y = tip_y_a[run,:]
       ntip_y = np.asarray(tip_y/dx,dtype=int)
 
-      piece_len = np.cumsum(p_len[run,:,:].T,axis=0)
+      p_len = p_len_a[run,:,:].T
+      piece_len = np.cumsum(p_len,axis=0)
       correction = piece_len[-1, :] - fnx
       for g in range(G//2, G):
         piece_len[g,:] -= correction
