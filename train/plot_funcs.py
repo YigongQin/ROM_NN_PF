@@ -232,7 +232,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
       miss=0
       for j in range(ntip_y[final-1]):
        #  loc = 0
-         for g in rangeG:
+         for g in range(G):
             if j <= ntip_y[0]: temp_piece[g] = piece0[g]
             else:
               fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
@@ -241,7 +241,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
          #print(temp_piece)
          #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
          for g in rangeG:
-          if g==rangeG[0]:
+          if g==0:
             for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break
 
@@ -264,7 +264,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
         
         for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
-          if g==rangeG[0]:
+          if g==0:
             for i in range(left_grains[run], left_grains[run]+temp_piece[g]):
               if (i>nx-1 or j>ny-1): break
               angle_field[i,j] = angles[aseq[g]]
