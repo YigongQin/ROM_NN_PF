@@ -103,14 +103,14 @@ param_dat[:,2*G+2] = float(sys.argv[3])
 
 for i in range(batch_m):
     param_dat[i::batch_m,G:2*G] = rand_angles[:,i*G//2:i*G//2+G]
-    bfrac = frac[:,i*G//2:i*G//2+G]
+    bfrac = frac[:,i*G//2:i*G//2+G]/G*G_small
     fsum = np.cumsum(bfrac, axis=-1)
     frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
     bfrac -= frac_change  
     bfrac[:,-1] = np.ones(batch_m) - np.sum(bfrac[:,:-1], axis=-1)
 
-    param_dat[i::batch_m,:G] = bfrac
-    seq_1[i::batch_m,0,:G] = bfrac
+    param_dat[i::batch_m,:G] = bfrac*G/G_small
+    seq_1[i::batch_m,0,:G] = bfrac*G/G_small
     left_domain[i::batch_m] = np.sum(frac[:,:i*G//2], axis=-1)*G_small/G_all
 
 print('sample frac', seq_1[0,0,:])
