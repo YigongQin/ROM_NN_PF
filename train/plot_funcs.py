@@ -191,7 +191,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return miss_rate
 
 
-def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_angles, area, left_grains):
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_angles, area_a, left_grains):
     
     #print('angle sequence', aseq)
     #print(frac) 
@@ -254,6 +254,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
 
 
   #=========================start fill the extra field=================
+      area = area_a[run]
       for g in rangeG:
 
         if p_len[g, final-1] ==0: height =0 
