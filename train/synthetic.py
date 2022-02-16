@@ -54,35 +54,24 @@ def tohost(data):
 
 
 #==============================
-G_test = G
+#G_test = G
 
 grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
-G = 32
+G_all = 128
 evolve_runs = 3 #num_test
-#frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-#dy_out = np.zeros((evolve_runs,frames))
-#darea_out = np.zeros((evolve_runs,frames,G))
-seq_out = np.zeros((evolve_runs,frames,3*G+1))
-left_grains = np.zeros((evolve_runs,frames,G))
-
-param_dat = np.zeros((evolve_runs, 2*G+4))
-seq_1 = np.zeros((evolve_runs,1,3*G+1))
-
-param_dat[:,2*G] = 2*float(sys.argv[1])
-param_dat[:,2*G+1] = 1 - np.log10(float(sys.argv[2]))/np.log10(100) 
-param_dat[:,2*G+2] = float(sys.argv[3])
 
 ## sample orientation
 np.random.seed(0)
 
-param_dat[:,G:2*G] = np.random.uniform(-1,1, evolve_runs*G).reshape((evolve_runs,G))
+rand_angles = np.random.uniform(-1,1, evolve_runs*G_all).reshape((evolve_runs,G_all))
+
 
 ## sample frac 
 
-frac = grain_size + std*grain_size*np.random.randn(evolve_runs, G)
-frac = frac/(G*grain_size)
+frac = grain_size + std*grain_size*np.random.randn(evolve_runs, G_all)
+frac = frac/(G_all*grain_size)
 fsum = np.cumsum(frac, axis=-1)
 frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
 frac -= frac_change  
@@ -92,10 +81,31 @@ frac[:,-1] = np.ones(evolve_runs) - np.sum(frac[:,:-1], axis=-1)
 
 assert np.linalg.norm( np.sum(frac, axis=-1) - np.ones(evolve_runs) ) <1e-5
 
-frac = frac*G/G_small
+frac = frac*G_all/G_small
 
-param_dat[:,:G] = frac
-seq_1[:,0,:G] = frac
+batch_m = 1
+if G_all>G:
+    batch_m = (G_all-G//2)/(G//2)
+    evolve_runs *= batch_m
+#frac_out = np.zeros((evolve_runs,frames,G)) ## final output
+#dy_out = np.zeros((evolve_runs,frames))
+#darea_out = np.zeros((evolve_runs,frames,G))
+seq_out = np.zeros((evolve_runs,frames,3*G+1))
+left_grains = np.zeros((evolve_runs,frames,G))
+left_domain = np.zeros((evolve_runs))
+
+param_dat = np.zeros((evolve_runs, 2*G+4))
+seq_1 = np.zeros((evolve_runs,1,3*G+1))
+
+param_dat[:,2*G] = 2*float(sys.argv[1])
+param_dat[:,2*G+1] = 1 - np.log10(float(sys.argv[2]))/np.log10(100) 
+param_dat[:,2*G+2] = float(sys.argv[3])
+
+for i in range(batch_m):
+    param_dat[i::batch_m,G:2*G] = rand_angles[:,i*G//2:i*G//2+G]
+    param_dat[i::batch_m,:G] = frac[:,i*G//2:i*G//2+G]
+    seq_1[i::batch_m,0,:G] = frac[:,i*G//2:i*G//2+G]
+    left_domain[i::batch_m] = np.sum(frac[:,:i*G//2], axis=-1)*G_small/G_all
 
 print('sample frac', seq_1[0,0,:])
 print('sample param', param_dat[0,:])
@@ -204,7 +214,7 @@ for i in range(0,pred_frames,out_win):
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-frac_out *= G_small/G
+frac_out *= G_small/G_all
 dy_out = dy_out*y_norm
 dy_out[:,0] = 0
 y_out = np.cumsum(dy_out,axis=-1)+y0
@@ -238,10 +248,11 @@ x = np.linspace(0, x[-2]*G/G_test+dx, nx)
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
 
-for data_id in range(3):
-
+for plot_id in range(3):
+    data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m]
     pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
-    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T)
+    plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, \
+        data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_domain[data_id])
 
 
 
