@@ -241,9 +241,9 @@ x = np.asarray(f['x_coordinates'])
 y = np.asarray(f['y_coordinates'])
 
 dx = x[1] - x[0]
-nx_test = len(x) -3
-nx = int(nx_test*G/G_test) + 1
-x = np.linspace(0, x[-2]*G/G_test+dx, nx)
+nx = len(x) -3
+nx_all = int(nx*G_all/G) + 1
+x = np.linspace(0, x[-2]*G_all/G+dx, nx_all)
 
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
