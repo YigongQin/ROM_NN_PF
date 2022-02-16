@@ -191,7 +191,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     return miss_rate
 
 
-def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, frac, plot_idx,final,pf_angles, area, left_grains):
+def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len, plot_idx,final,pf_angles, area, left_grains):
     
     #print('angle sequence', aseq)
     #print(frac) 
@@ -199,7 +199,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, frac, plot_idx,final,pf_angl
     ymin = y[1]; ytop = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
-    nt=len(tip_y)
+    #nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
 
     #print(piece_len[-1,:])
@@ -208,6 +208,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, frac, plot_idx,final,pf_angl
 
 
 #=========================start fill the final field=================
+    subruns =p_lem.shape[0]
     for run in range(subruns):
 
       tip_y = tip_y_a[run,:]
