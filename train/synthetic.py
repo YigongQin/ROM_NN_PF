@@ -85,7 +85,7 @@ frac = frac*G_all/G_small
 
 batch_m = 1
 if G_all>G:
-    batch_m = (G_all-G//2)/(G//2)
+    batch_m = (G_all-G//2)//(G//2)
     evolve_runs *= batch_m
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
 #dy_out = np.zeros((evolve_runs,frames))
@@ -249,10 +249,10 @@ pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
 
 for plot_id in range(3):
-    data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m]
-    pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
+    data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else plot_id
+   # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:],frac_out[data_id,:,:].T, \
-        data_id, train_frames, pf_angles, area_out[data_id,train_frames-1,:], left_domain[data_id])
+        plot_id, train_frames, (param_dat0[data_id,G:2*G]+1)*45, area_out[data_id,train_frames-1,:], left_domain[data_id])
 
 
 
