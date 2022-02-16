@@ -107,7 +107,7 @@ for i in range(batch_m):
     fsum = np.cumsum(bfrac, axis=-1)
     frac_change = np.diff((fsum>1)*(fsum-1),axis=-1,prepend=0) 
     bfrac -= frac_change  
-    bfrac[:,-1] = np.ones(batch_m) - np.sum(bfrac[:,:-1], axis=-1)
+    bfrac[:,-1] = np.ones(evolve_runs//batch_m) - np.sum(bfrac[:,:-1], axis=-1)
 
     param_dat[i::batch_m,:G] = bfrac*G/G_small
     seq_1[i::batch_m,0,:G] = bfrac*G/G_small
