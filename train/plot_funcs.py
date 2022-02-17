@@ -27,8 +27,8 @@ fg_color='white'; bg_color='black'
 
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-coolwarm = cm.get_cmap('coolwarm', 256*100)
-newcolors = coolwarm(np.linspace(0, 1, 256))
+coolwarm = cm.get_cmap('coolwarm', 256)
+newcolors = coolwarm(np.linspace(0, 1, 256*100))
 ly = np.array([255/256, 255/256, 210/256, 1])
 newcolors[0, :] = ly
 newcmp = ListedColormap(newcolors)
@@ -281,7 +281,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
        zeros = np.arange(nx)[angle_field[:,j]<1e-5]
        nonzeros = np.arange(nx)[angle_field[:,j]>=1e-5]
 
-       fint = interp1d(nonzeros, angle_field[nonzeros,j],kind='nearest')
+       fint = interp1d(nonzeros, angle_field[nonzeros,j],kind='nearest',fill_value='extrapolate')
        angle_field[zeros,j] = fint(zeros)
 
 #========================start plotting area, plot ini_field, alpha_true, and field======
