@@ -43,10 +43,10 @@ def subplot_rountine(fig, ax, cs, idx):
       if idx==1:
         axins = inset_axes(ax,width="3%",height="50%",loc='upper left')
         cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
-        cbar.set_label(r'$\alpha_0$', color=fg_color)
-        cbar.ax.yaxis.set_tick_params(color=fg_color)
-        cbar.outline.set_edgecolor(fg_color)
-        plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=fg_color)
+        cbar.set_label(r'$\alpha_0$', color=bg_color)
+        cbar.ax.yaxis.set_tick_params(color=bg_color)
+        cbar.outline.set_edgecolor(bg_color)
+        plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=bg_color)
       cs.set_clim(vmin, vmax)
     
       return
