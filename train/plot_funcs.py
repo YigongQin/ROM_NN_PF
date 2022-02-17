@@ -204,7 +204,7 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
 
     #print(piece_len[-1,:])
     field = np.zeros((nx,ny),dtype=int)
-    angle_field = -np.ones((nx,ny))
+    angle_field = np.zeros((nx,ny))
 
 
 
@@ -278,8 +278,8 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
 
     for j in range(ntip_y[final-1]):
 
-       zeros = np.arange(np.where(angle_field[:,j]<1e-5)[0])
-       nonzeros = np.arange(np.where(angle_field[:,j]>=1e-5)[0])
+       zeros = np.arange(nx)[angle_field[:,j]<1e-5]
+       nonzeros = np.arange(nx)[angle_field[:,j]>=1e-5]
 
        fint = interp1d(nonzeros, angle_field[nonzeros,j],kind='nearest')
        angle_field[zeros,j] = fint(zeros)
