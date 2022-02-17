@@ -27,7 +27,7 @@ fg_color='white'; bg_color='black'
 
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-coolwarm = cm.get_cmap('coolwarm', 256)
+coolwarm = cm.get_cmap('coolwarm', 256*100)
 newcolors = coolwarm(np.linspace(0, 1, 256))
 ly = np.array([255/256, 255/256, 210/256, 1])
 newcolors[0, :] = ly
