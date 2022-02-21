@@ -189,7 +189,7 @@ class ConvLSTMCell(nn.Module):
         for weight in self.parameters():
             init.uniform_(weight, -stdv, stdv)
 
-    def forward(self, input_tensor, cur_state, active):
+    def forward(self, input_tensor, active, cur_state):
         h_cur, c_cur = cur_state
 
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
@@ -308,8 +308,8 @@ class ConvLSTM(nn.Module):
             h, c = hidden_state[layer_idx]
             output_inner = []
             for t in range(seq_len):
-                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :],
-                                                 cur_state=[h, c], ((input_tensor[:, t, 0, :]>1e-6)*1.0).double())
+                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :], ((input_tensor[:, t, 0, :]>1e-6)*1.0).double(),
+                                                 cur_state=[h, c])
                 ## output shape b, hidden_dim, w
                 output_inner.append(h)
                 
