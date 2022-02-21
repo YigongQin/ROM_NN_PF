@@ -132,7 +132,7 @@ class self_attention(nn.Module):
         #output = self.linear(input.permute(0,2,1)).permute(0,2,1) 
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 )
 
-        return output + self.bias.view(1,self.out_channels,1)
+        return torch.cat([input[:,:0,:], output + self.bias.view(1,self.out_channels,1)],dim=1)
 
 
 
@@ -268,7 +268,7 @@ class ConvLSTM(nn.Module):
 
         cell_list = []
         for i in range(0, self.num_layers):
-            cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
+            cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]+1
 
             cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
                                           hidden_dim=self.hidden_dim[i],
