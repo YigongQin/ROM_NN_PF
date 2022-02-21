@@ -109,14 +109,14 @@ class self_attention(nn.Module):
         return P
 
 
-    def forward(self, input):
+    def forward(self, input, active):
         '''
         input  for B, C_in, W 
         output for B, C_out, W         
         '''
         b, in_ch, w = input.size()
         # active matrix
-        active = ((input[:,0,:]>1e-6)*1.0).double()
+        
         ## [B, W, W] outer product
         #active = torch.ones((b,w),  dtype = torch.float64, device = self.device)
         I = -self.ds*(self.w+2)*( 1.0 - torch.einsum('bi, bj->bij', active, active) )
@@ -132,7 +132,7 @@ class self_attention(nn.Module):
         #output = self.linear(input.permute(0,2,1)).permute(0,2,1) 
         output = torch.sum( torch.einsum('bwkh, bokh -> bowh', A, value), dim = 3 )
 
-        return torch.cat([input[:,:0,:], output + self.bias.view(1,self.out_channels,1)],dim=1)
+        return output + self.bias.view(1,self.out_channels,1)
 
 
 
@@ -189,12 +189,12 @@ class ConvLSTMCell(nn.Module):
         for weight in self.parameters():
             init.uniform_(weight, -stdv, stdv)
 
-    def forward(self, input_tensor, cur_state):
+    def forward(self, input_tensor, cur_state, active):
         h_cur, c_cur = cur_state
 
         combined = torch.cat([input_tensor, h_cur], dim=1)  # concatenate along channel axis
 
-        combined_conv = self.conv(combined)
+        combined_conv = self.conv(combined, active)
         cc_i, cc_f, cc_o, cc_g = torch.split(combined_conv, self.hidden_dim, dim=1)
 
 
@@ -268,7 +268,7 @@ class ConvLSTM(nn.Module):
 
         cell_list = []
         for i in range(0, self.num_layers):
-            cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]+1
+            cur_input_dim = self.input_dim if i == 0 else self.hidden_dim[i - 1]
 
             cell_list.append(ConvLSTMCell(input_dim=cur_input_dim,
                                           hidden_dim=self.hidden_dim[i],
@@ -309,7 +309,7 @@ class ConvLSTM(nn.Module):
             output_inner = []
             for t in range(seq_len):
                 h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :],
-                                                 cur_state=[h, c])
+                                                 cur_state=[h, c], ((input_tensor[:, t, 0, :]>1e-6)*1.0).double())
                 ## output shape b, hidden_dim, w
                 output_inner.append(h)
                 
