@@ -308,7 +308,7 @@ class ConvLSTM(nn.Module):
             h, c = hidden_state[layer_idx]
             output_inner = []
             for t in range(seq_len):
-                h, c = self.cell_list[layer_idx](input_tensor=cur_layer_input[:, t, :, :], ((input_tensor[:, t, 0, :]>1e-6)*1.0).double(),
+                h, c = self.cell_list[layer_idx](cur_layer_input[:, t, :, :], ((input_tensor[:, t, 0, :]>1e-6)*1.0).double(),
                                                  cur_state=[h, c])
                 ## output shape b, hidden_dim, w
                 output_inner.append(h)

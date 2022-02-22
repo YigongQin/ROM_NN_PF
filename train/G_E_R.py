@@ -36,10 +36,10 @@ LSTM_layer = (4, 4)
 LSTM_layer_ini = (4, 4)
 kernel_size = (3,)
 
-num_epochs = 40
+num_epochs = 60
 learning_rate=50e-4
 area_scale = 0.1
-
+size_scale = 1
 seed = 1   
 #data_dir = '../../G_E/*'
 #data_dir = '../../G_E/*'

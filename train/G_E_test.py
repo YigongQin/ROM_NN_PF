@@ -42,10 +42,14 @@ area_scale = 0.1
 
 seed = 1  
  
-data_dir = '../../validation/*.h5'
+data_dir = '../../old_validation/*.h5'
 size_scale = 1
+#data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.300_G010.000_Rmax1.000_seed10_rank0.h5'
 #valid_dir = '../../validation/*.h5'
+#data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.050_G010.000_Rmax1.000_seed0_rank0.h5'
 #data_dir = '../../double_grains/*.h5'
+#data_dir = '../../double_grains/ML_PF16_train0_test1_Mt154272_grains16_frames24_anis0.050_G01.000_Rmax0.600_seed0_rank0.h5'
 #data_dir = '../../quadra_grains/*.h5'
+#data_dir = '../../quadra_grains/ML_PF32_train0_test1_Mt154272_grains32_frames24_anis0.300_G01.000_Rmax1.000_seed10_rank0.h5'
 valid_dir = data_dir
 skip_check = False
