@@ -1,0 +1,233 @@
+/scratch/07428/ygqin/Aeolus/Fast_code/ML_dataset/ROM_NN_PF/train
+Mon Feb 21 15:22:40 CST 2022
+the mode is train
+device cuda
+(input data) train, test 1800 100
+dataset dir ../../twoD/*.h5  and size 1800
+xmin 0.0 xmax 19.968 ymin 0.0 ymax 59.904003
+nx,ny 391 1171
+(1800, 24, 8)
+maximum abs change 0.11508951149880886
+where the points are (array([], dtype=int64), array([], dtype=int64), array([], dtype=int64))
+weird values []
+the mean of the difference 0.004755982412981986
+number of weird sim 0
+[]
+renaissance 0
+renaissance points (array([], dtype=int64), array([], dtype=int64), array([], dtype=int64))
+min and max of training data 0.0 1.0
+max diff from 1 4.470348358154297e-08
+all the summation of grain fractions are 1 0.00036462442949414253
+all the summation of grain fractions are 1 4.691802502065912e-13
+mean and std of last y 32.63640903102027 12.170353870345611
+where they is small  (array([], dtype=int64),)
+weird values  []
+weird y traj []
+nan (array([], dtype=int64), array([], dtype=int64), array([], dtype=int64))
+throw away simulations []
+actual num_train 1800
+total frames 25 in_win 5 out_win 5
+epoch 60 learning rate 0.005
+1d grid size (number of grains) 8
+param length 12
+========== architecture ========
+type -- LSTM
+hidden dim 16 number of layers (4, 4)
+convolution kernel size (3,)
+========== architecture ========
+truncate train len 0
+train samples 28800
+total number of trained parameters  55697
+Epoch:0, Train loss:0.403920, valid loss:0.376677
+Epoch:1, Train loss:0.023313, valid loss:0.004498
+Epoch:2, Train loss:0.004953, valid loss:0.002477
+Epoch:3, Train loss:0.003150, valid loss:0.002427
+Epoch:4, Train loss:0.002442, valid loss:0.001622
+Epoch:5, Train loss:0.002058, valid loss:0.001561
+Epoch:6, Train loss:0.001899, valid loss:0.001330
+Epoch:7, Train loss:0.001796, valid loss:0.001377
+Epoch:8, Train loss:0.001669, valid loss:0.001259
+Epoch:9, Train loss:0.001573, valid loss:0.001098
+Epoch:10, Train loss:0.001493, valid loss:0.001252
+Epoch:11, Train loss:0.001155, valid loss:0.000975
+Epoch:12, Train loss:0.001112, valid loss:0.001001
+Epoch:13, Train loss:0.001111, valid loss:0.000906
+Epoch:14, Train loss:0.001053, valid loss:0.000881
+Epoch:15, Train loss:0.001092, valid loss:0.000871
+Epoch:16, Train loss:0.001024, valid loss:0.000869
+Epoch:17, Train loss:0.001000, valid loss:0.000948
+Epoch:18, Train loss:0.000953, valid loss:0.000776
+Epoch:19, Train loss:0.000959, valid loss:0.000814
+Epoch:20, Train loss:0.000921, valid loss:0.000780
+Epoch:21, Train loss:0.000755, valid loss:0.000680
+Epoch:22, Train loss:0.000765, valid loss:0.000714
+Epoch:23, Train loss:0.000734, valid loss:0.000659
+Epoch:24, Train loss:0.000730, valid loss:0.000691
+Epoch:25, Train loss:0.000731, valid loss:0.000643
+Epoch:26, Train loss:0.000716, valid loss:0.000722
+Epoch:27, Train loss:0.000704, valid loss:0.000651
+Epoch:28, Train loss:0.000701, valid loss:0.000632
+Epoch:29, Train loss:0.000685, valid loss:0.000640
+Epoch:30, Train loss:0.000673, valid loss:0.000615
+Epoch:31, Train loss:0.000595, valid loss:0.000600
+Epoch:32, Train loss:0.000591, valid loss:0.000585
+Epoch:33, Train loss:0.000589, valid loss:0.000580
+Epoch:34, Train loss:0.000588, valid loss:0.000588
+Epoch:35, Train loss:0.000571, valid loss:0.000573
+Epoch:36, Train loss:0.000572, valid loss:0.000582
+Epoch:37, Train loss:0.000558, valid loss:0.000569
+Epoch:38, Train loss:0.000565, valid loss:0.000587
+Epoch:39, Train loss:0.000562, valid loss:0.000568
+Epoch:40, Train loss:0.000553, valid loss:0.000559
+Epoch:41, Train loss:0.000515, valid loss:0.000550
+Epoch:42, Train loss:0.000511, valid loss:0.000554
+Epoch:43, Train loss:0.000510, valid loss:0.000561
+Epoch:44, Train loss:0.000507, valid loss:0.000553
+Epoch:45, Train loss:0.000507, valid loss:0.000546
+Epoch:46, Train loss:0.000500, valid loss:0.000528
+Epoch:47, Train loss:0.000500, valid loss:0.000528
+Epoch:48, Train loss:0.000502, valid loss:0.000544
+Epoch:49, Train loss:0.000497, valid loss:0.000539
+Epoch:50, Train loss:0.000492, valid loss:0.000529
+Epoch:51, Train loss:0.000468, valid loss:0.000523
+Epoch:52, Train loss:0.000465, valid loss:0.000518
+Epoch:53, Train loss:0.000464, valid loss:0.000523
+Epoch:54, Train loss:0.000463, valid loss:0.000518
+Epoch:55, Train loss:0.000463, valid loss:0.000521
+Epoch:56, Train loss:0.000463, valid loss:0.000521
+Epoch:57, Train loss:0.000462, valid loss:0.000519
+Epoch:58, Train loss:0.000462, valid loss:0.000521
+Epoch:59, Train loss:0.000462, valid loss:0.000522
+Epoch:60, Train loss:0.000461, valid loss:0.000519
+training time 4681.444275379181
+total number of trained parameters for initialize model 28945
+sample [0.12020461 0.17902814 0.15089513 0.13043478 0.10485934 0.05370844
+ 0.12787724 0.13299233 0.         0.         0.         0.
+ 0.         0.         0.         0.         0.         0.
+ 0.         0.         0.         0.         0.         0.
+ 0.        ]
+nondim time 0.20833333333333331
+nondim time 0.41666666666666663
+nondim time 0.625
+nondim time 0.8333333333333333
+plot_id,batch_id 0 0 miss% 0.024042792070283422
+plot_id,batch_id 0 1 miss% 0.020269342473878044
+plot_id,batch_id 0 2 miss% 0.027270030806070152
+plot_id,batch_id 0 3 miss% 0.03332050051856184
+plot_id,batch_id 0 4 miss% 0.05436183060183449
+plot_id,batch_id 0 5 miss% 0.0898954418027294
+plot_id,batch_id 0 6 miss% 0.09344297860994806
+plot_id,batch_id 0 7 miss% 0.058757599327403945
+plot_id,batch_id 0 8 miss% 0.05170119399662567
+plot_id,batch_id 0 9 miss% 0.18493094940218513
+plot_id,batch_id 0 10 miss% 0.027079693214415775
+plot_id,batch_id 0 11 miss% 0.019164948757781596
+plot_id,batch_id 0 12 miss% 0.02682122490257775
+plot_id,batch_id 0 13 miss% 0.04672056488539875
+plot_id,batch_id 0 14 miss% 0.03689028121374755
+plot_id,batch_id 0 15 miss% 0.03719625430293284
+plot_id,batch_id 0 16 miss% 0.014554139637916649
+plot_id,batch_id 0 17 miss% 0.032353429717996665
+plot_id,batch_id 0 18 miss% 0.029191963900676337
+plot_id,batch_id 0 19 miss% 0.048310738060542556
+plot_id,batch_id 0 20 miss% 0.021497546195730702
+plot_id,batch_id 0 21 miss% 0.014262029986894152
+plot_id,batch_id 0 22 miss% 0.03944504303970483
+plot_id,batch_id 0 23 miss% 0.018664982000815237
+plot_id,batch_id 0 24 miss% 0.03916355742510338
+plot_id,batch_id 0 25 miss% 0.03188225828119632
+plot_id,batch_id 0 26 miss% 0.030372781477458557
+plot_id,batch_id 0 27 miss% 0.05372110919907768
+plot_id,batch_id 0 28 miss% 0.04308241150990594
+plot_id,batch_id 0 29 miss% 0.02961029554588622
+plot_id,batch_id 0 30 miss% 0.07613481015319891
+plot_id,batch_id 0 31 miss% 0.12450933553500561
+plot_id,batch_id 0 32 miss% 0.08542107507376215
+plot_id,batch_id 0 33 miss% 0.04399695506466163
+plot_id,batch_id 0 34 miss% 0.0604027468776887
+plot_id,batch_id 0 35 miss% 0.021725806098700486
+plot_id,batch_id 0 36 miss% 0.018189984919241776
+plot_id,batch_id 0 37 miss% 0.018618510270385615
+plot_id,batch_id 0 38 miss% 0.025713717401284183
+plot_id,batch_id 0 39 miss% 0.04233336676888648
+plot_id,batch_id 0 40 miss% 0.04435083748087069
+plot_id,batch_id 0 41 miss% 0.027429207226756236
+plot_id,batch_id 0 42 miss% 0.03597162882472919
+plot_id,batch_id 0 43 miss% 0.0339438845277027
+plot_id,batch_id 0 44 miss% 0.03797255037055963
+plot_id,batch_id 0 45 miss% 0.027065288256683504
+plot_id,batch_id 0 46 miss% 0.022817259485342703
+plot_id,batch_id 0 47 miss% 0.041192167178206
+plot_id,batch_id 0 48 miss% 0.06062121893194195
+plot_id,batch_id 0 49 miss% 0.03525514277890494
+plot_id,batch_id 0 50 miss% 0.026044542775755686
+plot_id,batch_id 0 51 miss% 0.03547579898153322
+plot_id,batch_id 0 52 miss% 0.0635159093763001
+plot_id,batch_id 0 53 miss% 0.04583661367121591
+plot_id,batch_id 0 54 miss% 0.03956125768039548
+plot_id,batch_id 0 55 miss% 0.09199224720228333
+plot_id,batch_id 0 56 miss% 0.10342479410104381
+plot_id,batch_id 0 57 miss% 0.09984468393155768
+plot_id,batch_id 0 58 miss% 0.12699187584870344
+plot_id,batch_id 0 59 miss% 0.05167177965191705
+plot_id,batch_id 0 60 miss% 0.02785491074511896
+plot_id,batch_id 0 61 miss% 0.02730007536004315
+plot_id,batch_id 0 62 miss% 0.03516604591462182
+plot_id,batch_id 0 63 miss% 0.07213405910981122
+plot_id,batch_id 0 64 miss% 0.05218084926089959
+plot_id,batch_id 0 65 miss% 0.028670877518207277
+plot_id,batch_id 0 66 miss% 0.03163077054624339
+plot_id,batch_id 0 67 miss% 0.03035318388431158
+plot_id,batch_id 0 68 miss% 0.03560668106049754
+plot_id,batch_id 0 69 miss% 0.07227144094733505
+plot_id,batch_id 0 70 miss% 0.017308037604800902
+plot_id,batch_id 0 71 miss% 0.019120348164482596
+plot_id,batch_id 0 72 miss% 0.05092170922407021
+plot_id,batch_id 0 73 miss% 0.033018348549883135
+plot_id,batch_id 0 74 miss% 0.07736273495907597
+plot_id,batch_id 0 75 miss% 0.040010099120649456
+plot_id,batch_id 0 76 miss% 0.03889345542112245
+plot_id,batch_id 0 77 miss% 0.037845847106515486
+plot_id,batch_id 0 78 miss% 0.06989821183181917
+plot_id,batch_id 0 79 miss% 0.048008205550947265
+plot_id,batch_id 0 80 miss% 0.10636509998761944
+plot_id,batch_id 0 81 miss% 0.16630618883836423
+plot_id,batch_id 0 82 miss% 0.11378469436213542
+plot_id,batch_id 0 83 miss% 0.04829877625873636
+plot_id,batch_id 0 84 miss% 0.21907047323370984
+plot_id,batch_id 0 85 miss% 0.025812719783698073
+plot_id,batch_id 0 86 miss% 0.02853387168296571
+plot_id,batch_id 0 87 miss% 0.05240096978635724
+plot_id,batch_id 0 88 miss% 0.041438678130327596
+plot_id,batch_id 0 89 miss% 0.042261379842124996
+plot_id,batch_id 0 90 miss% 0.036883715638403085
+plot_id,batch_id 0 91 miss% 0.025794926680900037
+plot_id,batch_id 0 92 miss% 0.0296150599237045
+plot_id,batch_id 0 93 miss% 0.046701586813636765
+plot_id,batch_id 0 94 miss% 0.04687470027324534
+plot_id,batch_id 0 95 miss% 0.02674433202962446
+plot_id,batch_id 0 96 miss% 0.017810899371856842
+plot_id,batch_id 0 97 miss% 0.03014737715054702
+plot_id,batch_id 0 98 miss% 0.04263235733900302
+plot_id,batch_id 0 99 miss% 0.04311234085150105
+[0.05 0.05 0.05 ... 0.3  0.3  0.3 ]
+[1. 1. 1. ... 8. 8. 8.]
+[0.1  0.2  0.3  ... 0.96 0.98 1.  ]
+[0.02404279 0.02026934 0.02727003 0.0333205  0.05436183 0.08989544
+ 0.09344298 0.0587576  0.05170119 0.18493095 0.02707969 0.01916495
+ 0.02682122 0.04672056 0.03689028 0.03719625 0.01455414 0.03235343
+ 0.02919196 0.04831074 0.02149755 0.01426203 0.03944504 0.01866498
+ 0.03916356 0.03188226 0.03037278 0.05372111 0.04308241 0.0296103
+ 0.07613481 0.12450934 0.08542108 0.04399696 0.06040275 0.02172581
+ 0.01818998 0.01861851 0.02571372 0.04233337 0.04435084 0.02742921
+ 0.03597163 0.03394388 0.03797255 0.02706529 0.02281726 0.04119217
+ 0.06062122 0.03525514 0.02604454 0.0354758  0.06351591 0.04583661
+ 0.03956126 0.09199225 0.10342479 0.09984468 0.12699188 0.05167178
+ 0.02785491 0.02730008 0.03516605 0.07213406 0.05218085 0.02867088
+ 0.03163077 0.03035318 0.03560668 0.07227144 0.01730804 0.01912035
+ 0.05092171 0.03301835 0.07736273 0.0400101  0.03889346 0.03784585
+ 0.06989821 0.04800821 0.1063651  0.16630619 0.11378469 0.04829878
+ 0.21907047 0.02581272 0.02853387 0.05240097 0.04143868 0.04226138
+ 0.03688372 0.02579493 0.02961506 0.04670159 0.0468747  0.02674433
+ 0.0178109  0.03014738 0.04263236 0.04311234]
+for model  0 the mean error 0.04882148949169415
