@@ -60,7 +60,7 @@ grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
 G_all = 128
-evolve_runs = 3 #num_test
+evolve_runs = 63 #num_test
 
 ## sample orientation
 np.random.seed(1)
@@ -229,7 +229,7 @@ y_out = np.cumsum(dy_out,axis=-1)+y0
 
 area_out = darea_out*area_norm
 
-sio.savemat('synthetic'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_Rmax'+sys.argv[3]+'.mat',{'frac':frac_out,'y':y_out,'area':area_out,'param':param_dat})
+sio.savemat('synthetic_grains'+str(G_all)+'_runs'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_Rmax'+sys.argv[3]+'.mat',{'frac':frac_out,'y':y_out,'area':area_out,'param':param_dat})
 
 
 
