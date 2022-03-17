@@ -27,7 +27,7 @@ from models import *
 import matplotlib.tri as tri
 from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
 from scipy.interpolate import griddata
-torch.cuda.empty_cache()
+#torch.cuda.empty_cache()
 
 mode = sys.argv[1]
 if mode == 'train': from G_E_R import *
@@ -128,8 +128,9 @@ print('nan', np.where(np.isnan(frac_train)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 print('throw away simulations',weird_sim)
 #### delete the data in the actual training fractions and parameters
-frac_train = np.delete(frac_train,weird_sim,0)
-param_train = np.delete(param_train,weird_sim,0)
+if len(weird_sim)>0:
+ frac_train = np.delete(frac_train,weird_sim,0)
+ param_train = np.delete(param_train,weird_sim,0)
 #idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
 num_train -= len(weird_sim) 
 
