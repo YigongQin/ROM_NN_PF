@@ -62,7 +62,7 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 print('nx,ny', nx,ny)
 
-gap = all_frames//(frames-1)
+gap = int(all_frames/(frames-1))
 print('the gap of two frames', gap)
 ## =======load data and parameters from the every simulation======
 
@@ -98,8 +98,8 @@ def get_data(num_runs, num_batch, datasets):
       #Color = (aseq-5.5)/4.5
       Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
       #print('angle sequence', Color)
-      frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,G]  # grains coalese, include frames
-      area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,G]  # grains coalese, include frames
+      frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]
+      area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]  # grains coalese, include frames
       #if run<1: print(frac) 
       frac_all[run*num_batch+batch_id,:,:] = frac*G/G_small
       y_all[run*num_batch+batch_id,:] = tip_y 
