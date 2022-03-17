@@ -7,7 +7,7 @@ Created on Wed Sep 15 22:12:11 2021
 """
 
 batch = 1
-num_batch = 1800
+num_batch = 2400
 num_runs = batch*num_batch
 #valid_ratio = 1
 #num_train_all = int((1-valid_ratio)*num_runs)
@@ -18,6 +18,7 @@ num_train_b = 0 #int(num_train_all/num_batch)
 
 window = 5
 out_win = 5
+all_frames = 600-1
 frames = 25
 train_frames=frames
 pred_frames= frames-window
@@ -41,16 +42,7 @@ learning_rate=50e-4
 area_scale = 0.1
 size_scale = 1
 seed = 1   
-#data_dir = '../../G_E/*'
-#data_dir = '../../G_E/*'
-#data_dir = '../../fixed_size/*G01.*'
-data_dir = '../../final_ge/*'
-data_dir = '../../large_R/*'
-data_dir = '../../allgr/*.h5'
-data_dir = '../../naive/*.h5'
 data_dir = '../../twoD/*.h5'
-#data_dir = '../../fixed_size/*'
-#data_dir = '../../all_qoi/*'
 #data_dir = '../../ML_PF8_train1000_test100_Mt24002_grains8_frames25_anis0.050_G050.000_Rmax1.000_seed0_rank0.h5'
 valid_dir = '../../validation/*.h5'
 skip_check = False
