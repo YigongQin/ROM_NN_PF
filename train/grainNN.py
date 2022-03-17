@@ -62,6 +62,8 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 print('nx,ny', nx,ny)
 
+gap = all_frames//(frames-1)
+print('the gap of two frames', gap)
 ## =======load data and parameters from the every simulation======
 
 def get_data(num_runs, num_batch, datasets):
@@ -91,13 +93,13 @@ def get_data(num_runs, num_batch, datasets):
     # compile all the datasets interleave
     for run in range(batch):
       aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
-      tip_y = tip_y_asse[run*frames:(run+1)*frames]
+      tip_y = tip_y_asse[run*all_frames:(run+1)*all_frames][::gap]
   #    Color = (aseq-3)/2        # normalize C to [-1,1]
       #Color = (aseq-5.5)/4.5
       Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
       #print('angle sequence', Color)
-      frac = (frac_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
-      area = (area_asse[run*G*frames:(run+1)*G*frames]).reshape((frames,G))  # grains coalese, include frames
+      frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,G]  # grains coalese, include frames
+      area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,G]  # grains coalese, include frames
       #if run<1: print(frac) 
       frac_all[run*num_batch+batch_id,:,:] = frac*G/G_small
       y_all[run*num_batch+batch_id,:] = tip_y 
@@ -112,7 +114,7 @@ def get_data(num_runs, num_batch, datasets):
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
 testsets = sorted(glob.glob(valid_dir))
 frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_test, testsets)
-#print(tip_y_asse[frames::frames])
+#print(tip_y_asse[frames::gap])
 # trained dataset need to be randomly selected:
 
 if skip_check == False:
@@ -558,8 +560,8 @@ if valid_train:
      aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
      pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90
-     tip_y = tip_y_asse[(num_train_b+frame_idx)*frames:(num_train_b+frame_idx+1)*frames]
-     extra_area = (area_asse[(num_train_b+frame_idx)*G*frames:(num_train_b+frame_idx+1)*G*frames]).reshape((frames,G))[train_frames-1,:]
+     tip_y = tip_y_asse[(num_train_b+frame_idx)*all_frames:(num_train_b+frame_idx+1)*all_frames][::gap]
+     extra_area = (area_asse[(num_train_b+frame_idx)*G*all_frames:(num_train_b+frame_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][train_frames-1,:]
      #print((tip_y))
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
