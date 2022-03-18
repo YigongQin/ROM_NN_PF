@@ -56,8 +56,7 @@ learning_rate = learning_rate_pool[lr_id]
 layers = layers_pool[layers_id]
 frames = frames_pool[frames_id]+1
 
-print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
-    'num_layers', layers, 'frames', frames)
+
 
 
 if mode=='train' or mode=='test':
@@ -627,6 +626,9 @@ print(u)
 print('for model ', int(sys.argv[2]), 'the mean error', np.mean(u))
 
 ave_err = np.mean(u)
+
+print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
+    'num_layers', layers, 'frames', frames, 'err', ave_err)
 
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
   'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames})
