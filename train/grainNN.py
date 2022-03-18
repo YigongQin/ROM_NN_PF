@@ -35,6 +35,33 @@ elif mode == 'test': from G_E_test import *
 elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
+
+
+hidden_dim_pool = [10, 16, 24]
+learning_rate_pool=[25e-4, 50e-4, 100e-4]
+layers_pool=[4,5,6]
+
+frames_pool=[15,20,24,30]
+
+
+
+frames = frames_pool[int(sys.argv[2])]+1
+
+
+
+if mode=='train' or mode=='test':
+  train_frames=frames
+  pred_frames= frames-window
+if mode=='ini':
+  train_frames = window+out_win
+  pred_frames = out_win
+sam_per_run = frames - window - (out_win-1)
+total_size = frames*num_runs
+dt = 1.0/(frames-1)
+
+LSTM_layer = (layers, layers)
+LSTM_layer_ini = (layers, layers)
+
 # global parameters
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -507,10 +534,9 @@ for i in range(0,pred_frames,out_win):
 
     dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
-
-    if i>=pack:
+    if i>=pack and mode!='ini':
         seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
     else: 
         seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
         = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
@@ -564,9 +590,9 @@ if valid_train:
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
      # get the parameters from dataset name
-     G0 = np.float(G_list[batch_id])  #param_test[data_id,2*G+1]
-     Rmax = np.float(R_list[batch_id]) 
-     anis = np.float(e_list[batch_id])   #param_test[data_id,2*G]
+     G0 = float(G_list[batch_id])  #param_test[data_id,2*G+1]
+     Rmax = float(R_list[batch_id]) 
+     anis = float(e_list[batch_id])   #param_test[data_id,2*G]
 
      miss = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
       pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag)
