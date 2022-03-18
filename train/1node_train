@@ -52,3 +52,4 @@ python3 grainNN.py train 50
 python3 grainNN.py train 51
 python3 grainNN.py train 52
 python3 grainNN.py train 53
+
