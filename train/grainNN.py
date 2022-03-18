@@ -56,7 +56,8 @@ learning_rate = learning_rate_pool[lr_id]
 layers = layers_pool[layers_id]
 frames = frames_pool[frames_id]+1
 
-print('hidden_dim', hidden_dim, 'learning_rate', learning_rate, 'num_layers', layers, 'frames', frames)
+print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
+    'num_layers', layers, 'frames', frames)
 
 
 if mode=='train' or mode=='test':
