@@ -1,3 +1,4 @@
+python3 grainNN.py train 0
 python3 grainNN.py train 1
 python3 grainNN.py train 2
 python3 grainNN.py train 3
@@ -51,4 +52,3 @@ python3 grainNN.py train 50
 python3 grainNN.py train 51
 python3 grainNN.py train 52
 python3 grainNN.py train 53
-python3 grainNN.py train 54

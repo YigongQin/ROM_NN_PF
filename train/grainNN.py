@@ -36,23 +36,34 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
+all_id = int(sys.argv[2])
 
-hidden_dim_pool = [10, 16, 24]
-learning_rate_pool=[25e-4, 50e-4, 100e-4]
-layers_pool=[4,5,6]
+
 
 frames_pool=[15,20,24,30]
+learning_rate_pool=[25e-4, 50e-4, 100e-4]
+layers_pool=[3,4,5]
+hidden_dim_pool = [10, 16, 24]
+
+frames_id = all_id//27
+lr_id = (all_id%27)//9
+layers_id = (all_id%9)//3
+hd_id = (all_id%3)
 
 
+hidden_dim=hidden_dim_pool[hd_id]
+learning_rate = learning_rate_pool[lr_id]
+layers = layers_pool[layers_id]
+frames = frames_pool[frames_id]+1
 
-frames = frames_pool[int(sys.argv[2])]+1
-
+print('hidden_dim', hidden_dim, 'learning_rate', learning_rate, 'num_layers', layers, 'frames', frames)
 
 
 if mode=='train' or mode=='test':
   train_frames=frames
   pred_frames= frames-window
 if mode=='ini':
+  learning_rate *= 2
   train_frames = window+out_win
   pred_frames = out_win
 sam_per_run = frames - window - (out_win-1)
@@ -614,7 +625,9 @@ print(z)
 print(u)
 print('for model ', int(sys.argv[2]), 'the mean error', np.mean(u))
 
-sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
-  'seq_all':seq_all,'param_all':param_all})
+ave_err = np.mean(u)
+
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+sys.argv[2]+'err'+str(ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
+  'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames})
 
 
