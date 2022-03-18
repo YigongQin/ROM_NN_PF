@@ -43,7 +43,7 @@ all_id = int(sys.argv[2])
 frames_pool=[15,20,24,30]
 learning_rate_pool=[25e-4, 50e-4, 100e-4]
 layers_pool=[3,4,5]
-hidden_dim_pool = [10, 16, 24]
+hidden_dim_pool = [16, 24, 32]
 
 frames_id = all_id//27
 lr_id = (all_id%27)//9
