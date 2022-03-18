@@ -36,7 +36,7 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
-all_id = int(sys.argv[2])
+all_id = int(sys.argv[2])+54
 
 
 
@@ -425,10 +425,10 @@ print('total number of trained parameters ', pytorch_total_params)
 
 if model_exist:
   if mode == 'train' or mode== 'test':
-    model.load_state_dict(torch.load('./lstmmodel'+sys.argv[2]))
+    model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
     model.eval()  
   if mode == 'ini':  
-    model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
+    model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
     model.eval() 
 else: 
   train_list=[]
@@ -437,8 +437,8 @@ else:
   model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
-  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+sys.argv[2])
-  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+sys.argv[2])
+  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+str(all_id))
+  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+str(all_id))
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
@@ -489,7 +489,7 @@ else:
        ini_model.cuda()
     init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
     print('total number of trained parameters for initialize model', init_total_params)
-    ini_model.load_state_dict(torch.load('./ini_lstmmodel'+sys.argv[2]))
+    ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
     seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
