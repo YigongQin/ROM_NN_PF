@@ -36,7 +36,9 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
-all_id = int(sys.argv[2])+54
+out_case = 0 if len(sys.argv)<4 else int(sys.argv[3])
+
+all_id = int(sys.argv[2])+54*out_case
 
 
 
@@ -623,7 +625,7 @@ print(x)
 print(y)
 print(z)
 print(u)
-print('for model ', int(sys.argv[2]), 'the mean error', np.mean(u))
+print('for model ', all_id, 'the mean error', np.mean(u))
 
 ave_err = np.mean(u)
 
