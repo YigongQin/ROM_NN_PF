@@ -42,7 +42,7 @@ area_scale = 0.1
 
 seed = 1  
  
-data_dir = '../../old_validation/*.h5'
+data_dir = '../../validation/*.h5'
 size_scale = 1
 #data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.300_G010.000_Rmax1.000_seed10_rank0.h5'
 #valid_dir = '../../validation/*.h5'

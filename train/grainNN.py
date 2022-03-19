@@ -38,7 +38,7 @@ print('the mode is', mode)
 
 out_case = 0 if len(sys.argv)<4 else int(sys.argv[3])
 
-all_id = int(sys.argv[2])+54*out_case
+all_id = int(sys.argv[2])-1 #*out_case
 
 
 

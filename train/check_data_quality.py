@@ -63,7 +63,7 @@ def redo_divide(frac_train, weird_sim, param_train, G, frames):
 def check_data_quality(frac_all,param_all,y_all,G,frames):
 
     ### C1 check the fraction jump
-    weird_sim = find_weird(frac_all, 0.15)
+    weird_sim = find_weird(frac_all, 0.25)
     '''
     refine_count=0
     while len(weird_sim)>0:
@@ -79,7 +79,7 @@ def check_data_quality(frac_all,param_all,y_all,G,frames):
     merge_arg = np.where( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) )
     print("renaissance", np.sum( (frac_all[:,:-1,:]<1e-4)*1*(frac_all[:,1:,:]>1e-4) ) )
     print("renaissance points", merge_arg)
-    weird_sim = weird_sim + list(set(list(merge_arg[0])))
+    weird_sim = weird_sim #+ list(set(list(merge_arg[0])))
     #print("how emerge", frac_all[:,:-1,:][merge_arg], frac_all[:,1:,:][merge_arg])
     #print(frac_all[2489,:,:])
     

@@ -18,7 +18,7 @@ num_train_b = 0 #int(num_train_all/num_batch)
 
 window = 5
 out_win = 5
-all_frames = 600-1
+all_frames = 601
 frames = 25
 train_frames=frames
 pred_frames= frames-window
@@ -37,7 +37,7 @@ LSTM_layer = (4, 4)
 LSTM_layer_ini = (4, 4)
 kernel_size = (3,)
 
-num_epochs = 60
+num_epochs = 20 #60
 learning_rate=50e-4
 area_scale = 0.1
 size_scale = 1
