@@ -30,6 +30,7 @@ from scipy.interpolate import griddata
 torch.cuda.empty_cache()
 
 from G_E_test import *
+mode = 'test'
 
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -59,8 +60,8 @@ def tohost(data):
 grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
-G_all = 128
-evolve_runs = 63 #num_test
+G_all = 8 #128
+evolve_runs = 1000 #num_test
 
 ## sample orientation
 np.random.seed(1)
@@ -209,15 +210,12 @@ for i in range(0,pred_frames,out_win):
 
     dfrac_new[:,:,G_small:2*G_small] *= size_scale
 
-
-    #if i>=pack:
-     #   frac_out[:,-alone:,:], dy_out[:,-alone:], darea_out[:,-alone:,:], left_grains[:,-alone:,:] \
-    #    = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,-1], dfrac_new[:,:alone,G_small:2*G_small], G_small, G, expand, domain_factor, left_coors)
-   # else: 
-
-   # frac_out[:,window+i:window+i+out_win,:], dy_out[:,window+i:window+i+out_win], darea_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-    seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+    if i>=pack and mode!='ini':
+        seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
+    else: 
+        seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
     
     seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
 
@@ -256,7 +254,11 @@ x = np.linspace(-dx, x[-2]*G_all/G+dx, nx_all +3)
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
 
-for plot_id in range(1):
+plot_flag = False
+
+if plot_flag==True:
+
+ for plot_id in range(1):
     data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else plot_id
    # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     p_len = np.asarray(np.round(frac_out[data_id,:,:]*nx),dtype=int)
