@@ -16,9 +16,11 @@ num_train = num_batch*1 #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
-window = 5
-out_win = 5
-frames = 25
+
+out_win = 4
+window = out_win
+frames = 21
+all_frames = 601
 train_frames=frames
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
@@ -31,13 +33,13 @@ param_len = G + 4   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
-hidden_dim = 16
+hidden_dim = 32
 LSTM_layer = (4, 4)
 LSTM_layer_ini = (4, 4)
 kernel_size = (3,)
 
-num_epochs = 40
-learning_rate=50e-4
+num_epochs = 60
+learning_rate=100e-4
 area_scale = 0.1
 
 seed = 1  

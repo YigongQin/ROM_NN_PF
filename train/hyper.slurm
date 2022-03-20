@@ -15,22 +15,20 @@
 #        but slurm needs a plausible value to schedule the job.
 #----------------------------------------------------
 #SBATCH -J myjob           # Job name
-#SBATCH -o hyper_search.o%j       # Name of stdout output file
+#SBATCH -o o_hyper_search.o%j       # Name of stdout output file
 #SBATCH -e GER.e%j       # Name of stderr error file
-#SBATCH -p development            # Queue (partition) name
+#SBATCH -p normal            # Queue (partition) name
 #SBATCH -N 2               # Total # of nodes (must be 1 for serial)
-#SBATCH -n 112               # Total # of mpi tasks (should be 1 for serial)
-#SBATCH -t 02:00:00        # Run time (hh:mm:ss)
+#SBATCH -n 256               # Total # of mpi tasks (should be 1 for serial)
+#SBATCH -t 12:00:00        # Run time (hh:mm:ss)
 #SBATCH --mail-type=all    # Send email at begin and end of job
 #SBATCH --mail-user=ygqin@utexas.edu
-#SBATCH -A ASC21002       # Allocation name (req'd if you have more than 1)
+#SBATCH -A ASC21034       # Allocation name (req'd if you have more than 1)
 
 # Other commands must follow all #SBATCH directives...
-#module unload python3
-conda activate torch_env
-#module load python3
-#export MY_SPECTRUM_OPTIONS="--gpu --aff on" 
-module load launcher
+source /scratch/07428/ygqin/apps/anaconda3/etc/profile.d/conda.sh
+conda activate gpu_ML
+#module load launcher_gpu
 module list
 pwd
 date
