@@ -16,16 +16,16 @@ num_train = num_batch*1 #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
-
+dilation = 1
 out_win = 4
 window = out_win
-frames = 21
-all_frames = 601
+frames = 20*dilation +1
+all_frames = 600*dilation +1
 train_frames=frames
 pred_frames= frames-window
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
-dt = 1.0/(frames-1)
+dt = dilation*1.0/(frames-1)
 
 G = 8    # G is the number of grains
 G_small = 8
@@ -45,6 +45,7 @@ area_scale = 0.1
 seed = 1  
  
 data_dir = '../../validation/*.h5'
+#data_dir = '../../double_time/*.h5'
 size_scale = 1
 #data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.300_G010.000_Rmax1.000_seed10_rank0.h5'
 #valid_dir = '../../validation/*.h5'
