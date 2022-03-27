@@ -149,8 +149,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
     true_count = np.array([np.sum(alpha_true==g) for g in range(G)])
     rom_count = np.array([np.sum(field==g) for g in range(G)])
-    inset = np.array([np.sum(alpha_true==g and field==g) for g in range(G)])
+    inset = np.array([np.sum( (alpha_true==g)*(field==g) ) for g in range(G)])
     dice = 2*inset/(true_count + rom_count)
+    print(dice)
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
     ## count for the error of y
