@@ -47,8 +47,10 @@ def subplot_rountine(fig, ax, cs, idx):
         cbar.ax.yaxis.set_tick_params(color=bg_color)
         cbar.outline.set_edgecolor(bg_color)
         plt.setp(plt.getp(cbar.ax.axes, 'yticklabels'), color=bg_color)
-      cs.set_clim(vmin, vmax)
-    
+      if idx==4:
+         cs.set_clim(0,1)
+      else:
+         cs.set_clim(vmin, vmax)
       return
 
 def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains,plot_flag):
@@ -147,11 +149,11 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
-    true_count = np.array([np.sum(alpha_true==g) for g in range(G)])
-    rom_count = np.array([np.sum(field==g) for g in range(G)])
-    inset = np.array([np.sum( (alpha_true==g)*(field==g) ) for g in range(G)])
+    true_count = np.array([np.sum(alpha_true==g) for g in aseq])
+    rom_count = np.array([np.sum(field==g) for g in aseq])
+    inset = np.array([np.sum( (alpha_true==g)*(field==g) ) for g in aseq])
     dice = 2*inset/(true_count + rom_count)
-    print(dice)
+    print('\n',dice)
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
     ## count for the error of y
@@ -186,9 +188,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       ax3.set_title('final:NN_predict_'+str(int(miss_rate*100))+'%error', color=bg_color, fontsize=8)
       
       ax4 = fig.add_subplot(144)
-      cs4 = ax4.imshow(1*(alpha_true-field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
+      cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax4, cs4, 4)
-      ax1.set_title('miss classified',color=bg_color,fontsize=8)
+      ax4.set_title('missclassified',color=bg_color,fontsize=8)
 
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.png',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
