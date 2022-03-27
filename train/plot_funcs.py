@@ -98,7 +98,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
 
 #=========================start fill the final field=================
-    field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
+    field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
     nymax = int(ymax/dx)
     temp_piece = np.zeros((G, ny), dtype=int)
     y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+1)
@@ -109,7 +109,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
 
-    for j in range(y_range):
+    for j in y_range:
      #  loc = 0
        #print(temp_piece)
        #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
@@ -159,7 +159,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     #  miss += np.absolute(area[g]-area_true[g])
       #print(area[g], area_true[g])
 
-    y_top = next( x for x in np.mean(alpha_true, axis=0) if x<1e-5)
+    y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
 
     if plot_flag==True:
