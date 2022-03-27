@@ -574,7 +574,7 @@ area_out = darea_out*area_norm
 #area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
 
-
+dice = np.zeros((num_test,G))
 miss_rate_param = np.zeros(num_test)
 run_per_param = int(evolve_runs/num_batch)
 if run_per_param <1: run_per_param = 1
@@ -613,7 +613,7 @@ if valid_train:
      Rmax = float(R_list[batch_id]) 
      anis = float(e_list[batch_id])   #param_test[data_id,2*G]
 
-     miss = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
+     miss, dice[batch_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
       pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag)
      sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
@@ -641,7 +641,7 @@ if mode == 'test':
 else:
       print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
     'num_layers', layers, 'frames', frames, 'out win', out_win, 'err', ave_err, 'time', -start+end)
-sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,\
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,\
   'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames})
 
 

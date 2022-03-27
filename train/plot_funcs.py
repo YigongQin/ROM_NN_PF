@@ -147,7 +147,10 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
-
+    true_count = np.array([np.sum(alpha_true==g) for g in range(G)])
+    rom_count = np.array([np.sum(field==g) for g in range(G)])
+    inset = np.array([np.sum(alpha_true==g and field==g) for g in range(G)])
+    dice = 2*inset/(true_count + rom_count)
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
     ## count for the error of y
@@ -185,7 +188,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       plt.close()
 
     
-    return miss_rate
+    return miss_rate, dice
 
 
 def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_angles, area_a, left_grains, nx_small):
