@@ -539,7 +539,7 @@ for i in range(0,pred_frames,out_win):
 
     param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 
-    param_dat_s[:,-1] = (i+window)*dt if i+window+out_win<=frames else (frames-out_win)*dt## the first output time
+    param_dat_s[:,-1] = (i+window)*dt ## the first output time
     print('nondim time', (i+window)*dt)
 
     domain_factor = size_scale*domain_factor
@@ -553,16 +553,13 @@ for i in range(0,pred_frames,out_win):
 
     if i>=pack and mode!='ini':
         seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new[:,-alone:,:], dfrac_new[:,-alone:,:], G_small, G, expand, domain_factor, left_coors)
+        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
     else: 
         seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
         = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
     
-    if i+window+out_win<=frames:
-        seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
-    else:
-        seq_dat = np.concatenate((seq_dat[:,alone:,:], seq_out[:,window+i:window+i+alone,:]),axis=1)
-#    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+    seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
+    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
 
 frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
 frac_out *= G_small/G
