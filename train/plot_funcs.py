@@ -61,9 +61,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     dx = x[1]-x[0]
     nt=len(tip_y)
     #input_frac = int((window-1)/(nt-1)*100)
-    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')    
+    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')[1:-1,1:-1]    
 
-    ntip_y = np.asarray(tip_y/dx,dtype=int)
+    ntip_y = np.asarray(np.round(tip_y/dx),dtype=int)
     
     p_len = np.asarray(np.round(frac*nx),dtype=int)
     piece_len = np.cumsum(p_len,axis=0)
@@ -82,16 +82,10 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 #=========================start fill the initial field=================
 
     temp_piece = np.zeros(G, dtype=int)
-    for j in range(ntip_y[0]):
-     #  start with temp_piece
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
+    for j in range(ntip_y[0]+1):
 
        for g in range(G):
+        temp_piece[g] = piece0[g]
         if g==0:
           for i in range( temp_piece[g]):
             if (i>nx-1 or j>ny-1): break
@@ -104,35 +98,38 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
 
 #=========================start fill the final field=================
+    field[:,:ntip_y[0]] = ini_field[:,:ntip_y[0]]
     nymax = int(ymax/dx)
-    temp_piece = np.zeros(G, dtype=int)
-    miss=0
-    for j in range(ntip_y[final-1]):
+    temp_piece = np.zeros((G, ny), dtype=int)
+    y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+1)
+
+    for g in range(G):
+      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+      new_f = fint(y_range)
+      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+
+
+    for j in range(y_range):
      #  loc = 0
-       for g in range(G):
-          if j <= ntip_y[0]: temp_piece[g] = piece0[g]
-          else:
-            fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-            new_f = fint(j)
-            temp_piece[g] = np.asarray(new_f,dtype=int)
        #print(temp_piece)
        #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
-       for g in range(G):
+      for g in range(G):
         if g==0:
-          for i in range( temp_piece[g]):
+          for i in range( temp_piece[g, j]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
         else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+          for i in range(temp_piece[g-1, j], temp_piece[g, j]):
             if (i>nx-1 or j>ny-1): break
            # print(loc)
             field[i,j] = aseq[g]
-            if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
 
-        if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
+      #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
 #=========================start fill the extra field=================
+    y_f = ntip_y[final-1]
     for g in range(G):
 
       if p_len[g, final-1] ==0: height =0 
@@ -141,12 +138,12 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
         if g==0:
-          for i in range( temp_piece[g]):
+          for i in range( temp_piece[g, y_f]):
             if (i>nx-1 or j>ny-1): break
             field[i,j] = aseq[g]
 
         else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
+          for i in range(temp_piece[g-1, y_f], temp_piece[g, y_f]):
             if (i>nx-1 or j>ny-1): break         
             field[i,j] = aseq[g]
 
@@ -156,15 +153,15 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     ## count for the error of y
     
     #if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-    miss += np.absolute(nx*(nymax-ntip_y[final-1]))
+    #miss += np.absolute(nx*(nymax-ntip_y[final-1]))
     ## count for the error of area
-    for g in range(G):
-      miss += np.absolute(area[g]-area_true[g])
+    #for g in range(G):
+    #  miss += np.absolute(area[g]-area_true[g])
       #print(area[g], area_true[g])
-    miss_rate = miss/( nx*nymax + np.sum(area_true) );
 
-   # error=field-alpha_true[1:-1,1:-1]
-    
+    y_top = next( x for x in np.mean(alpha_true, axis=0) if x<1e-5)
+    miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
+
     if plot_flag==True:
       fig = plt.figure()
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
@@ -175,7 +172,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       #ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
       ax1.set_title('initial condition',color=bg_color,fontsize=8)
       ax2 = fig.add_subplot(132)
-      cs2 = ax2.imshow(pf_angles[alpha_true[1:-1,1:-1]].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
+      cs2 = ax2.imshow(pf_angles[alpha_true].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax2, cs2, 2)
       ax2.set_title('final:PDE_solver', color=bg_color,fontsize=8)
       
