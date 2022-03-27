@@ -57,7 +57,7 @@ owin_id = all_id%3
 hidden_dim=hidden_dim_pool[hd_id]
 learning_rate = learning_rate_pool[lr_id]
 layers = layers_pool[layers_id]
-frames = frames_pool[frames_id]+1
+frames = frames_pool[frames_id]*dilation+1
 
 out_win = out_win_pool[owin_id]
 
@@ -74,7 +74,7 @@ if mode=='ini':
   pred_frames = out_win
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
-dt = 1.0/(frames-1)
+dt = dilation*1.0/(frames-1)
 
 LSTM_layer = (layers, layers)
 LSTM_layer_ini = (layers, layers)
@@ -533,14 +533,16 @@ else:
 #print('the sub simulations', expand)
 
 for i in range(0,pred_frames,out_win):
-
-
+    
+    time_i = i
+    if dt*(time_i+window+out_win-1)>1: 
+        time_i = int(1/dt)-(window+out_win-1)
     ## you may resplit the grains here
 
     param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
 
-    param_dat_s[:,-1] = (i+window)*dt ## the first output time
-    print('nondim time', (i+window)*dt)
+    param_dat_s[:,-1] = (time_i+window)*dt ## the first output time
+    print('nondim time', (time_i+window)*dt)
 
     domain_factor = size_scale*domain_factor
     seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
