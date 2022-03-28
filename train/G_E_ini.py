@@ -18,6 +18,7 @@ num_train_b = 0 #int(num_train_all/num_batch)
 
 window = 1
 out_win = 4
+dilation = 1
 all_frames = 601
 frames = 25
 train_frames = window+out_win
