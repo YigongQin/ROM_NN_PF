@@ -455,7 +455,8 @@ else:
   plt.legend(['training loss','validation loss'])
   plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
   plt.savefig('mul_batch_loss.png')
-  
+
+sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
 ## plot to check if the construction is reasonable
 evolve_runs = num_test #num_test
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
