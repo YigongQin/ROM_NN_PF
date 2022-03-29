@@ -68,7 +68,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     ntip_y = np.asarray(np.round(tip_y/dx),dtype=int)
     
     p_len = np.asarray(np.round(frac*nx),dtype=int)
-    piece_len = np.cumsum(p_len,axis=0)
+    piece_len = np.asarray(np.round(np.cumsum(frac,axis=0)*nx),dtype=int)
     correction = piece_len[-1, :] - fnx
     for g in range(G//2, G):
       piece_len[g,:] -= correction
@@ -101,7 +101,6 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
 #=========================start fill the final field=================
     field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
-    nymax = int(ymax/dx)
     temp_piece = np.zeros((G, ny), dtype=int)
     y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+1)
 
@@ -135,7 +134,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     for g in range(G):
 
       if p_len[g, final-1] ==0: height =0 
-      else: height = int(area[g]/p_len[g, final-1])
+      else: height = int(np.round((area[g]/p_len[g, final-1])))
       #print(height)
       for j in range(ntip_y[final-1], ntip_y[final-1]+height):
 
