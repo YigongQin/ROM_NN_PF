@@ -23,7 +23,7 @@ from plot_funcs import plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib
 from check_data_quality import check_data_quality
-
+from models import *
 import matplotlib.tri as tri
 from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
 from scipy.interpolate import griddata
@@ -36,8 +36,6 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
-if mode == 'test': from test_models import *
-else: from models import *
 out_case = 0 if len(sys.argv)<4 else int(sys.argv[3])
 
 all_id = int(sys.argv[2])-1 #*out_case
