@@ -35,8 +35,14 @@ newcmp = ListedColormap(newcolors)
 
 def subplot_rountine(fig, ax, cs, idx):
     
-      ax.set_xlabel('$x\ (\mu m)$'); 
-      if idx ==1: ax.set_ylabel('$y\ (\mu m)$');
+
+      if idx ==1: 
+        ax.yaxis.set_ticks([0,30,60])
+        ax.set_xlabel(r'$x (\mu m)$')
+        ax.set_ylabel(r'$y (\mu m)$')
+      else: 
+        ax.yaxis.set_ticks([])
+        ax.xaxis.set_ticks([])
       ax.spines['bottom'].set_color(bg_color);ax.spines['left'].set_color(bg_color)
       ax.yaxis.label.set_color(bg_color); ax.xaxis.label.set_color(bg_color)
       ax.tick_params(axis='x', colors=bg_color); ax.tick_params(axis='y', colors=bg_color);
@@ -168,28 +174,28 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
 
     if plot_flag==True:
-      fig = plt.figure()
+      fig = plt.figure(figsize=(10,16))
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
      # fig.text(.5, .2, txt, ha='center')
-    #  ax1 = fig.add_subplot(131)
-    #  cs1 = ax1.imshow(pf_angles[ini_field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
-    #  subplot_rountine(fig, ax1, cs1, 1)
+      ax1 = fig.add_subplot(141)
+      cs1 = ax1.imshow(pf_angles[ini_field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
+      subplot_rountine(fig, ax1, cs1, 1)
       #ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
-    #  ax1.set_title('initial condition',color=bg_color,fontsize=8)
-      ax2 = fig.add_subplot(131)
+      ax1.set_title('t=0',color=bg_color,fontsize=8)
+      ax2 = fig.add_subplot(142)
       cs2 = ax2.imshow(pf_angles[alpha_true].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax2, cs2, 2)
       ax2.set_title('PDE', color=bg_color,fontsize=8)
       
-      ax3 = fig.add_subplot(132)
+      ax3 = fig.add_subplot(143)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
-      ax3.set_title('Neural Network', color=bg_color, fontsize=8)
+      ax3.set_title('NN', color=bg_color, fontsize=8)
       
-      ax4 = fig.add_subplot(133)
+      ax4 = fig.add_subplot(144)
       cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax4, cs4, 4)
-      ax4.set_title('misclassified '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=8)
+      ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=8)
 
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
