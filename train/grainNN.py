@@ -642,7 +642,8 @@ if mode == 'test':
 else:
       print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
     'num_layers', layers, 'frames', frames, 'out win', out_win, 'err', ave_err, 'time', -start+end)
-sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,\
-  'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames})
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,\
+  'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames, \
+  'frac_true':frac_test,'y_true':y_test,'area_true':area_test})
 
 
