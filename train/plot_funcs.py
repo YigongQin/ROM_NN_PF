@@ -19,7 +19,8 @@ fid=2
 var = var_list[fid]
 vmin = np.float64(range_l[fid])
 vmax = np.float64(range_h[fid])
-plt.rcParams.update({'font.size': 10})
+ft=32
+plt.rcParams.update({'font.size': ft})
 #plt.style.use("dark_background")
 mathtext.FontConstantsBase.sub1 = 0.2  
 fg_color='white'; bg_color='black'
@@ -181,21 +182,21 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       cs1 = ax1.imshow(pf_angles[ini_field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax1, cs1, 1)
       #ax1.set_title('input:'+str(input_frac)+'%history',color=bg_color,fontsize=8)
-      ax1.set_title('t=0',color=bg_color,fontsize=8)
+      ax1.set_title('t=0',color=bg_color,fontsize=ft)
       ax2 = fig.add_subplot(142)
       cs2 = ax2.imshow(pf_angles[alpha_true].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax2, cs2, 2)
-      ax2.set_title('PDE', color=bg_color,fontsize=8)
+      ax2.set_title('PDE', color=bg_color,fontsize=ft)
       
       ax3 = fig.add_subplot(143)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
-      ax3.set_title('NN', color=bg_color, fontsize=8)
+      ax3.set_title('NN', color=bg_color, fontsize=ft)
       
       ax4 = fig.add_subplot(144)
       cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax4, cs4, 4)
-      ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=8)
+      ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=ft)
 
       plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=800,facecolor="white", bbox_inches='tight')
       plt.close()
