@@ -155,9 +155,9 @@ def get_data(num_runs, num_batch, datasets):
 
   return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
-frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_train, datasets)
+frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_batch, datasets)
 testsets = sorted(glob.glob(valid_dir))
-frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_test, testsets)
+frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_batch, testsets)
 #print(tip_y_asse[frames::gap])
 # trained dataset need to be randomly selected:
 
@@ -584,7 +584,7 @@ if mode == 'test': valid_train = True
 else: valid = False
 valid_train = True
 if valid_train:
-  for batch_id in range(num_test): 
+  for batch_id in range(num_batch): 
    fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
    aseq_asse = np.asarray(f['sequence'])
@@ -614,11 +614,11 @@ if valid_train:
      Rmax = float(R_list[batch_id]) 
      anis = float(e_list[batch_id])   #param_test[data_id,2*G]
 
-     miss, dice[batch_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
+     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
       pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag)
-     sum_miss = sum_miss + miss
-     print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss)
-   miss_rate_param[batch_id] = sum_miss/run_per_param
+ #    sum_miss = sum_miss + miss
+     print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss_rate_param[data_id])
+ #  miss_rate_param[data_id] = sum_miss/run_per_param
 
 
 #fig, ax = plt.subplots() 
