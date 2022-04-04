@@ -11,12 +11,12 @@ num_batch = 100
 num_runs = batch*num_batch
 valid_ratio = 1
 num_train_all = int((1-valid_ratio)*num_runs)
-num_test = num_runs-num_train_all
-num_train = num_batch*1 #num_train_all
+num_test = num_runs #-num_train_all
+num_train = num_runs #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
-dilation = 1
+dilation = 2
 out_win = 4
 window = out_win
 frames = 20*dilation +1
@@ -44,15 +44,13 @@ area_scale = 0.1
 
 seed = 1  
  
-data_dir = '../../validation/*.h5'
+#data_dir = '../../test_single/*grainsize5*' #ML_PF8_train0_test1_Mt94800_grains8_frames600_anis0.080_G02.400_Rmax1.520_seed6933304_rank0_grainsize2.500.h5' #validation/*.h5'
 #data_dir = '../../double_time/*.h5'
+#data_dir = '../../validation/*.h5'
 size_scale = 1
-#data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.300_G010.000_Rmax1.000_seed10_rank0.h5'
 #valid_dir = '../../validation/*.h5'
-#data_dir = '../../old_validation/ML_PF8_train0_test1_Mt154272_grains8_frames24_anis0.050_G010.000_Rmax1.000_seed0_rank0.h5'
 #data_dir = '../../double_grains/*.h5'
-#data_dir = '../../double_grains/ML_PF16_train0_test1_Mt154272_grains16_frames24_anis0.050_G01.000_Rmax0.600_seed0_rank0.h5'
 #data_dir = '../../quadra_grains/*.h5'
-#data_dir = '../../quadra_grains/ML_PF32_train0_test1_Mt154272_grains32_frames24_anis0.300_G01.000_Rmax1.000_seed10_rank0.h5'
+data_dir = '../../double_time/*.h5'
 valid_dir = data_dir
 skip_check = False

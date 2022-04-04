@@ -174,11 +174,10 @@ print('nan', np.where(np.isnan(frac_train)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
 print('throw away simulations',weird_sim)
 #### delete the data in the actual training fractions and parameters
-if len(weird_sim)>0:
- frac_train = np.delete(frac_train,weird_sim,0)
- param_train = np.delete(param_train,weird_sim,0)
-#idx_all = np.concatenate((np.delete(idx[:num_train],weird_sim,0),idx[num_train_all:])) 
-num_train -= len(weird_sim) 
+#if len(weird_sim)>0:
+# frac_train = np.delete(frac_train,weird_sim,0)
+# param_train = np.delete(param_train,weird_sim,0)
+#num_train -= len(weird_sim) 
 
 assert num_train==frac_train.shape[0]==param_train.shape[0]
 assert num_test==frac_test.shape[0]==param_test.shape[0]
