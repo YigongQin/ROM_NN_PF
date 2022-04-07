@@ -19,7 +19,7 @@ fid=2
 var = var_list[fid]
 vmin = np.float64(range_l[fid])
 vmax = np.float64(range_h[fid])
-ft=32
+ft=24
 plt.rcParams.update({'font.size': ft})
 #plt.style.use("dark_background")
 mathtext.FontConstantsBase.sub1 = 0.2  
@@ -175,7 +175,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
 
     if plot_flag==True:
-      fig = plt.figure(figsize=(10,16))
+      fig = plt.figure(figsize=(7.5*xmax/20,12*ytop/80))
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
      # fig.text(.5, .2, txt, ha='center')
       ax1 = fig.add_subplot(141)
