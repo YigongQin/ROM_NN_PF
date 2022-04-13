@@ -8,11 +8,12 @@ Created on Wed Sep 15 22:12:11 2021
 
 batch = 1
 num_batch = 2400
+num_batch_test = 100
 num_runs = batch*num_batch
 #valid_ratio = 1
 #num_train_all = int((1-valid_ratio)*num_runs)
-num_test = 100 #num_runs-num_train_all
-num_train = num_batch*1 #num_train_all
+num_test = num_batch_test #100 #num_runs-num_train_all
+num_train = num_batch #num_batch*1 #num_train_all
 num_train_b = 0 #int(num_train_all/num_batch)
 #num_test_b = int(num_test/num_batch)
 

@@ -130,10 +130,10 @@ def get_data(num_runs, num_batch, datasets):
     tip_y_asse = np.asarray(f['y_t'])
     number_list=re.findall(r"[-+]?\d*\.\d+|\d+", datasets[batch_id])
     #print(number_list[6],number_list[7],number_list[8])
-    e_list.append(number_list[6])
-    G_list.append(number_list[7])
-    R_list.append(number_list[8])
-    
+    e_list.append(number_list[5])
+    G_list.append(number_list[6])
+    R_list.append(number_list[7])
+    #print(number_list[5],number_list[6],number_list[7]) 
     # compile all the datasets interleave
     for run in range(batch):
       aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
@@ -149,15 +149,15 @@ def get_data(num_runs, num_batch, datasets):
       y_all[run*num_batch+batch_id,:] = tip_y 
       area_all[run*num_batch+batch_id,:,:] = area
       param_all[run*num_batch+batch_id,:G] = Color
-      param_all[run*num_batch+batch_id,G] = 2*float(number_list[6])
-      param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[7]))/np.log10(100) 
-      param_all[run*num_batch+batch_id,G+2] = float(number_list[8])
+      param_all[run*num_batch+batch_id,G] = 2*float(number_list[5])
+      param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[6]))/np.log10(100) 
+      param_all[run*num_batch+batch_id,G+2] = float(number_list[7])
 
   return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_batch, datasets)
 testsets = sorted(glob.glob(valid_dir))
-frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_batch, testsets)
+frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_batch_test, testsets)
 #print(tip_y_asse[frames::gap])
 # trained dataset need to be randomly selected:
 
@@ -576,14 +576,14 @@ area_out = darea_out*area_norm
 
 dice = np.zeros((num_test,G))
 miss_rate_param = np.zeros(num_test)
-run_per_param = int(evolve_runs/num_batch)
+run_per_param = int(evolve_runs/num_batch_test)
 if run_per_param <1: run_per_param = 1
 
 if mode == 'test': valid_train = True
 else: valid = False
 valid_train = True
 if valid_train:
-  for batch_id in range(num_batch): 
+  for batch_id in range(num_batch_test): 
    fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
    aseq_asse = np.asarray(f['sequence'])
@@ -594,7 +594,7 @@ if valid_train:
    sum_miss = 0
    for plot_idx in range( run_per_param ):  # in test dataset
 
-     data_id = plot_idx*num_batch+batch_id
+     data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
      #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
      frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
