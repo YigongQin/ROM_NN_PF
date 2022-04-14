@@ -8,6 +8,7 @@ Created on Wed Sep 15 22:12:11 2021
 
 batch = 1
 num_batch = 100
+num_batch_test = 100
 num_runs = batch*num_batch
 valid_ratio = 1
 num_train_all = int((1-valid_ratio)*num_runs)
@@ -16,7 +17,7 @@ num_train = num_runs #num_train_all
 num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
-dilation = 2
+dilation = 1
 out_win = 4
 window = out_win
 frames = 20*dilation +1
@@ -51,6 +52,6 @@ size_scale = 1
 #valid_dir = '../../validation/*.h5'
 #data_dir = '../../double_grains/*.h5'
 #data_dir = '../../quadra_grains/*.h5'
-data_dir = '../../double_time/*.h5'
+data_dir = '../../testing/*.h5'
 valid_dir = data_dir
 skip_check = False
