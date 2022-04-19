@@ -87,7 +87,7 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = True
+plot_flag = False
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
