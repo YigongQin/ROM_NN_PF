@@ -36,7 +36,6 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
-out_case = 0 if len(sys.argv)<4 else int(sys.argv[3])
 
 all_id = int(sys.argv[2])-1 #*out_case
 
@@ -305,7 +304,7 @@ if mode=='ini':
     input_seq[:,:,-1] = 0  
     input_param[:,:G] = input_seq[:,0,:G]  
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
-torch.manual_seed(35)
+torch.manual_seed(35+int(sys.argv[3]))
 
 
 def con_samlpe(a, b):
@@ -427,23 +426,15 @@ print('total number of trained parameters ', pytorch_total_params)
 
 
 
-
-if model_exist:
-  if mode == 'train' or mode== 'test':
-    model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
-    model.eval()  
-  if mode == 'ini':  
-    model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
-    model.eval() 
-else: 
+if model_exist==False: 
   train_list=[]
   test_list=[]
   start = time.time()
   model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
-  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+str(all_id))
-  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+str(all_id))
+  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+str(all_id)+'_'+sys.argv[3])
+  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+str(all_id)+'_'+sys.argv[3])
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
@@ -469,18 +460,13 @@ seq_out = np.zeros((evolve_runs,frames,3*G+1))
 alone = pred_frames%out_win
 pack = pred_frames-alone
 
-param_test = param_all[num_train:,:]
-param_dat = param_test[:evolve_runs,:]
 
-seq_test = seq_all[num_train:,:,:]
+param_dat = param_all[:num_train:,:]
 
-#frac_out[:,0,:] = seq_test[:,0,:G]
-#dy_out[:,0] = seq_test[:,0,-1]
-#darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
-seq_out[:,0,:] = seq_test[:,0,:]
+seq_out[:,0,:] = seq_all[num_train:,0,:]
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
-def network_inf(seq_out,param_dat):
+def network_inf(seq_out,param_dat,model_real_id, model):
     if noPDE == False:
         seq_dat = seq_test[:evolve_runs,:window,:]
 
@@ -496,7 +482,7 @@ def network_inf(seq_out,param_dat):
            ini_model.cuda()
         init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
         print('total number of trained parameters for initialize model', init_total_params)
-        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)+'_'+model_real_id))
         ini_model.eval()
 
         seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
@@ -574,9 +560,50 @@ def network_inf(seq_out,param_dat):
     return frac_out, y_out, area_out
 
 
+def ensemble(seq_out, param_dat, Nmodel):
 
-#frac_out_f, y_out_f, area_out_f = network_inf(seq_out, param_dat)
 
+
+    for i in range(Nmodel):
+
+
+
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)+'_'+str(i)))
+        model.eval()  
+
+
+        frac_out_i, y_out_i, area_out_i = network_inf(seq_out, param_dat, str(i), model)
+
+        if i==0: 
+            frac_out = frac_out_i
+            y_out = y_out_i
+            area_out = area_out_i
+        else:
+            frac_out += frac_out_i
+            y_out += y_out_i
+            area_out += area_out_i
+
+    return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+
+if mode!='test':
+
+    if model_exist:
+      if mode == 'train' :
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)+'_'+sys.argv[3]))
+        model.eval()  
+      if mode == 'ini':  
+        model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)+'_'+sys.argv[3]))
+        model.eval() 
+
+
+    frac_out, y_out, area_out = network_inf(seq_out, param_dat, sys.argv[3], model)
+
+if mode=='test':
+    frac_out, y_out, area_out = ensemble(seq_out, param_dat, 4)
+
+
+
+'''
 seq_reverse = copy.deepcopy(seq_out)
 param_reverse = copy.deepcopy(param_dat)
 seq_reverse [:,:,:G]      = np.flip(seq_out[:,:,:G],axis=-1)
@@ -599,7 +626,7 @@ frac_out_f, y_out_f, area_out_f = network_inf(seq_out, param_dat)
 frac_out = 0.5*(frac_out_f+frac_out_r)
 y_out = 0.5*(y_out_f+y_out_r)
 area_out = 0.5*(area_out_f+area_out_r)
-
+'''
 
 #darea_out[:,0,:] = 0
 #area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
