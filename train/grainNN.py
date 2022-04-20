@@ -304,7 +304,7 @@ if mode=='ini':
     input_seq[:,:,-1] = 0  
     input_param[:,:G] = input_seq[:,0,:G]  
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
-torch.manual_seed(35+int(sys.argv[3]))
+torch.manual_seed(35)
 
 
 def con_samlpe(a, b):
@@ -433,8 +433,8 @@ if model_exist==False:
   model=train(model, num_epochs, train_loader, test_loader)
   end = time.time()
   print('training time',-start+end)
-  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+str(all_id)+'_'+sys.argv[3])
-  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+str(all_id)+'_'+sys.argv[3])
+  if mode == 'train': torch.save(model.state_dict(), './lstmmodel'+str(all_id))
+  if mode == 'ini': torch.save(model.state_dict(), './ini_lstmmodel'+str(all_id))
   fig, ax = plt.subplots() 
   ax.semilogy(train_list)
   ax.semilogy(test_list)
@@ -457,16 +457,15 @@ left_grains = np.zeros((evolve_runs,frames,G))
 
 seq_out = np.zeros((evolve_runs,frames,3*G+1))
 
-alone = pred_frames%out_win
-pack = pred_frames-alone
 
 
-param_dat = param_all[:num_train:,:]
+
+param_dat = param_all[num_train:,:]
 
 seq_out[:,0,:] = seq_all[num_train:,0,:]
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
-def network_inf(seq_out,param_dat,model_real_id, model):
+def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, window):
     if noPDE == False:
         seq_dat = seq_test[:evolve_runs,:window,:]
 
@@ -476,14 +475,7 @@ def network_inf(seq_out,param_dat,model_real_id, model):
 
         param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
     else: 
-        ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
-        ini_model = ini_model.double()
-        if device=='cuda':
-           ini_model.cuda()
-        init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
-        print('total number of trained parameters for initialize model', init_total_params)
-        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)+'_'+model_real_id))
-        ini_model.eval()
+
 
         seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
         seq_1[:,:,-1]=0
@@ -518,6 +510,8 @@ def network_inf(seq_out,param_dat,model_real_id, model):
     ## write initial windowed data to out arrays
 
     #print('the sub simulations', expand)
+    alone = pred_frames%out_win
+    pack = pred_frames-alone
 
     for i in range(0,pred_frames,out_win):
         
@@ -560,46 +554,87 @@ def network_inf(seq_out,param_dat,model_real_id, model):
     return frac_out, y_out, area_out
 
 
-def ensemble(seq_out, param_dat, Nmodel):
+def ensemble(seq_out, param_dat, inf_model_list):
+
+    Nmodel = len(inf_model_list)
 
 
-
+    frac_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    area_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    y_out = np.zeros((Nmodel,evolve_runs,frames))
     for i in range(Nmodel):
 
+        seq_i = copy.deepcopy(seq_out)
+        param_i = copy.deepcopy(param_dat)
+        all_id = inf_model_list[i]
+        frames_id = all_id//81
+        lr_id = (all_id%81)//27
+        layers_id = (all_id%27)//9
+        hd_id = (all_id%9)//3
+        owin_id = all_id%3
 
+        hidden_dim=hidden_dim_pool[hd_id]
+        layers = layers_pool[layers_id]
 
-        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)+'_'+str(i)))
+        out_win = out_win_pool[owin_id]
+        out_win+=1
+        window=out_win
+        pred_frames= frames-window
+
+        LSTM_layer = (layers, layers)
+        LSTM_layer_ini = (layers, layers)
+
+        model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+        model = model.double()
+        if device=='cuda':
+            model.cuda()
+        pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print('total number of trained parameters ', pytorch_total_params)
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
         model.eval()  
 
 
-        frac_out_i, y_out_i, area_out_i = network_inf(seq_out, param_dat, str(i), model)
 
-        if i==0: 
-            frac_out = frac_out_i
-            y_out = y_out_i
-            area_out = area_out_i
-        else:
-            frac_out += frac_out_i
-            y_out += y_out_i
-            area_out += area_out_i
+        ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+        ini_model = ini_model.double()
+        if device=='cuda':
+           ini_model.cuda()
+        init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
+        print('total number of trained parameters for initialize model', init_total_params)
+        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        ini_model.eval()
 
-    return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+
+        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, pred_frames, out_win, window)
+
+  #  return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+    return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
+
 
 if mode!='test':
 
     if model_exist:
       if mode == 'train' :
-        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)+'_'+sys.argv[3]))
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
         model.eval()  
       if mode == 'ini':  
-        model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)+'_'+sys.argv[3]))
+        model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
         model.eval() 
 
+    ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+    ini_model = ini_model.double()
+    if device=='cuda':
+       ini_model.cuda()
+    init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
+    print('total number of trained parameters for initialize model', init_total_params)
+    ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+    ini_model.eval()
 
-    frac_out, y_out, area_out = network_inf(seq_out, param_dat, sys.argv[3], model)
+    frac_out, y_out, area_out = network_inf(seq_out, param_dat, all_id, model, ini_model, pred_frames, out_win, window)
 
 if mode=='test':
-    frac_out, y_out, area_out = ensemble(seq_out, param_dat, 4)
+    inf_model_list = [42,24, 69,71]
+    frac_out, y_out, area_out = ensemble(seq_out, param_dat, inf_model_list)
 
 
 
