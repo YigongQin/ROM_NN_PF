@@ -39,6 +39,7 @@ def subplot_rountine(fig, ax, cs, idx):
 
       if idx ==1: 
         ax.yaxis.set_ticks([0,30,60])
+       # ax.yaxis.set_ticks([0,30,60,90,120,150])
         ax.set_xlabel(r'$x (\mu m)$')
         ax.set_ylabel(r'$y (\mu m)$')
       else: 
@@ -48,7 +49,7 @@ def subplot_rountine(fig, ax, cs, idx):
       ax.yaxis.label.set_color(bg_color); ax.xaxis.label.set_color(bg_color)
       ax.tick_params(axis='x', colors=bg_color); ax.tick_params(axis='y', colors=bg_color);
       if idx==1:
-        axins = inset_axes(ax,width="3%",height="50%",loc='upper left')
+        axins = inset_axes(ax,width=0.25,height=2.5,loc='upper left')
         cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
         cbar.set_label(r'$\alpha_0$', color=bg_color)
         cbar.ax.yaxis.set_tick_params(color=bg_color)
@@ -198,7 +199,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       subplot_rountine(fig, ax4, cs4, 4)
       ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=ft)
 
-      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=800,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
