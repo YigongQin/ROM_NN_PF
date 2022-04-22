@@ -149,7 +149,7 @@ if device=='cuda':
 pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print('total number of trained parameters ', pytorch_total_params)
 
-model.load_state_dict(torch.load('./lstmmodel0'))
+model.load_state_dict(torch.load('./lstmmodel42'))
 model.eval()  
 
 ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
@@ -158,7 +158,7 @@ if device=='cuda':
    ini_model.cuda()
 init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
 print('total number of trained parameters for initialize model', init_total_params)
-ini_model.load_state_dict(torch.load('./ini_lstmmodel0'))
+ini_model.load_state_dict(torch.load('./ini_lstmmodel42'))
 ini_model.eval()
 
 
