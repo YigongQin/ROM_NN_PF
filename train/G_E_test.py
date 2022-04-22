@@ -18,7 +18,7 @@ num_train_b = int(num_train_all/num_batch)
 num_test_b = int(num_test/num_batch)
 
 dilation = 1
-out_win = 3
+out_win = 4
 window = out_win
 frames = 20*dilation +1
 all_frames = 600*dilation +1
@@ -34,7 +34,7 @@ param_len = G + 4   # how many parameters, color plus 3 physical
 output_len = G
 
 ## architecture
-hidden_dim = 16
+hidden_dim = 32
 LSTM_layer = (4, 4)
 LSTM_layer_ini = (4, 4)
 kernel_size = (3,)
