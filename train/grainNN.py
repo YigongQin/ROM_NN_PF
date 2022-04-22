@@ -86,7 +86,7 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = False
+plot_flag = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -690,14 +690,16 @@ if valid_train:
      data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
      #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
-     frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
-     
+     train_frames = 21  # here the idx means the local id of the test part (last 100)
+     frame_idx = frames*plot_idx + train_frames -1
+     frame_idx = plot_idx
+
      alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
-     aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
-     pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
+     aseq_test = aseq_asse[(num_train_b+plot_idx)*G:(num_train_b+plot_idx+1)*G]
+     pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90
-     tip_y = tip_y_asse[(num_train_b+frame_idx)*all_frames:(num_train_b+frame_idx+1)*all_frames][::gap]
-     extra_area = (area_asse[(num_train_b+frame_idx)*G*all_frames:(num_train_b+frame_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][train_frames-1,:]
+     tip_y = tip_y_asse[(num_train_b+plot_idx)*all_frames:(num_train_b+plot_idx+1)*all_frames][::gap]
+     extra_area = (area_asse[(num_train_b+plot_idx)*G*all_frames:(num_train_b+plot_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][train_frames-1,:]
      #print((tip_y))
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
