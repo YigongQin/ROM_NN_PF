@@ -86,7 +86,7 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = True
+plot_flag = False
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -446,7 +446,7 @@ if model_exist==False:
   plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
   plt.savefig('mul_batch_loss.png')
 
-if mode!='test': sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
+if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
 ## plot to check if the construction is reasonable
 evolve_runs = num_test #num_test
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
@@ -630,12 +630,14 @@ if mode!='test':
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
-    frac_out, y_out, area_out = network_inf(seq_out, param_dat, all_id, model, ini_model, pred_frames, out_win, window)
+    frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, pred_frames, out_win, window)
 
 if mode=='test':
     inf_model_list = [42,24, 69,71]
+    nn_start = time.time()
     frac_out, y_out, area_out = ensemble(seq_out, param_dat, inf_model_list)
-
+    nn_end = time.time()
+    print('===network inference time %f seconds =====', nn_end-nn_start)
 
 
 '''
