@@ -21,7 +21,7 @@ import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_IO
 from torch.utils.data import Dataset, DataLoader
-import glob, os, re, sys, importlib
+import glob, os, re, sys, importlib, copy
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
@@ -36,7 +36,7 @@ elif mode == 'ini': from G_E_ini import *
 else: raise ValueError('mode not specified')
 print('the mode is', mode)
 
-out_case = 0 if len(sys.argv)<4 else int(sys.argv[3])
+
 
 all_id = int(sys.argv[2])-1 #*out_case
 
@@ -66,7 +66,7 @@ if mode=='train' or mode=='test':
   out_win+=1
   window=out_win
 
-  train_frames=frames
+  train_frames=frames-5
   pred_frames= frames-window
 if mode=='ini':
   learning_rate *= 2
@@ -437,14 +437,7 @@ print('total number of trained parameters ', pytorch_total_params)
 
 
 
-if model_exist:
-  if mode == 'train' or mode== 'test':
-    model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
-    model.eval()  
-  if mode == 'ini':  
-    model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
-    model.eval() 
-else: 
+if model_exist==False: 
   train_list=[]
   test_list=[]
   start = time.time()
@@ -464,7 +457,7 @@ else:
   plt.title('training time:'+str( "%d"%int( (end-start)/60 ) )+'min')
   plt.savefig('mul_batch_loss.png')
 
-if mode!='test': sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
+if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
 ## plot to check if the construction is reasonable
 evolve_runs = num_test #num_test
 #frac_out = np.zeros((evolve_runs,frames,G)) ## final output
@@ -475,29 +468,170 @@ left_grains = np.zeros((evolve_runs,frames,G))
 
 seq_out = np.zeros((evolve_runs,frames,3*G+1))
 
-alone = pred_frames%out_win
-pack = pred_frames-alone
 
-param_test = param_all[num_train:,:]
-param_dat = param_test[:evolve_runs,:]
 
-seq_test = seq_all[num_train:,:,:]
 
-#frac_out[:,0,:] = seq_test[:,0,:G]
-#dy_out[:,0] = seq_test[:,0,-1]
-#darea_out[:,0,:] = seq_test[:,0,2*G:3*G]
-seq_out[:,0,:] = seq_test[:,0,:]
+param_dat = param_all[num_train:,:]
+
+seq_out[:,0,:] = seq_all[num_train:,0,:]
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
-if noPDE == False:
-    seq_dat = seq_test[:evolve_runs,:window,:]
+def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, window):
+    if noPDE == False:
+        seq_dat = seq_test[:evolve_runs,:window,:]
 
-    frac_out[:,:window,:] = seq_dat[:,:,:G]
-    dy_out[:,:window] = seq_dat[:,:,-1]
-    darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
+        frac_out[:,:window,:] = seq_dat[:,:,:G]
+        dy_out[:,:window] = seq_dat[:,:,-1]
+        darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
 
-    param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
-else: 
+        param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+    else: 
+
+
+        seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
+        seq_1[:,:,-1]=0
+        seq_1[:,:,G:2*G]=0
+        print('sample', seq_1[0,0,:])
+
+        param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
+
+        param_dat_s[:,-1] = dt
+        domain_factor = size_scale*domain_factor
+        seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
+        y0 = todevice(y_all[num_train:,[0]])
+        output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor), y0 )
+        dfrac_new = tohost( output_model[0] ) 
+        frac_new = tohost(output_model[1])
+
+        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+
+        #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+        seq_out[:,1:window,:], left_grains[:,1:window,:] \
+            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+
+        seq_dat = seq_out[:,:window,:]
+        seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+        if mode != 'ini':
+          seq_dat[:,0,-1] = seq_dat[:,1,-1]
+          seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+          seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
+          seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
+        #print(frac_new_vec.shape)
+
+    ## write initial windowed data to out arrays
+
+    #print('the sub simulations', expand)
+    alone = pred_frames%out_win
+    pack = pred_frames-alone
+
+    for i in range(0,pred_frames-5,out_win):
+        
+        time_i = i
+        if dt*(time_i+window+out_win-1)>1: 
+            time_i = int(1/dt)-(window+out_win-1)
+        ## you may resplit the grains here
+
+        param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+
+        param_dat_s[:,-1] = (time_i+window)*dt ## the first output time
+        print('nondim time', (time_i+window)*dt)
+
+        domain_factor = size_scale*domain_factor
+        seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
+
+        output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor), y0  )
+        dfrac_new = tohost( output_model[0] ) 
+        frac_new = tohost(output_model[1])
+
+        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+
+        if i>=pack and mode!='ini':
+            seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
+            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
+        else: 
+            seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+        
+        seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
+        seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+
+    frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
+    frac_out *= G_small/G
+    dy_out = dy_out*y_norm
+    dy_out[:,0] = 0
+    y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
+
+    area_out = darea_out*area_norm
+    return frac_out, y_out, area_out
+
+
+def ensemble(seq_out, param_dat, inf_model_list):
+
+    Nmodel = len(inf_model_list)
+
+
+    frac_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    area_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    y_out = np.zeros((Nmodel,evolve_runs,frames))
+    for i in range(Nmodel):
+
+        seq_i = copy.deepcopy(seq_out)
+        param_i = copy.deepcopy(param_dat)
+        all_id = inf_model_list[i]
+        frames_id = all_id//81
+        lr_id = (all_id%81)//27
+        layers_id = (all_id%27)//9
+        hd_id = (all_id%9)//3
+        owin_id = all_id%3
+
+        hidden_dim=hidden_dim_pool[hd_id]
+        layers = layers_pool[layers_id]
+
+        out_win = out_win_pool[owin_id]
+        out_win+=1
+        window=out_win
+        pred_frames= frames-window
+
+        LSTM_layer = (layers, layers)
+        LSTM_layer_ini = (layers, layers)
+
+        model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+        model = model.double()
+        if device=='cuda':
+            model.cuda()
+        pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print('total number of trained parameters ', pytorch_total_params)
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
+        model.eval()  
+
+
+
+        ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+        ini_model = ini_model.double()
+        if device=='cuda':
+           ini_model.cuda()
+        init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
+        print('total number of trained parameters for initialize model', init_total_params)
+        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        ini_model.eval()
+
+
+        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, pred_frames, out_win, window)
+
+  #  return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+    return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
+
+
+if mode!='test':
+
+    if model_exist:
+      if mode == 'train' :
+        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
+        model.eval()  
+      if mode == 'ini':  
+        model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        model.eval() 
+
     ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
     ini_model = ini_model.double()
     if device=='cuda':
@@ -507,87 +641,49 @@ else:
     ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
-    seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
-    seq_1[:,:,-1]=0
-    seq_1[:,:,G:2*G]=0
-    print('sample', seq_1[0,0,:])
+    frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, pred_frames, out_win, window)
 
-    param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
+if mode=='test':
+    inf_model_list = [42,24, 69]
+    nn_start = time.time()
+    frac_out, y_out, area_out = ensemble(seq_out, param_dat, inf_model_list)
+    nn_end = time.time()
+    print('===network inference time %f seconds =====', nn_end-nn_start)
 
-    param_dat_s[:,-1] = dt
-    domain_factor = size_scale*domain_factor
-    seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
 
-    y0 = todevice(y_all[num_train:,[0]])
+'''
+seq_reverse = copy.deepcopy(seq_out)
+param_reverse = copy.deepcopy(param_dat)
+seq_reverse [:,:,:G]      = np.flip(seq_out[:,:,:G],axis=-1)
+seq_reverse [:,:,G:2*G]   = np.flip(seq_out[:,:,G:2*G],axis=-1)
+seq_reverse [:,:,2*G:3*G] = np.flip(seq_out[:,:,2*G:3*G],axis=-1)
 
-    output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor), y0)
-    dfrac_new = tohost( output_model[0] ) 
-    frac_new = tohost(output_model[1])
+param_reverse [:,:G]      = np.flip(param_dat[:,:G],axis=-1)
+param_reverse [:,G:2*G]   = -np.flip(param_dat[:,G:2*G],axis=-1)
 
-    dfrac_new[:,:,G_small:2*G_small] *= size_scale
+print(seq_reverse[0,0,:],seq_out[0,0,:])
+print(param_reverse[0,:],param_dat[0,:])
 
-    #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
-    seq_out[:,1:window,:], left_grains[:,1:window,:] \
-        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+frac_out_r, y_out_r, area_out_r = network_inf(seq_reverse, param_reverse)
+frac_out_r= np.flip(frac_out_r,axis=-1)
+area_out_r= np.flip(area_out_r,axis=-1)
 
-    seq_dat = seq_out[:,:window,:]
-    seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
-    if mode != 'ini':
-      seq_dat[:,0,-1] = seq_dat[:,1,-1]
-      seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
-      seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
-      seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
-    #print(frac_new_vec.shape)
 
-## write initial windowed data to out arrays
+frac_out_f, y_out_f, area_out_f = network_inf(seq_out, param_dat)
 
-#print('the sub simulations', expand)
+frac_out = 0.5*(frac_out_f+frac_out_r)
+y_out = 0.5*(y_out_f+y_out_r)
+area_out = 0.5*(area_out_f+area_out_r)
+'''
 
-for i in range(0,pred_frames-5,out_win):
-    
-    time_i = i
-    if dt*(time_i+window+out_win-1)>1: 
-        time_i = int(1/dt)-(window+out_win-1)
-    ## you may resplit the grains here
-
-    param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
-
-    param_dat_s[:,-1] = (time_i+window)*dt ## the first output time
-    print('nondim time', (time_i+window)*dt)
-
-    domain_factor = size_scale*domain_factor
-    seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
-
-    output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor), y0 )
-    dfrac_new = tohost( output_model[0] ) 
-    frac_new = tohost(output_model[1])
-
-    dfrac_new[:,:,G_small:2*G_small] *= size_scale
-
-    if i>=pack and mode!='ini':
-        seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
-    else: 
-        seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
-    
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
-    seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
-
-frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-frac_out *= G_small/G
-dy_out = dy_out*y_norm
-dy_out[:,0] = 0
-y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
-
-area_out = darea_out*area_norm
 #darea_out[:,0,:] = 0
 #area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
+print(area_out)
 
 dice = np.zeros((num_test,G))
 miss_rate_param = np.zeros(num_test)
-run_per_param = int(evolve_runs/num_batch)
+run_per_param = int(evolve_runs/num_batch_test)
 if run_per_param <1: run_per_param = 1
 
 if mode == 'test': valid_train = True

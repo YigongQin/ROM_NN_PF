@@ -412,6 +412,7 @@ class ConvLSTM_seq(nn.Module):
            
             y_ += torch.mean(dy, dim=0).view(1,-1)
             contrac = 1 - y_/(160/pi)
+            print(contrac)
             dfrac = self.project(last_time)/domain_factor/contrac   # project last time output b,hidden_dim, to the desired shape [b,w]   
             frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions

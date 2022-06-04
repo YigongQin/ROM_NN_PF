@@ -8,6 +8,7 @@ Created on Wed Sep 15 22:12:11 2021
 
 batch = 1
 num_batch = 1
+num_batch_test = 1
 num_runs = batch*num_batch
 valid_ratio = 1
 num_train_all = int((1-valid_ratio)*num_runs)
