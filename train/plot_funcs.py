@@ -192,7 +192,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
       ax3 = fig.add_subplot(143)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
-      ax3.set_title('NN', color=bg_color, fontsize=ft)
+      ax3.set_title('GrainNN', color=bg_color, fontsize=ft)
       
       ax4 = fig.add_subplot(144)
       cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
