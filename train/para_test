@@ -1,4 +1,0 @@
-python3 setup0.py test 0
-python3 setup1.py test 1
-python3 setup2.py test 2
-python3 setup3.py test 3

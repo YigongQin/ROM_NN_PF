@@ -1,4 +1,0 @@
-python3 setup0.py train 0
-python3 setup1.py train 1
-python3 setup2.py train 2
-python3 setup3.py train 3
