@@ -60,8 +60,8 @@ def tohost(data):
 grain_size = 2.5
 std = 0.35
 y0 = 2.25279999
-G_all = 8 #128
-evolve_runs = 1000 #num_test
+G_all = 128
+evolve_runs = 1 #num_test
 
 ## sample orientation
 np.random.seed(1)
@@ -264,12 +264,12 @@ x = np.linspace(-dx, x[-2]*G_all/G+dx, nx_all +3)
 pf_angles = np.zeros(G+1)
 aseq_test = np.arange(G) +1
 
-plot_flag = False
+plot_flag = True
 
 if plot_flag==True:
 
  for plot_id in range(1):
-    data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else plot_id
+    data_id = np.arange(evolve_runs)[plot_id*batch_m:(plot_id+1)*batch_m] if G_all>G else [plot_id]
    # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     p_len = np.asarray(np.round(frac_out[data_id,:,:]*nx),dtype=int)
     left_grains = np.asarray(np.round(left_domain[data_id]*nx_all),dtype=int)

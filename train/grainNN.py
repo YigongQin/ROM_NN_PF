@@ -590,7 +590,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
             model.cuda()
         pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('total number of trained parameters ', pytorch_total_params)
-        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
+        model.load_state_dict(torch.load('./fecr_model/lstmmodel'+str(all_id)))
         model.eval()  
 
 
@@ -601,7 +601,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
            ini_model.cuda()
         init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
         print('total number of trained parameters for initialize model', init_total_params)
-        ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        ini_model.load_state_dict(torch.load('./fecr_model/ini_lstmmodel'+str(all_id)))
         ini_model.eval()
 
 
@@ -615,10 +615,10 @@ if mode!='test':
 
     if model_exist:
       if mode == 'train' :
-        model.load_state_dict(torch.load('./lstmmodel'+str(all_id)))
+        model.load_state_dict(torch.load('./fecr_model/lstmmodel'+str(all_id)))
         model.eval()  
       if mode == 'ini':  
-        model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+        model.load_state_dict(torch.load('./fecr_model/ini_lstmmodel'+str(all_id)))
         model.eval() 
 
     ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
@@ -627,7 +627,7 @@ if mode!='test':
        ini_model.cuda()
     init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
     print('total number of trained parameters for initialize model', init_total_params)
-    ini_model.load_state_dict(torch.load('./ini_lstmmodel'+str(all_id)))
+    ini_model.load_state_dict(torch.load('./fecr_model/ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
     frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, pred_frames, out_win, window)
