@@ -21,7 +21,7 @@ import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from plot_funcs import plot_synthetic
 from torch.utils.data import Dataset, DataLoader
-import glob, os, re, sys, importlib
+import glob, os, re, sys, importlib, copy
 from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
@@ -31,6 +31,50 @@ torch.cuda.empty_cache()
 
 from G_E_test import *
 mode = 'test'
+noPDE = True
+all_id = 42 #*out_case
+
+
+
+frames_pool=[20,24,30]
+learning_rate_pool=[25e-4, 50e-4, 100e-4]
+layers_pool=[3,4,5]
+hidden_dim_pool = [16, 24, 32]
+out_win_pool = [3, 4, 5] 
+
+frames_id = all_id//81
+lr_id = (all_id%81)//27
+layers_id = (all_id%27)//9
+hd_id = (all_id%9)//3
+owin_id = all_id%3
+
+hidden_dim=hidden_dim_pool[hd_id]
+learning_rate = learning_rate_pool[lr_id]
+layers = layers_pool[layers_id]
+frames = int(frames_pool[frames_id]*dilation)+1
+
+out_win = out_win_pool[owin_id]
+
+
+if mode=='train' or mode=='test':
+  out_win+=1
+  window=out_win
+
+  train_frames=frames
+  pred_frames= frames-window
+if mode=='ini':
+  learning_rate *= 2
+  train_frames = window+out_win
+  pred_frames = out_win
+sam_per_run = frames - window - (out_win-1)
+total_size = frames*num_runs
+dt = dilation*1.0/(frames-1)
+
+LSTM_layer = (layers, layers)
+LSTM_layer_ini = (layers, layers)
+
+
+
 
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -128,6 +172,7 @@ else:
 print('sample frac', seq_1[0,0,:])
 print('sample param', param_dat[0,:])
 print('squence and param shape', seq_1.shape, param_dat.shape)
+param_dat0 = param_dat
 #============================
 
 
@@ -142,27 +187,153 @@ print('squence and param shape', seq_1.shape, param_dat.shape)
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 seq_out[:,0,:] = seq_1[:,0,:]
 
-model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
-model = model.double()
-if device=='cuda':
-  model.cuda()
-pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-print('total number of trained parameters ', pytorch_total_params)
-
-model.load_state_dict(torch.load('./fecr_model/lstmmodel42'))
-model.eval()  
-
-ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
-ini_model = ini_model.double()
-if device=='cuda':
-   ini_model.cuda()
-init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
-print('total number of trained parameters for initialize model', init_total_params)
-ini_model.load_state_dict(torch.load('./fecr_model/ini_lstmmodel42'))
-ini_model.eval()
 
 
 
+def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, window):
+    if noPDE == False:
+        seq_dat = seq_test[:evolve_runs,:window,:]
+
+        frac_out[:,:window,:] = seq_dat[:,:,:G]
+        dy_out[:,:window] = seq_dat[:,:,-1]
+        darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
+
+        param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+    else: 
+
+
+        seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
+        seq_1[:,:,-1]=0
+        seq_1[:,:,G:2*G]=0
+        print('sample', seq_1[0,0,:])
+
+        param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
+
+        param_dat_s[:,-1] = dt
+        domain_factor = size_scale*domain_factor
+        seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
+
+        output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
+        dfrac_new = tohost( output_model[0] ) 
+        frac_new = tohost(output_model[1])
+
+        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+
+        #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
+        seq_out[:,1:window,:], left_grains[:,1:window,:] \
+            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+
+        seq_dat = seq_out[:,:window,:]
+        seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+        if mode != 'ini':
+          seq_dat[:,0,-1] = seq_dat[:,1,-1]
+          seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+          seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
+          seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
+        #print(frac_new_vec.shape)
+
+    ## write initial windowed data to out arrays
+
+    #print('the sub simulations', expand)
+    alone = pred_frames%out_win
+    pack = pred_frames-alone
+
+    for i in range(0,pred_frames,out_win):
+        
+        time_i = i
+        if dt*(time_i+window+out_win-1)>1: 
+            time_i = int(1/dt)-(window+out_win-1)
+        ## you may resplit the grains here
+
+        param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+
+        param_dat_s[:,-1] = (time_i+window)*dt ## the first output time
+        print('nondim time', (time_i+window)*dt)
+
+        domain_factor = size_scale*domain_factor
+        seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
+
+        output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
+        dfrac_new = tohost( output_model[0] ) 
+        frac_new = tohost(output_model[1])
+
+        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+
+        if i>=pack and mode!='ini':
+            seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
+            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
+        else: 
+            seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
+            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+        
+        seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
+      
+
+    frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
+    frac_out *= G_small/G
+    dy_out = dy_out*y_norm
+    dy_out[:,0] = 0
+    y_out = np.cumsum(dy_out,axis=-1)+y0
+
+    area_out = darea_out*area_norm
+    return frac_out, y_out, area_out
+
+
+def ensemble(seq_out, param_dat, inf_model_list):
+
+    Nmodel = len(inf_model_list)
+
+
+    frac_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    area_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
+    y_out = np.zeros((Nmodel,evolve_runs,frames))
+    for i in range(Nmodel):
+
+        seq_i = copy.deepcopy(seq_out)
+        param_i = copy.deepcopy(param_dat)
+        all_id = inf_model_list[i]
+        frames_id = all_id//81
+        lr_id = (all_id%81)//27
+        layers_id = (all_id%27)//9
+        hd_id = (all_id%9)//3
+        owin_id = all_id%3
+
+        hidden_dim=hidden_dim_pool[hd_id]
+        layers = layers_pool[layers_id]
+
+        out_win = out_win_pool[owin_id]
+        out_win+=1
+        window=out_win
+        pred_frames= frames-window
+
+        LSTM_layer = (layers, layers)
+        LSTM_layer_ini = (layers, layers)
+
+        model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+        model = model.double()
+        if device=='cuda':
+            model.cuda()
+        pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print('total number of trained parameters ', pytorch_total_params)
+        model.load_state_dict(torch.load('./fecr_model/lstmmodel'+str(all_id)))
+        model.eval()  
+
+
+
+        ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+        ini_model = ini_model.double()
+        if device=='cuda':
+           ini_model.cuda()
+        init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
+        print('total number of trained parameters for initialize model', init_total_params)
+        ini_model.load_state_dict(torch.load('./fecr_model/ini_lstmmodel'+str(all_id)))
+        ini_model.eval()
+
+
+        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, pred_frames, out_win, window)
+
+  #  return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+    return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
 #============================
 
 
@@ -171,71 +342,13 @@ ini_model.eval()
 
 #==============================
 
-alone = pred_frames%out_win
-pack = pred_frames-alone
-
-param_dat0 = param_dat
-param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
-
-param_dat_s[:,-1] = dt
-domain_factor = size_scale*domain_factor
-seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
-
-output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
-dfrac_new = tohost( output_model[0] ) 
-frac_new = tohost(output_model[1])
-
-dfrac_new[:,:,G_small:2*G_small] *= size_scale
-
-seq_out[:,1:window,:], left_grains[:,1:window,:] \
-    = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
-
-seq_dat = seq_out[:,:window,:]
-seq_dat[:,0,-1] = seq_dat[:,1,-1]
-seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
-
 ## write initial windowed data to out arrays
+inf_model_list = [42,24, 69,71]
+nn_start = time.time()
+frac_out, y_out, area_out = ensemble(seq_out, param_dat, inf_model_list)
+nn_end = time.time()
+print('===network inference time %f seconds =====', nn_end-nn_start)
 
-
-
-
-#print('the sub simulations', expand)
-
-for i in range(0,pred_frames,out_win):
-
-
-    ## you may resplit the grains here
-
-    param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
-
-    param_dat_s[:,-1] = (i+window)*dt ## the first output time
-    print('nondim time', (i+window)*dt)
-
-    domain_factor = size_scale*domain_factor
-    seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
-
-    output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
-    dfrac_new = tohost( output_model[0] ) 
-    frac_new = tohost(output_model[1])
-
-    dfrac_new[:,:,G_small:2*G_small] *= size_scale
-
-    if i>=pack and mode!='ini':
-        seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
-        = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
-    else: 
-        seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-        = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
-    
-    seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
-
-frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-frac_out *= G_small/G
-dy_out = dy_out*y_norm
-dy_out[:,0] = 0
-y_out = np.cumsum(dy_out,axis=-1)+y0
-
-area_out = darea_out*area_norm
 
 sio.savemat('synthetic_grains'+str(G_all)+'_runs'+str(evolve_runs)+'_anis'+sys.argv[1]+'_G'+sys.argv[2]+'_Rmax'+sys.argv[3]+'.mat',{'frac':frac_out,'y':y_out,'area':area_out,'param':param_dat})
 
