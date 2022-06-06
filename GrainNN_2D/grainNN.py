@@ -503,9 +503,8 @@ def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, windo
         if mode != 'ini':
           seq_dat[:,0,-1] = seq_dat[:,1,-1]
           seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
-          seq_dat_s[:,0,-1] = seq_dat_s[:,1,-1]
-          seq_dat_s[:,0,G:2*G] = seq_dat_s[:,1,G:2*G]
-        #print(frac_new_vec.shape)
+
+
 
     ## write initial windowed data to out arrays
 
@@ -542,7 +541,7 @@ def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, windo
             = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
         
         seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
-        seq_dat_s = np.concatenate((seq_dat_s[:,out_win:,:], np.concatenate((frac_new, dfrac_new), axis = -1) ),axis=1)
+       
 
     frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
     frac_out *= G_small/G
