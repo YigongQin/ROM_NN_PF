@@ -305,15 +305,20 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, plot_idx,final,pf_a
    # error=field-alpha_true[1:-1,1:-1]
     plot_flag=True
     if plot_flag==True:
-      fig = plt.figure()
+      fig = plt.figure(figsize=(7.5*xmax/140,12*ytop/140))
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
      # fig.text(.5, .2, txt, ha='center')
       
       ax3 = fig.add_subplot(111)
       cs3 = ax3.imshow(angle_field.T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
-      subplot_rountine(fig, ax3, cs3, 3)
-    
-      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.pdf',dpi=800,facecolor="white", bbox_inches='tight')
+      #subplot_rountine(fig, ax3, cs3, 3)
+      ax3.yaxis.set_ticks([0,30,60])
+      ax3.xaxis.set_ticks([0,50,100,150,200,250,300])
+      ax3.set_xlabel(r'$x (\mu m)$')
+      ax3.set_ylabel(r'$y (\mu m)$')
+      cs3.set_clim(vmin, vmax)
+
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx) + '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax)+'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
  
       plt.close()
 
