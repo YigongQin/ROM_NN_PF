@@ -103,7 +103,7 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 print('nx,ny', nx,ny)
 
-gap = int(all_frames/(frames-1))
+gap = int((all_frames-1)/(frames-1))
 print('the gap of two frames', gap)
 ## =======load data and parameters from the every simulation======
 
@@ -689,21 +689,27 @@ if valid_train:
 
      data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
-  
-     dat_frames = all_frames  
-     frame_idx = all_frames*plot_idx + dat_frames -1 ## uncomment this line if there are more than one frame in dat file
-     frame_idx = plot_idx
-
-     alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
      
-     pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
-     pf_angles[1:] = pf_angles[1:]*180/pi + 90
- 
+     for dat_frames in [all_frames-1]:
+         
+         inf_frames = dat_frames//gap + 1
+         extra_time = dat_frames/gap - dat_frames//gap
+         area = area_out[data_id,inf_frames-1,:]
+         if extra_time>0: area += extra_time*(area_out[data_id,inf_frames,:]-area_out[data_id,inf_frames-1,:])
 
-     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,alpha_true,\
-        y_out[data_id,:],frac_out[data_id,:,:].T, area_out[data_id,inf_frames-1,:], inf_frames, plot_flag,data_id)
+         frame_idx = all_frames*plot_idx + dat_frames  ## uncomment this line if there are more than one frame in dat file
+         frame_idx = plot_idx
 
-     print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss_rate_param[data_id])
+         alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
+         
+         pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
+         pf_angles[1:] = pf_angles[1:]*180/pi + 90
+     
+
+         miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,alpha_true,\
+            y_out[data_id,:],frac_out[data_id,:,:].T, area, inf_frames, extra_time, plot_flag,data_id)
+
+         print('realization id, param id', plot_idx, batch_id, 'frame id' , dat_frames, 'miss%',miss_rate_param[data_id])
 
 
 

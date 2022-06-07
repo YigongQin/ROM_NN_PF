@@ -61,7 +61,7 @@ def subplot_rountine(fig, ax, cs, idx):
          cs.set_clim(vmin, vmax)
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,final,pf_angles, area_true, area,plot_flag):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final, extra_time, plot_flag, plot_idx):
 
     #print('angle sequence', aseq)
     #print(frac) 
@@ -138,13 +138,13 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,final,pf_ang
 
       #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
 #=========================start fill the extra field=================
-    y_f = ntip_y[final-1]
+    y_f = y_range[-1]
     for g in range(G):
-
-      if p_len[g, final-1] ==0: height =0 
-      else: height = int(np.round((area[g]/p_len[g, final-1])))
+      top_layer = p_len[g, final-1]
+      if  top_layer==0: height =0 
+      else: height = int(np.round((area[g]/top_layer)))
       #print(height)
-      for j in range(ntip_y[final-1], ntip_y[final-1]+height):
+      for j in range(y_f, y_f+height):
 
         if g==0:
           for i in range( temp_piece[g, y_f]):
@@ -199,7 +199,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,final,pf_ang
       subplot_rountine(fig, ax4, cs4, 4)
       ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=ft)
 
-      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_frame' + str(final)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
