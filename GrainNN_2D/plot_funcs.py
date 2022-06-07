@@ -61,7 +61,7 @@ def subplot_rountine(fig, ax, cs, idx):
          cs.set_clim(vmin, vmax)
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains,plot_flag):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,final,pf_angles, area_true, area,plot_flag):
 
     #print('angle sequence', aseq)
     #print(frac) 

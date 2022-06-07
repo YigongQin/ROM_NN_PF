@@ -65,11 +65,11 @@ if mode=='train' or mode=='test':
   out_win+=1
   window=out_win
 
-  train_frames=frames
+  plot_frames=frames
   pred_frames= frames-window
 if mode=='ini':
   learning_rate *= 2
-  train_frames = window+out_win
+  plot_frames = window+out_win
   pred_frames = out_win
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
@@ -691,8 +691,8 @@ if valid_train:
      data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
      #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
-     train_frames = 21  # here the idx means the local id of the test part (last 100)
-     frame_idx = frames*plot_idx + train_frames -1
+     plot_frames = 21  # here the idx means the local id of the test part (last 100)
+     frame_idx = frames*plot_idx + plot_frames -1
      frame_idx = plot_idx
 
      alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
@@ -700,7 +700,7 @@ if valid_train:
      pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90
      tip_y = tip_y_asse[(num_train_b+plot_idx)*all_frames:(num_train_b+plot_idx+1)*all_frames][::gap]
-     extra_area = (area_asse[(num_train_b+plot_idx)*G*all_frames:(num_train_b+plot_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][train_frames-1,:]
+     extra_area = (area_asse[(num_train_b+plot_idx)*G*all_frames:(num_train_b+plot_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][plot_frames-1,:]
      #print((tip_y))
      #plot_real(x,y,alpha_true,plot_idx)
      #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
@@ -709,8 +709,8 @@ if valid_train:
      Rmax = float(R_list[batch_id]) 
      anis = float(e_list[batch_id])   #param_test[data_id,2*G]
 
-     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
-      pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag)
+     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, plot_frames,\
+      pf_angles, extra_area, area_out[data_id,plot_frames-1,:], plot_flag)
  #    sum_miss = sum_miss + miss
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss_rate_param[data_id])
  #  miss_rate_param[data_id] = sum_miss/run_per_param
