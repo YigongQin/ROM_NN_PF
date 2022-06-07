@@ -65,11 +65,9 @@ if mode=='train' or mode=='test':
   out_win+=1
   window=out_win
 
-  plot_frames=frames
   pred_frames= frames-window
 if mode=='ini':
   learning_rate *= 2
-  plot_frames = window+out_win
   pred_frames = out_win
 sam_per_run = frames - window - (out_win-1)
 total_size = frames*num_runs
@@ -86,7 +84,7 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = False
+plot_flag = True
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
@@ -677,43 +675,36 @@ if mode == 'test': valid_train = True
 else: valid = False
 valid_train = True
 if valid_train:
+  aseq_test = np.arange(G)+1
   for batch_id in range(num_batch_test): 
    fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
-   aseq_asse = np.asarray(f['sequence'])
+ 
    angles_asse = np.asarray(f['angles'])
-   frac_asse = np.asarray(f['fractions'])
-   tip_y_asse = np.asarray(f['y_t'])
-   area_asse = np.asarray(f['extra_area'])
-   sum_miss = 0
+
+   G0 = float(G_list[batch_id]) 
+   Rmax = float(R_list[batch_id]) 
+   anis = float(e_list[batch_id])  
    for plot_idx in range( run_per_param ):  # in test dataset
 
      data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
-     #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
-     plot_frames = 21  # here the idx means the local id of the test part (last 100)
-     frame_idx = frames*plot_idx + plot_frames -1
+  
+     dat_frames = all_frames  
+     frame_idx = all_frames*plot_idx + dat_frames -1 ## uncomment this line if there are more than one frame in dat file
      frame_idx = plot_idx
 
      alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
-     aseq_test = aseq_asse[(num_train_b+plot_idx)*G:(num_train_b+plot_idx+1)*G]
+     
      pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90
-     tip_y = tip_y_asse[(num_train_b+plot_idx)*all_frames:(num_train_b+plot_idx+1)*all_frames][::gap]
-     extra_area = (area_asse[(num_train_b+plot_idx)*G*all_frames:(num_train_b+plot_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][plot_frames-1,:]
-     #print((tip_y))
-     #plot_real(x,y,alpha_true,plot_idx)
-     #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
-     # get the parameters from dataset name
-     G0 = float(G_list[batch_id])  #param_test[data_id,2*G+1]
-     Rmax = float(R_list[batch_id]) 
-     anis = float(e_list[batch_id])   #param_test[data_id,2*G]
+ 
 
-     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, plot_frames,\
-      pf_angles, extra_area, area_out[data_id,plot_frames-1,:], plot_flag)
- #    sum_miss = sum_miss + miss
+     miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,alpha_true,\
+        y_out[data_id,:],frac_out[data_id,:,:].T, area_out[data_id,inf_frames-1,:], inf_frames, plot_flag,data_id)
+
      print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss_rate_param[data_id])
- #  miss_rate_param[data_id] = sum_miss/run_per_param
+
 
 
 #fig, ax = plt.subplots() 
