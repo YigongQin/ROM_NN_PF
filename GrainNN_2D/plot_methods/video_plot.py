@@ -116,7 +116,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
     y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
     for g in range(G):
-      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+      fint = interp1d(ntip_y, piece_len,kind='linear')
       new_f = fint(y_range)
       temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
