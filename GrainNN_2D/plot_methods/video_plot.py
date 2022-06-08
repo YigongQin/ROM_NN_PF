@@ -110,54 +110,56 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
 
 #=========================start fill the final field=================
     field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
-    temp_piece = np.zeros((G, ny), dtype=int)
-    extra_y = 0
-    if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
-    y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
-    for g in range(G):
-      fint = interp1d(ntip_y, piece_len,kind='linear')
-      new_f = fint(y_range)
-      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
+    if plot_idx>0:
+      temp_piece = np.zeros((G, ny), dtype=int)
+      extra_y = 0
+      if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
+      y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
-
-    for j in y_range:
-     #  loc = 0
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g, j]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
-        else:
-          for i in range(temp_piece[g-1, j], temp_piece[g, j]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+        fint = interp1d(ntip_y, piece_len,kind='linear')
+        new_f = fint(y_range)
+        temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
-      #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
-#=========================start fill the extra field=================
-    y_f = y_range[-1]
-    for g in range(G):
-      top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
-      if  top_layer==0: height =0 
-      else: height = int(np.round((area[g]/top_layer)))
-      #print(height)
-      for j in range(y_f, y_f+height):
 
-        if g==0:
-          for i in range( temp_piece[g, y_f]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
+      for j in y_range:
+       #  loc = 0
+         #print(temp_piece)
+         #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+        for g in range(G):
+          if g==0:
+            for i in range( temp_piece[g, j]):
+              if (i>nx-1 or j>ny-1): break
+             # print(loc)
+              field[i,j] = aseq[g]
+             # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+          else:
+            for i in range(temp_piece[g-1, j], temp_piece[g, j]):
+              if (i>nx-1 or j>ny-1): break
+             # print(loc)
+              field[i,j] = aseq[g]
+             # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
 
-        else:
-          for i in range(temp_piece[g-1, y_f], temp_piece[g, y_f]):
-            if (i>nx-1 or j>ny-1): break         
-            field[i,j] = aseq[g]
+        #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
+  #=========================start fill the extra field=================
+      y_f = y_range[-1]
+      for g in range(G):
+        top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
+        if  top_layer==0: height =0 
+        else: height = int(np.round((area[g]/top_layer)))
+        #print(height)
+        for j in range(y_f, y_f+height):
+
+          if g==0:
+            for i in range( temp_piece[g, y_f]):
+              if (i>nx-1 or j>ny-1): break
+              field[i,j] = aseq[g]
+
+          else:
+            for i in range(temp_piece[g-1, y_f], temp_piece[g, y_f]):
+              if (i>nx-1 or j>ny-1): break         
+              field[i,j] = aseq[g]
 
     true_count = np.array([np.sum(alpha_true==g) for g in aseq])
     rom_count = np.array([np.sum(field==g) for g in aseq])
