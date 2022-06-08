@@ -188,7 +188,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       subplot_rountine(fig, ax2, cs2, 2)
       ax2.set_title('PDE', color=bg_color,fontsize=28)
       trans = mtransforms.ScaledTranslation(10/72, -5/72, fig.dpi_scale_trans)
-      ax2.text(0.45,0.9, r'$t=$'+str("%1.2f"%((final-1+extra_time)*0.1/Rmax))+r'$\mu s$', transform=ax2.transAxes + trans, fontsize=ft, horizontalalignment='center')
+      ax2.text(0.45,0.9, r'$t=$'+str("%1.2f"%(60/Rmax*plot_idx/100))+r'$\mu s$', transform=ax2.transAxes + trans, fontsize=ft, horizontalalignment='center')
       ax3 = fig.add_subplot(132)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
