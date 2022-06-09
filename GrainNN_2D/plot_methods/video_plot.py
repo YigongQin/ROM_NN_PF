@@ -191,6 +191,12 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       ax2.set_title('PDE', color=bg_color,fontsize=28)
       trans = mtransforms.ScaledTranslation(10/72, -5/72, fig.dpi_scale_trans)
       ax2.text(0.45,0.9, r'$t=$'+str("%1.2f"%(60/Rmax*plot_idx/100))+r'$\mu s$', transform=ax2.transAxes + trans, fontsize=ft, horizontalalignment='center')
+
+      ax2.yaxis.set_ticks([0,30,60])
+      ax2.xaxis.set_ticks([0,50])
+      ax2.set_xlabel(r'$x (\mu m)$')
+      ax2.set_ylabel(r'$y (\mu m)$')
+
       ax3 = fig.add_subplot(132)
       cs3 = ax3.imshow(pf_angles[field].T,cmap=newcmp,origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax3, cs3, 3)
@@ -201,7 +207,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       subplot_rountine(fig, ax4, cs4, 4)
       ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=28)
 
-      plt.savefig(var + '_grains' + str(G) + '_frame' + str("%3d"%plot_idx) +'.png',dpi=400,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_frame' + f'{plot_idx:03}'+'.png',dpi=400,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
