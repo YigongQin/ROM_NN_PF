@@ -205,7 +205,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       ax4 = fig.add_subplot(133)
       cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax4, cs4, 4)
-      ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=28)
+      ax4.set_title('Error '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=28)
 
       plt.savefig(var + '_grains' + str(G) + '_frame' + f'{plot_idx:03}'+'.png',dpi=400,facecolor="white", bbox_inches='tight')
       plt.close()
