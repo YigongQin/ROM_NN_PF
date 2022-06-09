@@ -110,7 +110,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
 
 #=========================start fill the final field=================
     field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
-    
+    if plot_idx==0: alpha_true = field
     if plot_idx>0:
       temp_piece = np.zeros((G, ny), dtype=int)
       extra_y = 0
@@ -176,8 +176,8 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
     #for g in range(G):
     #  miss += np.absolute(area[g]-area_true[g])
       #print(area[g], area_true[g])
-    if plot_idx==0: y_top = ntip_y[0]
-    else: y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
+
+    y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
 
     if plot_flag==True:
