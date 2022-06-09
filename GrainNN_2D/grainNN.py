@@ -681,7 +681,7 @@ if valid_train:
    f = h5py.File(fname, 'r')
  
    angles_asse = np.asarray(f['angles'])
-
+   alpha_asse = np.asarray(f['alpha'])
    G0 = float(G_list[batch_id]) 
    Rmax = float(R_list[batch_id]) 
    anis = float(e_list[batch_id])  
@@ -700,7 +700,7 @@ if valid_train:
          frame_idx = all_frames*plot_idx + dat_frames  ## uncomment this line if there are more than one frame in dat file
          frame_idx = plot_idx
 
-         alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
+         alpha_true = alpha_asse[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
          
          pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
          pf_angles[1:] = pf_angles[1:]*180/pi + 90
