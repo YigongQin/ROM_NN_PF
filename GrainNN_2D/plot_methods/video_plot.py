@@ -201,7 +201,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       subplot_rountine(fig, ax4, cs4, 4)
       ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=28)
 
-      plt.savefig(var + '_grains' + str(G) + '_frame' + str(plot_idx) +'.png',dpi=400,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_frame' + str("%3d"%plot_idx) +'.png',dpi=400,facecolor="white", bbox_inches='tight')
       plt.close()
 
     

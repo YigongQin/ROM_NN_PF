@@ -689,7 +689,8 @@ if valid_train:
 
      data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
-     
+     pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
+     pf_angles[1:] = pf_angles[1:]*180/pi + 90     
      for dat_frames in [all_frames-1]:
          
          inf_frames = dat_frames//gap + 1
@@ -701,10 +702,6 @@ if valid_train:
          frame_idx = plot_idx
 
          alpha_true = alpha_asse[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
-         
-         pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
-         pf_angles[1:] = pf_angles[1:]*180/pi + 90
-     
 
          miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,alpha_true,\
             y_out[data_id,:],frac_out[data_id,:,:].T, area, inf_frames, extra_time, plot_flag,data_id)
