@@ -110,7 +110,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
 
 #=========================start fill the final field=================
     field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
-
+    if plot_idx==0: alpha_true = field
     if plot_idx>0:
       temp_piece = np.zeros((G, ny), dtype=int)
       extra_y = 0
