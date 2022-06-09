@@ -17,16 +17,32 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from matplotlib import colors
 import glob, os, re
 from scipy.interpolate import griddata
-plt.rcParams.update({'font.size': 24})
+from matplotlib import cm
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
+coolwarm = cm.get_cmap('coolwarm', 256)
+newcolors = coolwarm(np.linspace(0, 1, 256))
+pink = np.array([255/256, 255/256, 210/256, 1])
+newcolors[0, :] = pink
+newcmp = ListedColormap(newcolors)
+import matplotlib.transforms as mtransforms
+fg_color='white'; bg_color='black'
+
+
+
+ft=24
+plt.rcParams.update({'font.size': ft})
 mathtext.FontConstantsBase.sub1 = 0.
 
+
+tid = int(sys.argv[1])
+Rmax = 1.52
 
 batch = 1
 num_gpu = 1
 npx  = 1
 npy = npx
 ratio=1
-hd=1
+
 
 datasets = sorted(glob.glob('*6933304*76500*.h5'))
 filename = datasets[0]
@@ -72,30 +88,15 @@ var = var_list[fid]
 vmin = np.float64(range_l[fid])
 vmax = np.float64(range_h[fid])
 print('the field variable: ',var,', range (limits):', vmin, vmax)
-fg_color='white'; bg_color='black'
 
 
-case = ['t=0','PDE','NN','MR 9%']
 
-fig, ax = plt.subplots(1,4,figsize=(24,8))
-
-from matplotlib import cm
-from matplotlib.colors import ListedColormap, LinearSegmentedColormap
-coolwarm = cm.get_cmap('coolwarm', 256)
-newcolors = coolwarm(np.linspace(0, 1, 256))
-pink = np.array([255/256, 255/256, 210/256, 1])
-newcolors[0, :] = pink
-newcmp = ListedColormap(newcolors)
-import matplotlib.transforms as mtransforms
-
-
-tid= 0
 alpha_id = (f[var])[tid*length:(tid+1)*length]
 aid = tid + train
 angles = np.asarray(f['angles'])[aid*pfs:(aid+1)*pfs]
 
   
-alpha = np.asarray(alpha_id).reshape((fnx,fny),order='F')[1:-1,1:-1]
+alpha = alpha_id.reshape((fnx,fny),order='F')[1:-1,1:-1]
 alpha = ( angles[alpha]/pi*180 + 90 )*(alpha>0)
   
 
@@ -124,27 +125,30 @@ values = values.flatten()
 interp_a = griddata(points, values, (xx, yy), method='nearest')
 
 
-for i in range(4):
+fig, ax = plt.subplots(1,3,figsize=(20,8))
+case = ['PDE','GrainNN','MR 9%']
+for i in range(3):
     alpha = np.asarray(alpha_id).reshape((fnx,fny),order='F')[1:-1,1:-1]
     alpha = ( angles[alpha]/pi*180 + 90 )*(alpha>0)
     u = alpha
-    if i==2:
+    if i==1:
         u=interp_a
-    if i==3: 
+    if i==2: 
         u = 1.0*(alpha!=interp_a)
         newcmp = 'Reds'
 
 
-    if i>0:
+    if i>=0:
         u[circle>rn**2] = np.NaN 
     else:
         u[rn_out**2<circle] = np.NaN   
         u[rn**2>circle] = 0
  
-    if i==3:
+    if i==2:
         no_nonnan = nx*ny - np.sum(1*(np.isnan(u)))
         no_one = np.sum(1*(u==1.0))
-        print('MR', no_one/no_nonnan)
+        MR = no_one/no_nonnan
+        print('MR', MR)
     cs = ax[i].imshow(u.T[mask_int:,mask_int:],cmap=newcmp,origin='lower', \
         extent= ( lx*mask_ratio, lx,  ly*mask_ratio, ly))
     #trans = mtransforms.ScaledTranslation(10/72, -5/72, fig.dpi_scale_trans)
@@ -153,8 +157,13 @@ for i in range(4):
     else: 
         ax[i].yaxis.set_ticks([20,40,60]); ax[i].xaxis.set_ticks([20,40,60]); 
         ax[i].set_xlabel(r'$x (\mu m)$');ax[i].set_ylabel(r'$y (\mu m)$');
+    if i==0:   
+        trans = mtransforms.ScaledTranslation(10/72, -5/72, fig.dpi_scale_trans)
+        ax[i].text(0.45,0.05, r'$t=$'+str("%1.2f"%(60/Rmax*tid/100))+r'$\mu s$', transform=ax[i].transAxes + trans, fontsize=ft, horizontalalignment='center')
 
- #   ax[i].set_title(case[i])
+    if i<2: ax[i].set_title(case[i],fontsize=28)
+    else: ax[i].set_title('Error '+str(int(MR*100))+'%',color=bg_color,fontsize=28)
+        
     if i==0:
         axins = inset_axes(ax[i],width="3%",height="30%",loc='lower left')#,bbox_to_anchor=(1.05, 0., 1, 1),bbox_transform=ax[i].transax[i]es,borderpad=0,)
         cbar = fig.colorbar(cs,cax = axins)#,ticks=[1, 2, 3,4,5])
