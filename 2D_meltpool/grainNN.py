@@ -679,7 +679,7 @@ area_out = 0.5*(area_out_f+area_out_r)
 #darea_out[:,0,:] = 0
 #area_out = np.cumsum(darea_out,axis=1)+area_all[num_train:num_train+evolve_runs,[0],:]
 #print((y_out[0,:]))
-print(area_out)
+#print(area_out)
 
 dice = np.zeros((num_test,G))
 miss_rate_param = np.zeros(num_test)
@@ -690,45 +690,40 @@ if mode == 'test': valid_train = True
 else: valid = False
 valid_train = True
 if valid_train:
-  for batch_id in range(num_batch): 
+  aseq_test = np.arange(G)+1
+  for batch_id in range(num_batch_test): 
    fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
-   aseq_asse = np.asarray(f['sequence'])
+ 
    angles_asse = np.asarray(f['angles'])
-   frac_asse = np.asarray(f['fractions'])
-   tip_y_asse = np.asarray(f['y_t'])
-   area_asse = np.asarray(f['extra_area'])
-   sum_miss = 0
+   alpha_asse = np.asarray(f['alpha'])
+   G0 = float(G_list[batch_id]) 
+   Rmax = float(R_list[batch_id]) 
+   anis = float(e_list[batch_id])  
    for plot_idx in range( run_per_param ):  # in test dataset
 
-     data_id = plot_idx*num_batch+batch_id
+     data_id = plot_idx*num_batch_test+batch_id
      #print('seq', param_test[data_id,:])
-     #frac_out_true = output_test_pt.detach().numpy()[plot_idx*pred_frames:(plot_idx+1)*pred_frames,:]
-     frame_idx=plot_idx  # here the idx means the local id of the test part (last 100)
-     
-     alpha_true = np.asarray(f['alpha'])[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
-     aseq_test = aseq_asse[(num_train_b+frame_idx)*G:(num_train_b+frame_idx+1)*G]
-     pf_angles = angles_asse[(num_train_b+frame_idx)*(G+1):(num_train_b+frame_idx+1)*(G+1)]
-     pf_angles[1:] = pf_angles[1:]*180/pi + 90
+     pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
+     pf_angles[1:] = pf_angles[1:]*180/pi + 90     
      embeded_angle = np.zeros_like(pf_angles)
      embeded_angle[1:] = angle_arc*180/pi
-     tip_y = tip_y_asse[(num_train_b+frame_idx)*all_frames:(num_train_b+frame_idx+1)*all_frames][::gap]
-     extra_area = (area_asse[(num_train_b+frame_idx)*G*all_frames:(num_train_b+frame_idx+1)*G*all_frames]).reshape((all_frames,G))[::gap][train_frames-1,:]
-     #print((tip_y))
-     #plot_real(x,y,alpha_true,plot_idx)
-     #plot_reconst(G,x,y,aseq_test,tip_y,alpha_true,frac_out[plot_idx,:,:].T,plot_idx)
-     # get the parameters from dataset name
-     G0 = float(G_list[batch_id])  #param_test[data_id,2*G+1]
-     Rmax = float(R_list[batch_id]) 
-     anis = float(e_list[batch_id])   #param_test[data_id,2*G]
+     for dat_frames in [all_frames-1]:
+         
+         inf_frames = dat_frames//gap + 1
+         extra_time = dat_frames/gap - dat_frames//gap
+         area = area_out[data_id,inf_frames-1,:]
+         if extra_time>0: area += extra_time*(area_out[data_id,inf_frames,:]-area_out[data_id,inf_frames-1,:])
 
-     phi_square = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,y_out[data_id,:],alpha_true,frac_out[data_id,:,:].T,data_id, tip_y[train_frames-1],train_frames,\
-      pf_angles, extra_area, area_out[data_id,train_frames-1,:], left_grains[data_id,:,:].T, plot_flag, embeded_angle)
- #    sum_miss = sum_miss + miss
-     print('plot_id,batch_id', plot_idx, batch_id,'miss%',miss_rate_param[data_id])
- #  miss_rate_param[data_id] = sum_miss/run_per_param
+         frame_idx = all_frames*plot_idx + dat_frames  ## uncomment this line if there are more than one frame in dat file
+         frame_idx = plot_idx
 
-sio.savemat('phi_square.mat', {'phi':phi_square})
+         alpha_true = alpha_asse[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
+
+         phi_square = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,embeded_angle,alpha_true,\
+            y_out[data_id,:],frac_out[data_id,:,:].T, area, inf_frames, extra_time, plot_flag, dat_frames)
+         print('realization id, param id', plot_idx, batch_id, 'frame id' , dat_frames, 'miss%',miss_rate_param[data_id])
+         sio.savemat('phi_square'+ f'{dat_frames:03}'+'.mat', {'phi':phi_square})
 #fig, ax = plt.subplots() 
 
 x = np.array(e_list,dtype=float)

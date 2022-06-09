@@ -58,7 +58,7 @@ def subplot_rountine(fig, ax, cs, idx):
       cs.set_clim(vmin, vmax)
       return
 
-def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,pf_angles, area_true, area, left_grains,plot_flag, embeded_angles):
+def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,embeded_angles,alpha_true,tip_y,frac,area, final, extra_time, plot_flag, plot_idx):
 
     #print('angle sequence', aseq)
     #print(frac) 
@@ -72,7 +72,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
     ntip_y = np.asarray(np.round(tip_y/dx),dtype=int)
     
-    p_len = np.asarray(np.round(frac*nx),dtype=int)
+    #p_len = np.asarray(np.round(frac*nx),dtype=int)
     piece_len = np.asarray(np.round(np.cumsum(frac,axis=0)*nx),dtype=int)
     correction = piece_len[-1, :] - fnx
     for g in range(G//2, G):
@@ -107,7 +107,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 #=========================start fill the final field=================
     field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
     temp_piece = np.zeros((G, ny), dtype=int)
-    y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+1)
+    extra_y = 0
+    if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
+    y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
     for g in range(G):
       fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
@@ -135,13 +137,13 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,tip_y,alpha_true,frac, plot_idx,ymax,final,p
 
       #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
 #=========================start fill the extra field=================
-    y_f = ntip_y[final-1]
+    y_f = y_range[-1]
     for g in range(G):
-
-      if p_len[g, final-1] ==0: height =0 
-      else: height = int(np.round((area[g]/p_len[g, final-1])))
+      top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
+      if  top_layer==0: height =0 
+      else: height = int(np.round((area[g]/top_layer)))
       #print(height)
-      for j in range(ntip_y[final-1], ntip_y[final-1]+height):
+      for j in range(y_f, y_f+height):
 
         if g==0:
           for i in range( temp_piece[g, y_f]):
