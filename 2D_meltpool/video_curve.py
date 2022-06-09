@@ -179,7 +179,8 @@ for i in range(3):
 
 
 
-fig.savefig('curve_part.pdf',dpi=600, bbox_inches='tight')
+    plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{tid:03}'+'.png',dpi=400,facecolor="white", bbox_inches='tight')
+    plt.close()
 
 
 
