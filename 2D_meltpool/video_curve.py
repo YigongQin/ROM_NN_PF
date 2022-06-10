@@ -95,9 +95,7 @@ alpha_id = (f[var])[tid*length:(tid+1)*length]
 aid = tid + train
 angles = np.asarray(f['angles'])[:pfs]
 
-  
-alpha = alpha_id.reshape((fnx,fny),order='F')[1:-1,1:-1]
-alpha = ( angles[alpha]/pi*180 + 90 )*(alpha>0)
+
   
 
 nx = fnx-2
@@ -130,9 +128,9 @@ case = ['PDE','GrainNN','MR 9%']
 for i in range(3):
     alpha = np.asarray(alpha_id).reshape((fnx,fny),order='F')[1:-1,1:-1]
     alpha = ( angles[alpha]/pi*180 + 90 )*(alpha>0)
-    u = alpha
+    u = alpha 
     if i==1:
-        u=interp_a
+        u=interp_a if tid>0 else alpha
     if i==2: 
         u = 1.0*(alpha!=interp_a)
         newcmp = 'Reds'
