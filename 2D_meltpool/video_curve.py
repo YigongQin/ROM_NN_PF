@@ -34,7 +34,7 @@ plt.rcParams.update({'font.size': ft})
 mathtext.FontConstantsBase.sub1 = 0.
 
 
-tid = int(sys.argv[1])
+tid = 0 #int(sys.argv[1])
 Rmax = 1.52
 
 batch = 1
@@ -43,7 +43,7 @@ npx  = 1
 npy = npx
 ratio=1
 
-
+#datasets = sorted(glob.glob('../../*frames75*6933304*76500*.h5'))
 datasets = sorted(glob.glob('*6933304*76500*.h5'))
 filename = datasets[0]
 number_list=re.findall(r"[-+]?\d*\.\d+|\d+", filename)
@@ -71,13 +71,13 @@ print('the limits for geometry lx, ly: ',lx,ly)
 
 
 r_in = 80/pi*2
-r_out = 82/pi*2
+r_out = (80+2.2528)/pi*2
 
 rn = int( r_in*(fnx-2)/60 )
 rn_out = int( r_out*(fnx-2)/60 )
 
 phi = sio.loadmat('phi_square.mat')['phi']
-
+#phi = sio.loadmat('phi_square'+f'{tid:03}'+'.mat')['phi']
 
 var_list = ['Uc','phi','alpha']
 range_l = [0,-1,0]
@@ -93,15 +93,15 @@ print('the field variable: ',var,', range (limits):', vmin, vmax)
 
 alpha_id = (f[var])[tid*length:(tid+1)*length]
 aid = tid + train
-angles = np.asarray(f['angles'])[aid*pfs:(aid+1)*pfs]
+angles = np.asarray(f['angles'])[:pfs]
 
   
 alpha = alpha_id.reshape((fnx,fny),order='F')[1:-1,1:-1]
 alpha = ( angles[alpha]/pi*180 + 90 )*(alpha>0)
   
 
-nx = alpha.shape[0]
-ny = alpha.shape[1]
+nx = fnx-2
+ny = fny-2
 
 mask_ratio = 0.1 
 mask_int = int(mask_ratio*nx)
@@ -114,7 +114,7 @@ nxp = phi.shape[0]
 nyp = phi.shape[1]
 xp, yp = np.mgrid[:nxp, :nyp]
 theta = xp/nxp*pi/2
-r = int(round((r_in+ 2.2528)/dx ))- yp
+r = int(round(r_out/dx ))- yp
 x_data = (nx - r*np.cos(theta)).flatten()
 y_data = (ny - r*np.sin(theta)).flatten()
 points = np.zeros((x_data.shape[0],2))
@@ -180,7 +180,7 @@ for i in range(3):
 
 
     plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{tid:03}'+'.png',dpi=400,facecolor="white", bbox_inches='tight')
-    plt.close()
+    
 
 
 
