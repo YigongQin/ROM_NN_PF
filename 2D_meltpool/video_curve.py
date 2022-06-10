@@ -71,7 +71,7 @@ print('the limits for geometry lx, ly: ',lx,ly)
 
 
 r_in = 80/pi*2
-r_out = (80+2.2528)/pi*2
+r_out = (80)/pi*2 +2.2528
 
 rn = int( r_in*(fnx-2)/60 )
 rn_out = int( r_out*(fnx-2)/60 )
@@ -139,7 +139,7 @@ for i in range(3):
 
 
     if i>=0:
-        u[circle>rn**2] = np.NaN 
+        u[circle>rn_out**2] = np.NaN 
     else:
         u[rn_out**2<circle] = np.NaN   
         u[rn**2>circle] = 0
@@ -162,7 +162,7 @@ for i in range(3):
         ax[i].text(0.45,0.05, r'$t=$'+str("%1.2f"%(60/Rmax*tid/100))+r'$\mu s$', transform=ax[i].transAxes + trans, fontsize=ft, horizontalalignment='center')
 
     if i<2: ax[i].set_title(case[i],fontsize=28)
-    else: ax[i].set_title('Error '+str(int(MR*100))+'%',color=bg_color,fontsize=28)
+    else: ax[i].set_title('Error '+str(int(np.round(MR*100)))+'%',color=bg_color,fontsize=28)
         
     if i==0:
         axins = inset_axes(ax[i],width="3%",height="30%",loc='lower left')#,bbox_to_anchor=(1.05, 0., 1, 1),bbox_transform=ax[i].transax[i]es,borderpad=0,)
