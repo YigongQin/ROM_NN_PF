@@ -68,7 +68,7 @@ fg_color='white'; bg_color='black'
 
 tid_arr = [0,4,8,12,16,20]
 case = ['a','b','c','d','e','f','g','h']
-fig, ax = plt.subplots(1,8,figsize=(20,12))
+fig, ax = plt.subplots(1,6,figsize=(20,12))
 
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
@@ -80,7 +80,7 @@ newcmp = ListedColormap(newcolors)
 import matplotlib.transforms as mtransforms
 for i in range(len(tid_arr)):
 
-    fname =datasets[i]; print(fname)
+    fname =datasets[0]; print(fname)
     f = h5py.File(str(fname), 'r')
     number_list=re.findall(r"[-+]?\d*\.\d+|\d+", fname)
     R= float(number_list[7])
