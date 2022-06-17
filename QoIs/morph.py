@@ -40,8 +40,8 @@ number_list=re.findall(r"[-+]?\d*\.\d+|\d+", filename)
 pfs = int(number_list[0])+1; print('PFs',pfs)
 train = int(number_list[1]); print('train',train)
 test = int(number_list[2]); print('test',test)
-G = int(number_list[4]); print('grains',G)
-frames = int(number_list[5])+1; print('frames',frames)
+G = int(number_list[3]); print('grains',G)
+frames = int(number_list[4])+1; print('frames',frames)
 
 f = h5py.File(filename, 'r')
 x = f['x_coordinates']
@@ -83,9 +83,9 @@ for i in range(len(tid_arr)):
     fname =datasets[i]; print(fname)
     f = h5py.File(str(fname), 'r')
     number_list=re.findall(r"[-+]?\d*\.\d+|\d+", fname)
-    R= float(number_list[8])
-    G = float(number_list[7])
-    anis = float(number_list[6])
+    R= float(number_list[7])
+    G = float(number_list[6])
+    anis = float(number_list[5])
     
     tid= tid_arr[i]
     alpha_id = (f[var])[tid*length:(tid+1)*length]
