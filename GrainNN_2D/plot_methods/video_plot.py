@@ -269,70 +269,71 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, extra_time, plot_id
 
 
 #=========================start fill the final field=================
+      if plot_idx==0: alpha_true = angle_field
+      if plot_idx>0:
+        temp_piece = np.zeros((G, ny), dtype=int)
+        extra_y = 0
+        if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
+        y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
-      temp_piece = np.zeros((G, ny), dtype=int)
-      extra_y = 0
-      if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
-      y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
+        for g in range(G):
+          fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
+          new_f = fint(y_range)
+          temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
-      for g in range(G):
-        fint = interp1d(ntip_y, piece_len[g,:],kind='linear')
-        new_f = fint(y_range)
-        temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
+        for j in y_range:
+
+           #print(temp_piece)
+           #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+           for g in rangeG:
+            if g==0:
+              for i in range(left_grains[run], left_grains[run]+temp_piece[g,j]):
+                if (i>nx-1 or j>ny-1): break
+
+                angle_field[i,j] = angles[aseq[g]]
+
+            else:
+              for i in range(left_grains[run]+temp_piece[g-1,j], left_grains[run]+temp_piece[g,j]):
+                if (i>nx-1 or j>ny-1): break
+        
+                angle_field[i,j] = angles[aseq[g]]
+
+
+
+    #=========================start fill the extra field=================
+        area = area_a[run]
+        y_f = y_range[-1]
+        for g in rangeG:
+
+          top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
+          if  top_layer==0: height =0 
+          else: height = int(np.round((area[g]/top_layer)))
+          #print(height)
+          for j in range(y_f, y_f+height):
+
+            if g==0:
+              for i in range(left_grains[run], left_grains[run]+temp_piece[g, y_f]):
+                if (i>nx-1 or j>ny-1): break
+                angle_field[i,j] = angles[aseq[g]]
+
+            else:
+              for i in range(left_grains[run]+temp_piece[g-1, y_f], left_grains[run]+temp_piece[g, y_f]):
+                if (i>nx-1 or j>ny-1): break         
+                angle_field[i,j] = angles[aseq[g]]
+
+    #=========================fill in =================
 
       for j in y_range:
 
-         #print(temp_piece)
-         #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
-         for g in rangeG:
-          if g==0:
-            for i in range(left_grains[run], left_grains[run]+temp_piece[g,j]):
-              if (i>nx-1 or j>ny-1): break
+         zeros = np.arange(nx)[angle_field[:,j]<1e-5]
+         nonzeros = np.arange(nx)[angle_field[:,j]>=1e-5]
 
-              angle_field[i,j] = angles[aseq[g]]
+         fint = interp1d(nonzeros, angle_field[nonzeros,j],kind='nearest',fill_value='extrapolate')
+         angle_field[zeros,j] = fint(zeros)
 
-          else:
-            for i in range(left_grains[run]+temp_piece[g-1,j], left_grains[run]+temp_piece[g,j]):
-              if (i>nx-1 or j>ny-1): break
-      
-              angle_field[i,j] = angles[aseq[g]]
-
-
-
-  #=========================start fill the extra field=================
-      area = area_a[run]
-      y_f = y_range[-1]
-      for g in rangeG:
-
-        top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
-        if  top_layer==0: height =0 
-        else: height = int(np.round((area[g]/top_layer)))
-        #print(height)
-        for j in range(y_f, y_f+height):
-
-          if g==0:
-            for i in range(left_grains[run], left_grains[run]+temp_piece[g, y_f]):
-              if (i>nx-1 or j>ny-1): break
-              angle_field[i,j] = angles[aseq[g]]
-
-          else:
-            for i in range(left_grains[run]+temp_piece[g-1, y_f], left_grains[run]+temp_piece[g, y_f]):
-              if (i>nx-1 or j>ny-1): break         
-              angle_field[i,j] = angles[aseq[g]]
-
-  #=========================fill in =================
-
-    for j in y_range:
-
-       zeros = np.arange(nx)[angle_field[:,j]<1e-5]
-       nonzeros = np.arange(nx)[angle_field[:,j]>=1e-5]
-
-       fint = interp1d(nonzeros, angle_field[nonzeros,j],kind='nearest',fill_value='extrapolate')
-       angle_field[zeros,j] = fint(zeros)
-
-#========================start plotting area, plot ini_field, alpha_true, and field======
-    angle_field[:,:ntip_y[0]+1] = alpha_true[:,:ntip_y[0]+1]
+  #========================start plotting area, plot ini_field, alpha_true, and field======
+      angle_field[:,:ntip_y[0]+1] = alpha_true[:,:ntip_y[0]+1]
     y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
     miss_rate = np.sum( np.absolute(alpha_true[:,:y_top]-angle_field[:,:y_top])>1 )/(nx*y_top)
    # error=field-alpha_true[1:-1,1:-1]
