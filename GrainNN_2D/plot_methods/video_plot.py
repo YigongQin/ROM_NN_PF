@@ -230,47 +230,49 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, extra_time, plot_id
     angle_field = np.zeros((nx,ny))
 
 
-
+    if plot_idx ==0: 
+      alpha_true[:,ntip_y[0]+1:] = 0
+      angle_field = alpha_true
 #=========================start fill the final field=================
-    subruns = p_len_a.shape[0]
-    for run in range(subruns):
+    if plot_idx>0:
+      subruns = p_len_a.shape[0]
+      for run in range(subruns):
 
-      angles = pf_angles[run,:]
-      tip_y = tip_y_a[run,:]
-      ntip_y = np.asarray(tip_y/dx,dtype=int)
+        angles = pf_angles[run,:]
+        tip_y = tip_y_a[run,:]
+        ntip_y = np.asarray(tip_y/dx,dtype=int)
 
-      p_len = p_len_a[run,:,:].T
-      piece_len = np.cumsum(p_len,axis=0)
-      correction = piece_len[-1, :] - nx_small
-      for g in range(G//2, G):
-        piece_len[g,:] -= correction
+        p_len = p_len_a[run,:,:].T
+        piece_len = np.cumsum(p_len,axis=0)
+        correction = piece_len[-1, :] - nx_small
+        for g in range(G//2, G):
+          piece_len[g,:] -= correction
 
-      piece0 = piece_len[:,0]
+        piece0 = piece_len[:,0]
 
-      if run ==0: rangeG = np.arange(G)[:3*G//4]
-      elif run == subruns-1: rangeG=np.arange(G)[-3*G//4:]
-      else: rangeG = np.arange(G)[G//4:3*G//4]
+        if run ==0: rangeG = np.arange(G)[:3*G//4]
+        elif run == subruns-1: rangeG=np.arange(G)[-3*G//4:]
+        else: rangeG = np.arange(G)[G//4:3*G//4]
 
-      temp_piece = np.zeros(G, dtype=int)
+        temp_piece = np.zeros(G, dtype=int)
 
-      for j in range(ntip_y[0]+1):
+        for j in range(ntip_y[0]+1):
 
-         for g in range(G):
-          temp_piece[g] = piece0[g]
-          if g==0:
-            for i in range( left_grains[run], left_grains[run]+temp_piece[g]):
-              if (i>nx-1 or j>ny-1): break
-              angle_field[i,j] = angles[aseq[g]]
+           for g in range(G):
+            temp_piece[g] = piece0[g]
+            if g==0:
+              for i in range( left_grains[run], left_grains[run]+temp_piece[g]):
+                if (i>nx-1 or j>ny-1): break
+                angle_field[i,j] = angles[aseq[g]]
 
-          else:
-            for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
-              if (i>nx-1 or j>ny-1): break         
-              angle_field[i,j] = angles[aseq[g]]
+            else:
+              for i in range(left_grains[run]+temp_piece[g-1], left_grains[run]+temp_piece[g]):
+                if (i>nx-1 or j>ny-1): break         
+                angle_field[i,j] = angles[aseq[g]]
 
 
-#=========================start fill the final field=================
-      if plot_idx==0: alpha_true = angle_field
-      if plot_idx>0:
+  #=========================start fill the final field=================
+
         temp_piece = np.zeros((G, ny), dtype=int)
         extra_y = 0
         if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
