@@ -231,6 +231,8 @@ def plot_synthetic(anis,G0,Rmax,G,x,y,aseq,tip_y_a, p_len_a, extra_time, plot_id
 
 
     if plot_idx ==0: 
+      tip_y = tip_y_a[0,:]
+      ntip_y = np.asarray(tip_y/dx,dtype=int)
       alpha_true[:,ntip_y[0]+1:] = 0
       angle_field = alpha_true
 #=========================start fill the final field=================
