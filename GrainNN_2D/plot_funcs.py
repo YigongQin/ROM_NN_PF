@@ -176,7 +176,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
 
     y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
-
+    miss = int(np.round(miss_rate*100))
     if plot_flag==True:
       fig = plt.figure(figsize=(7.5*xmax/20,12*ytop/80))
       txt = r'$\epsilon_k$'+str(anis)+'_G'+str("%1.1f"%G0)+r'_$R_{max}$'+str(Rmax)
@@ -199,9 +199,9 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
       ax4 = fig.add_subplot(144)
       cs4 = ax4.imshow(1*(alpha_true!=field).T,cmap='Reds',origin='lower',extent= (xmin,xmax, ymin, ytop))
       subplot_rountine(fig, ax4, cs4, 4)
-      ax4.set_title('MR '+str(int(miss_rate*100))+'%',color=bg_color,fontsize=ft)
+      ax4.set_title('MR '+str(miss)+'%',color=bg_color,fontsize=ft)
 
-      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_frame' + str(final)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%int(miss_rate*100)) +'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
+      plt.savefig(var + '_grains' + str(G) + '_case' + str(plot_idx)+ '_frame' + str(final)+ '_anis' + str(anis)+'_G'+str("%1.1f"%G0)+'R' +str(Rmax) + '_error'+ str("%d"%miss) +'.pdf',dpi=600,facecolor="white", bbox_inches='tight')
       plt.close()
 
     
