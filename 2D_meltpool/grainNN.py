@@ -87,12 +87,13 @@ print('device',device)
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = True
+plot_flag = False
 param_list = ['anis','G0','Rmax']
 
 print('(input data) train, test', num_train, num_test)
 
 datasets = sorted(glob.glob(data_dir))
+datasets = [datasets[int(sys.argv[3])]]
 print('dataset dir',data_dir,' and size',len(datasets))
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
@@ -167,6 +168,7 @@ def get_data(num_runs, num_batch, datasets):
 
 frac_train, param_train, y_train, area_train, G_list, R_list, e_list, angle_arc = get_data(num_train, num_batch, datasets)
 testsets = sorted(glob.glob(valid_dir))
+testsets = [sorted(glob.glob(valid_dir))[int(sys.argv[3])]]
 frac_test, param_test, y_test, area_test, _ , _ , _, angle_arc = get_data(num_test, num_batch, testsets)
 # trained dataset need to be randomly selected:
 
