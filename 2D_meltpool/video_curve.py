@@ -20,7 +20,7 @@ from scipy.interpolate import griddata
 from matplotlib import cm
 from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 coolwarm = cm.get_cmap('coolwarm', 256)
-newcolors = coolwarm(np.linspace(0, 1, 256))
+newcolors = coolwarm(np.linspace(0, 1, 25600))
 pink = np.array([255/256, 255/256, 210/256, 1])
 newcolors[0, :] = pink
 newcmp = ListedColormap(newcolors)
@@ -34,7 +34,7 @@ plt.rcParams.update({'font.size': ft})
 mathtext.FontConstantsBase.sub1 = 0.
 
 
-tid = 0 #int(sys.argv[1])
+tid = 15 #int(sys.argv[1])
 Rmax = 1.52
 
 batch = 1
@@ -44,7 +44,8 @@ npy = npx
 ratio=1
 
 #datasets = sorted(glob.glob('../../*frames75*6933304*76500*.h5'))
-datasets = sorted(glob.glob('*6933304*76500*.h5'))
+datasets = sorted(glob.glob('../../*frames15*.h5'))
+datasets = [datasets[int(sys.argv[1])]]
 filename = datasets[0]
 number_list=re.findall(r"[-+]?\d*\.\d+|\d+", filename)
 
@@ -76,7 +77,7 @@ r_out = (80)/pi*2 +2.2528
 rn = int( r_in*(fnx-2)/60 )
 rn_out = int( r_out*(fnx-2)/60 )
 
-phi = sio.loadmat('phi_square.mat')['phi']
+phi = sio.loadmat('phi_square15.mat')['phi']
 #phi = sio.loadmat('phi_square'+f'{tid:03}'+'.mat')['phi']
 
 var_list = ['Uc','phi','alpha']
@@ -157,7 +158,7 @@ for i in range(3):
         ax[i].set_xlabel(r'$x (\mu m)$');ax[i].set_ylabel(r'$y (\mu m)$');
     if i==0:   
         trans = mtransforms.ScaledTranslation(10/72, -5/72, fig.dpi_scale_trans)
-        ax[i].text(0.45,0.05, r'$t=$'+str("%1.2f"%(60/Rmax*tid/100))+r'$\mu s$', transform=ax[i].transAxes + trans, fontsize=ft, horizontalalignment='center')
+       # ax[i].text(0.45,0.05, r'$t=$'+str("%1.2f"%(60/Rmax*tid/100))+r'$\mu s$', transform=ax[i].transAxes + trans, fontsize=ft, horizontalalignment='center')
 
     if i<2: ax[i].set_title(case[i],fontsize=28)
     else: ax[i].set_title('Error '+str(int(np.round(MR*100)))+'%',color=bg_color,fontsize=28)
@@ -177,7 +178,7 @@ for i in range(3):
 
 
 
-    plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{tid:03}'+'.png',dpi=400,facecolor="white", bbox_inches='tight')
+    plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{tid:03}'+'.pdf',dpi=400,facecolor="white", bbox_inches='tight')
     
 
 
