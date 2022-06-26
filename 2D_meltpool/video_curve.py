@@ -77,7 +77,7 @@ r_out = (80)/pi*2 +2.2528
 rn = int( r_in*(fnx-2)/60 )
 rn_out = int( r_out*(fnx-2)/60 )
 
-phi = sio.loadmat('phi_square15.mat')['phi']
+phi = sio.loadmat('phi_square015.mat')['phi']
 #phi = sio.loadmat('phi_square'+f'{tid:03}'+'.mat')['phi']
 
 var_list = ['Uc','phi','alpha']
