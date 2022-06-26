@@ -139,7 +139,7 @@ def get_data(num_runs, num_batch, datasets):
     for run in range(batch):
       aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
       tip_y = tip_y_asse[run*all_frames:(run+1)*all_frames][::gap]
-      tip_y[0] = 2.144
+      tip_y[0] = 2.2528
   #    Color = (aseq-3)/2        # normalize C to [-1,1]
       #Color = (aseq-5.5)/4.5
       #print('angle sequence', Color)
