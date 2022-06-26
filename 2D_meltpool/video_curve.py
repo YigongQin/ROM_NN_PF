@@ -43,6 +43,8 @@ npx  = 1
 npy = npx
 ratio=1
 
+real_id = int(sys.argv[1])
+
 #datasets = sorted(glob.glob('../../*frames75*6933304*76500*.h5'))
 datasets = sorted(glob.glob('../../*frames15*.h5'))
 datasets = [datasets[int(sys.argv[1])]]
@@ -178,7 +180,7 @@ for i in range(3):
 
 
 
-    plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{tid:03}'+'.pdf',dpi=400,facecolor="white", bbox_inches='tight')
+    plt.savefig(var + '_grains' + str(G) + 'meltpool_frame' + f'{real_id:03}'+'.pdf',dpi=400,facecolor="white", bbox_inches='tight')
     
 
 
