@@ -66,7 +66,7 @@ if mode=='train' or mode=='test':
   out_win+=1
   window=out_win
 
-  train_frames=frames-5
+  frames=frames-5
   pred_frames= frames-window
 if mode=='ini':
   learning_rate *= 2
@@ -141,7 +141,7 @@ def get_data(num_runs, num_batch, datasets):
   #    Color = (aseq-3)/2        # normalize C to [-1,1]
       #Color = (aseq-5.5)/4.5
       #print('angle sequence', Color)
-      frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]
+      frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]/pi*2
       area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]  # grains coalese, include frames
 
       mid = np.cumsum(frac[0,:]) - 0.5*frac[0,:]
@@ -524,7 +524,7 @@ def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, windo
     alone = pred_frames%out_win
     pack = pred_frames-alone
 
-    for i in range(0,pred_frames-5,out_win):
+    for i in range(0,pred_frames,out_win):
         
         time_i = i
         if dt*(time_i+window+out_win-1)>1: 
