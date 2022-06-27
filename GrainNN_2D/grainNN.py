@@ -702,6 +702,7 @@ if valid_train:
          frame_idx = plot_idx
 
          alpha_true = alpha_asse[frame_idx*fnx*fny:(frame_idx+1)*fnx*fny]
+         alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')[1:-1,1:-1]   
 
          miss_rate_param[data_id], dice[data_id,:] = plot_IO(anis,G0,Rmax,G,x,y,aseq_test,pf_angles,alpha_true,\
             y_out[data_id,:],frac_out[data_id,:,:].T, area, inf_frames, extra_time, plot_flag,data_id)

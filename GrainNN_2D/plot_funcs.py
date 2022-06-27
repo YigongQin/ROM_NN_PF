@@ -12,6 +12,8 @@ from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import time
+from numba import njit, prange
 var_list = ['Uc','phi','alpha']
 range_l = [0,-5,0]
 range_h = [5,5,90]
@@ -61,6 +63,26 @@ def subplot_rountine(fig, ax, cs, idx):
          cs.set_clim(vmin, vmax)
       return
 
+@njit(parallel=True, nopython=True)
+def reconstruction(field, temp_piece, y_range, area, G):
+    y_f = y_range[-1]
+    y_0 = y_range[0]
+    ylen = len(y_range)
+    
+    for k in range(100):
+      for g in prange(G):
+        for j in prange(ylen):
+              
+              field[temp_piece[g, j+y_0]:temp_piece[g+1, j+y_0],j+y_0] = g+1
+
+        top_layer = temp_piece[g+1, y_f]- temp_piece[g, y_f] 
+        if  top_layer<5: height =0 
+        else: height = int(np.round((area[g]/top_layer)))
+        #print(height)
+        field[temp_piece[g, y_f]:temp_piece[g+1, y_f], y_f:y_f+height] = g+1
+
+
+
 def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final, extra_time, plot_flag, plot_idx):
 
     #print('angle sequence', aseq)
@@ -69,95 +91,48 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
     ymin = y[1]; ytop = y[-2]
     fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
     dx = x[1]-x[0]
-    nt=len(tip_y)
-    #input_frac = int((window-1)/(nt-1)*100)
-    alpha_true = np.reshape(alpha_true,(fnx,fny),order='F')[1:-1,1:-1]    
-
     ntip_y = np.asarray(np.round(tip_y/dx),dtype=int)
     
-    #p_len = np.asarray(np.round(frac*nx),dtype=int)
+
     piece_len = np.asarray(np.round(np.cumsum(frac,axis=0)*nx),dtype=int)
     correction = piece_len[-1, :] - fnx
     for g in range(G//2, G):
       piece_len[g,:] -= correction
 
-    piece0 = piece_len[:,0]
-    #print(piece_len[-1,:])
+
     field = np.zeros((nx,ny),dtype=int)
     ini_field = np.zeros((nx,ny),dtype=int)
+    field[:,:ntip_y[0]+1] = alpha_true[:,:ntip_y[0]+1]
+    ini_field[:,:ntip_y[0]+1] = alpha_true[:,:ntip_y[0]+1]
 
-
-            
-
-#=========================start fill the initial field=================
-
-    temp_piece = np.zeros(G, dtype=int)
-    for j in range(ntip_y[0]+1):
-
-       for g in range(G):
-        temp_piece[g] = piece0[g]
-        if g==0:
-          for i in range( temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break
-            ini_field[i,j] = aseq[g]
-
-        else:
-          for i in range(temp_piece[g-1], temp_piece[g]):
-            if (i>nx-1 or j>ny-1): break         
-            ini_field[i,j] = aseq[g]
-
-
-#=========================start fill the final field=================
-    field[:,:ntip_y[0]+1] = ini_field[:,:ntip_y[0]+1]
     temp_piece = np.zeros((G, ny), dtype=int)
     extra_y = 0
     if extra_time>0: extra_y = int(extra_time*( ntip_y[final] - ntip_y[final-1]))
     y_range = np.arange(ntip_y[0]+1, ntip_y[final-1]+extra_y+1)
 
-    for g in range(G):
-      fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
-      new_f = fint(y_range)
-      temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
 
-    for j in y_range:
-     #  loc = 0
-       #print(temp_piece)
-       #temp_piece = np.asarray(np.round(temp_piece/np.sum(temp_piece)*nx),dtype=int)
+#=========================start fill the final field=================
+    start = time.time()
+    for k in range(100):
       for g in range(G):
-        if g==0:
-          for i in range( temp_piece[g, j]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
-        else:
-          for i in range(temp_piece[g-1, j], temp_piece[g, j]):
-            if (i>nx-1 or j>ny-1): break
-           # print(loc)
-            field[i,j] = aseq[g]
-           # if (alpha_true[i+1,j+1]!=field[i,j]) and j< nymax: miss+=1
+        fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
+        new_f = fint(y_range)
+        temp_piece[g,y_range] = np.asarray(np.round(new_f),dtype=int)
 
-      #  if temp_piece[G-1]<nx-1: miss += nx-1-temp_piece[G-1]   
-#=========================start fill the extra field=================
-    y_f = y_range[-1]
-    for g in range(G):
-      top_layer = temp_piece[g, y_f]- temp_piece[g-1, y_f] if g>0 else temp_piece[0, y_f]#p_len[g, final-1]
-      if  top_layer==0: height =0 
-      else: height = int(np.round((area[g]/top_layer)))
-      #print(height)
-      for j in range(y_f, y_f+height):
+    end = time.time()
+    print(end-start)
 
-        if g==0:
-          for i in range( temp_piece[g, y_f]):
-            if (i>nx-1 or j>ny-1): break
-            field[i,j] = aseq[g]
 
-        else:
-          for i in range(temp_piece[g-1, y_f], temp_piece[g, y_f]):
-            if (i>nx-1 or j>ny-1): break         
-            field[i,j] = aseq[g]
+    temp_piece = np.concatenate((0*temp_piece[:1,:], temp_piece),axis=0)  
 
+    start = time.time()
+    reconstruction(field, temp_piece, y_range, area, G)
+    end = time.time()
+    print(end-start)
+
+
+    
     true_count = np.array([np.sum(alpha_true==g) for g in aseq])
     rom_count = np.array([np.sum(field==g) for g in aseq])
     inset = np.array([np.sum( (alpha_true==g)*(field==g) ) for g in aseq])
@@ -165,14 +140,6 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
     print('\n',dice)
 #========================start plotting area, plot ini_field, alpha_true, and field======
 
-    ## count for the error of y
-    
-    #if nymax-ntip_y[final-1]>0: miss += nx*(nymax-ntip_y[final-1])
-    #miss += np.absolute(nx*(nymax-ntip_y[final-1]))
-    ## count for the error of area
-    #for g in range(G):
-    #  miss += np.absolute(area[g]-area_true[g])
-      #print(area[g], area_true[g])
 
     y_top = next( i for i,x  in  enumerate(np.mean(alpha_true, axis=0)) if x<1e-5)
     miss_rate = np.sum( alpha_true[:,:y_top]!=field[:,:y_top] )/(nx*y_top)
