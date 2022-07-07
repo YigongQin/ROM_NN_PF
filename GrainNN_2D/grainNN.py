@@ -15,82 +15,69 @@ import h5py
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
-import matplotlib.mathtext as mathtext
 
 from plot_funcs import plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib, copy
 from check_data_quality import check_data_quality
 from models import *
-import matplotlib.tri as tri
 from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
+from parameters import *
+
 
 #torch.cuda.empty_cache()
 
 mode = sys.argv[1]
-if mode == 'train': from G_E_R import *
-elif mode == 'test': from G_E_test import *
-elif mode == 'ini': from G_E_ini import *
-else: raise ValueError('mode not specified')
-print('the mode is', mode)
-
-
-all_id = int(sys.argv[2])-1 #*out_case
-
-
-
-frames_pool=[20,24,30]
-learning_rate_pool=[25e-4, 50e-4, 100e-4]
-layers_pool=[3,4,5]
-hidden_dim_pool = [16, 24, 32]
-out_win_pool = [3, 4, 5] 
-
-frames_id = all_id//81
-lr_id = (all_id%81)//27
-layers_id = (all_id%27)//9
-hd_id = (all_id%9)//3
-owin_id = all_id%3
-
-hidden_dim=hidden_dim_pool[hd_id]
-learning_rate = learning_rate_pool[lr_id]
-layers = layers_pool[layers_id]
-frames = frames_pool[frames_id]*dilation+1
-
-out_win = out_win_pool[owin_id]
-
-
-if mode=='train' or mode=='test':
-  out_win+=1
-  window=out_win
-
-  pred_frames= frames-window
-if mode=='ini':
-  learning_rate *= 2
-  pred_frames = out_win
-sam_per_run = frames - window - (out_win-1)
-total_size = frames*num_runs
-dt = dilation*1.0/(frames-1)
-
-LSTM_layer = (layers, layers)
-LSTM_layer_ini = (layers, layers)
-
-# global parameters
+all_id = int(sys.argv[2])-1
 host='cpu'
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-#device=host
-print('device',device)
+
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
 plot_flag = True
-param_list = ['anis','G0','Rmax']
+skip_check = False
 
-print('(input data) train, test', num_train, num_test)
+
+hp = hyperparam(mode, all_id)
+frames = hp.frames
+all_frames = all_frames*hp.Cl + 1
+gap = int((all_frames-1)/(frames-1))
 
 datasets = sorted(glob.glob(data_dir))
-print('dataset dir',data_dir,' and size',len(datasets))
+testsets = sorted(glob.glob(valid_dir))
+seed_num = 35
+torch.manual_seed(seed_num)
+print('==========  GrainNN specification  =========')
+print('2D grain microstructure evolution')
+print('the mode is: ', mode, ', the model id is: ', all_id)
+print('device: ',device)
+print('model already exists, no training required: ', model_exist)
+print('no PDE solver required, input is random: ', noPDE)
+print('plot GrainNN verus PDE pointwise error: ', plot_flag)
+print('\n')
+print('==========  data information  =========')
+
+print('dataset dir: ',data_dir,' data: ',len(datasets))
+print('test dir: ', valid_dir,' data: ',len(testsets))
+print('(input data) train, test', num_train, num_test)
+print('trust the data, skip check: ', skip_check)
+print('data frames: ', all_frames, 'GrainNN frames: ', frames, 'ratio: ', gap)
+print('1d grid size (number of grains): ', G)
+param_len = G + 4
+print('physical parameters: N_G orientations, G, R, e_k with length ' , param_len)
+print('\n')
+print('==========  architecture  ========')
+print('type -- s2s LSTM')
+print('input window', hp.window,'output window', hp.out_win)
+print('epochs: ', hp.epoch, 'learning rate: ', hp.lr)
+print('hidden dim', hp.layer_size, 'number of layers', hp.layers)
+print('convolution kernel size', hp.kernel_size)
+print('torch seed', seed_num)
+print('\n')
+
+
+
 filename = datasets[0]
 #filename = filebase+str(2)+ '_rank0.h5'
 f = h5py.File(filename, 'r')
@@ -103,8 +90,7 @@ dx = x[1]-x[0]
 fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
 print('nx,ny', nx,ny)
 
-gap = int((all_frames-1)/(frames-1))
-print('the gap of two frames', gap)
+
 ## =======load data and parameters from the every simulation======
 
 def get_data(num_runs, num_batch, datasets):
@@ -132,7 +118,7 @@ def get_data(num_runs, num_batch, datasets):
     R_list.append(number_list[7])
     #print(number_list[5],number_list[6],number_list[7]) 
     # compile all the datasets interleave
-    for run in range(batch):
+    for run in range(1):
       aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
       tip_y = tip_y_asse[run*all_frames:(run+1)*all_frames][::gap]
   #    Color = (aseq-3)/2        # normalize C to [-1,1]
@@ -142,7 +128,7 @@ def get_data(num_runs, num_batch, datasets):
       frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]
       area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]  # grains coalese, include frames
       #if run<1: print(frac) 
-      frac_all[run*num_batch+batch_id,:,:] = frac*G/G_small
+      frac_all[run*num_batch+batch_id,:,:] = frac*G/hp.G_base
       y_all[run*num_batch+batch_id,:] = tip_y 
       area_all[run*num_batch+batch_id,:,:] = area
       param_all[run*num_batch+batch_id,:G] = Color
@@ -152,9 +138,9 @@ def get_data(num_runs, num_batch, datasets):
 
   return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
 
-frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, num_batch, datasets)
-testsets = sorted(glob.glob(valid_dir))
-frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, num_batch_test, testsets)
+frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, batch_train, datasets)
+
+frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, batch_test, testsets)
 #print(tip_y_asse[frames::gap])
 # trained dataset need to be randomly selected:
 
@@ -163,9 +149,7 @@ if skip_check == False:
 else: weird_sim=[]
 ### divide train and validation
 
-idx =  np.arange(num_runs) # you can permute the order of train here
-np.random.seed(seed)
-#np.random.shuffle(idx[:-1])
+
 
 print('nan', np.where(np.isnan(frac_train)))
 weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
@@ -182,15 +166,6 @@ assert param_train.shape[1]==param_len
 num_all = num_train + num_test
 
 print('actual num_train',num_train)
-print('total frames',frames,'in_win',window,'out_win',out_win)
-print('epoch', num_epochs, 'learning rate',learning_rate)
-print('1d grid size (number of grains)', G)
-print('param length', param_len)
-print('========== architecture ========')
-print('type -- LSTM')
-print('hidden dim', hidden_dim, 'number of layers', LSTM_layer)
-print('convolution kernel size', kernel_size)
-print('========== architecture ========')
 
 def todevice(data):
     return torch.from_numpy(data).to(device)
@@ -253,15 +228,13 @@ assert seq_all.shape[2] == (3*G+1)
 
 
 # Shape the inputs and outputs
-trunc = 0
-print('truncate train len', trunc)
-sam_per_run-=trunc
-num_all_traj = int(1*num_train)
-all_samp = num_all*sam_per_run + num_all_traj*trunc
 
-input_seq = np.zeros((all_samp, window, 3*G+1))
+num_all_traj = int(1*num_train)
+all_samp = num_all*hp.S 
+
+input_seq = np.zeros((all_samp, hp.window, 3*G+1))
 input_param = np.zeros((all_samp, param_len))
-output_seq = np.zeros((all_samp, out_win, 2*G+1))
+output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
 output_area = np.zeros((all_samp, G))
 assert input_param.shape[1]==param_all.shape[1]
 
@@ -269,28 +242,28 @@ assert input_param.shape[1]==param_all.shape[1]
 ###### input_param last dim seq: ini, phase_field, ek, G, time #######
 
 
-train_sam=num_train*sam_per_run + num_all_traj*trunc
-test_sam=num_test*sam_per_run
+train_sam=num_train*hp.S 
+test_sam=num_test*hp.S
 print('train samples', train_sam)
 
 # Setting up inputs and outputs
-# input t-window to t-1
+# input t-hp.window to t-1
 # output t to t+win_out-1
 sample = 0
 for run in range(num_all):
     lstm_snapshot = seq_all[run,:,:]
     if run < num_all_traj:
-        end_frame = sam_per_run+window+trunc
-    else: end_frame = sam_per_run+window
+        end_frame = hp.S+hp.window
+    else: end_frame = hp.S+hp.window
         
-    for t in range(window, end_frame):
+    for t in range(hp.window, end_frame):
         
-        input_seq[sample,:,:] = lstm_snapshot[t-window:t,:]        
-        output_seq[sample,:,:] = lstm_snapshot[t:t+out_win,G:]
-        #output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,G:2*G],lstm_snapshot[t:t+out_win,-1:]),axis=-1)        
+        input_seq[sample,:,:] = lstm_snapshot[t-hp.window:t,:]        
+        output_seq[sample,:,:] = lstm_snapshot[t:t+hp.out_win,G:]
+        #output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+hp.out_win,G:2*G],lstm_snapshot[t:t+hp.out_win,-1:]),axis=-1)        
         input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
-        input_param[sample,-1] = t*dt 
-        output_area[sample,:] = np.sum(area_all[run,t-1:t+out_win-1,:],axis=0)
+        input_param[sample,-1] = t*hp.dt 
+        output_area[sample,:] = np.sum(area_all[run,t-1:t+hp.out_win-1,:],axis=0)
         
         sample = sample + 1
 
@@ -302,7 +275,7 @@ if mode=='ini':
     input_seq[:,:,-1] = 0  
     input_param[:,:G] = input_seq[:,0,:G]  
 #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
-torch.manual_seed(35)
+
 
 
 
@@ -321,14 +294,14 @@ test_loader = DataLoader(test_loader, batch_size = test_sam//8, shuffle=False)
 ### prioritize the the first frame
 
 def p(P_train):
-    return (torch.ones_like(P_train[:,-1]) + 0*(P_train[:,-1]==dt)).view(-1,1,1).to(device)
+    return (torch.ones_like(P_train[:,-1]) + 0*(P_train[:,-1]==hp.dt)).view(-1,1,1).to(device)
 
 
 def train(model, num_epochs, train_loader, test_loader):
     
     #torch.manual_seed(42)
     criterion = nn.MSELoss() # mean square error loss
-    optimizer = torch.optim.Adam(model.parameters(),lr=learning_rate) 
+    optimizer = torch.optim.Adam(model.parameters(),lr=hp.lr) 
                                  #weight_decay=1e-5) # <--
     #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 30, 40, 50], gamma=0.5, last_epoch=-1)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
@@ -339,7 +312,7 @@ def train(model, num_epochs, train_loader, test_loader):
     for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
         count += I_train.shape[0]
         recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
-        train_loss += I_train.shape[0]*float(criterion(p(P_train)*recon, p(P_train)*O_train)) #+ 0.01*out_win/dt*criterion(area_train, A_train)
+        train_loss += I_train.shape[0]*float(criterion(p(P_train)*recon, p(P_train)*O_train)) #+ 0.01*hp.out_win/hp.dt*criterion(area_train, A_train)
     train_loss/=count
 
     test_loss = 0
@@ -347,7 +320,7 @@ def train(model, num_epochs, train_loader, test_loader):
     for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):      
         count += I_test.shape[0]
         pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
-        test_loss += I_test.shape[0]*float(criterion(p(P_test)*pred, p(P_test)*O_test)) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+        test_loss += I_test.shape[0]*float(criterion(p(P_test)*pred, p(P_test)*O_test)) #+ 0.01*hp.out_win/hp.dt*criterion(area_test, A_test)
     test_loss/=count
 
     print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(0, float(train_loss), float(test_loss)))
@@ -366,7 +339,7 @@ def train(model, num_epochs, train_loader, test_loader):
          #print(I_train.shape[0])
          recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
         # loss = criterion(model(I_train, P_train), O_train)
-         loss = criterion(p(P_train)*recon, p(P_train)*O_train) #+ 0.01*out_win/dt*criterion(area_train, A_train)
+         loss = criterion(p(P_train)*recon, p(P_train)*O_train) #+ 0.01*hp.out_win/hp.dt*criterion(area_train, A_train)
 
          optimizer.zero_grad()
          loss.backward()
@@ -382,8 +355,8 @@ def train(model, num_epochs, train_loader, test_loader):
         count += I_test.shape[0]
         pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
         #test_loss = criterion(model(I_test, P_test), O_test)
-        #print(criterion(pred, O_test) , out_win/dt*criterion(area_test, A_test))
-        test_loss += I_test.shape[0]*float(criterion(p(P_test)*pred, p(P_test)*O_test)) #+ 0.01*out_win/dt*criterion(area_test, A_test)
+        #print(criterion(pred, O_test) , hp.out_win/hp.dt*criterion(area_test, A_test))
+        test_loss += I_test.shape[0]*float(criterion(p(P_test)*pred, p(P_test)*O_test)) #+ 0.01*hp.out_win/hp.dt*criterion(area_test, A_test)
  
       test_loss/=count
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(train_loss), float(test_loss)))
@@ -395,8 +368,8 @@ def train(model, num_epochs, train_loader, test_loader):
     return model 
 
 
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
-if mode=='ini': model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, out_win, kernel_size, True, device, dt)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(10, hp, True, device)
+if mode=='ini': model = ConvLSTM_start(10, hp, True, device)
 
 model = model.double()
 if device=='cuda':
@@ -431,15 +404,15 @@ if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat
 
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
-def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, window):
+def network_inf(seq_out,param_dat, model, ini_model, hp):
     if noPDE == False:
-        seq_dat = seq_test[:evolve_runs,:window,:]
+        seq_dat = seq_test[:evolve_runs,:hp.window,:]
 
-        frac_out[:,:window,:] = seq_dat[:,:,:G]
-        dy_out[:,:window] = seq_dat[:,:,-1]
-        darea_out[:,:window,:] = seq_dat[:,:,2*G:3*G]
+        frac_out[:,:hp.window,:] = seq_dat[:,:,:G]
+        dy_out[:,:hp.window] = seq_dat[:,:,-1]
+        darea_out[:,:hp.window,:] = seq_dat[:,:,2*G:3*G]
 
-        param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+        param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, hp.G_base, G)
     else: 
 
 
@@ -448,23 +421,23 @@ def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, windo
         seq_1[:,:,G:2*G]=0
         print('sample', seq_1[0,0,:])
 
-        param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, G_small, G)
+        param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, hp.G_base, G)
 
-        param_dat_s[:,-1] = dt
-        domain_factor = size_scale*domain_factor
-        seq_1_s[:,:,2*G_small:3*G_small] /= size_scale
+        param_dat_s[:,-1] = hp.dt
+        domain_factor = hp.Cl*domain_factor
+        seq_1_s[:,:,2*hp.G_base:3*hp.G_base] /= hp.Cl
 
         output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
 
-        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+        dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
-        #frac_out[:,1:window,:], dy_out[:,1:window], darea_out[:,1:window,:], left_grains[:,1:window,:] \
-        seq_out[:,1:window,:], left_grains[:,1:window,:] \
-            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+        #frac_out[:,1:hp.window,:], dy_out[:,1:hp.window], darea_out[:,1:hp.window,:], left_grains[:,1:hp.window,:] \
+        seq_out[:,1:hp.window,:], left_grains[:,1:hp.window,:] \
+            = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
 
-        seq_dat = seq_out[:,:window,:]
+        seq_dat = seq_out[:,:hp.window,:]
         seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
         if mode != 'ini':
           seq_dat[:,0,-1] = seq_dat[:,1,-1]
@@ -475,42 +448,42 @@ def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, windo
     ## write initial windowed data to out arrays
 
     #print('the sub simulations', expand)
-    alone = pred_frames%out_win
-    pack = pred_frames-alone
+    alone = hp.pred_frames%hp.out_win
+    pack = hp.pred_frames-alone
 
-    for i in range(0,pred_frames,out_win):
+    for i in range(0,hp.pred_frames,hp.out_win):
         
         time_i = i
-        if dt*(time_i+window+out_win-1)>1: 
-            time_i = int(1/dt)-(window+out_win-1)
+        if hp.dt*(time_i+hp.window+hp.out_win-1)>1: 
+            time_i = int(1/hp.dt)-(hp.window+hp.out_win-1)
         ## you may resplit the grains here
 
-        param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, G_small, G)
+        param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, hp.G_base, G)
 
-        param_dat_s[:,-1] = (time_i+window)*dt ## the first output time
-        print('nondim time', (time_i+window)*dt)
+        param_dat_s[:,-1] = (time_i+hp.window)*hp.dt ## the first output time
+        print('nondim time', (time_i+hp.window)*hp.dt)
 
-        domain_factor = size_scale*domain_factor
-        seq_dat_s[:,:,2*G_small:3*G_small] /= size_scale
+        domain_factor = hp.Cl*domain_factor
+        seq_dat_s[:,:,2*hp.G_base:3*hp.G_base] /= hp.Cl
 
         output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
 
-        dfrac_new[:,:,G_small:2*G_small] *= size_scale
+        dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
         if i>=pack and mode!='ini':
             seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
-            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], G_small, G, expand, domain_factor, left_coors)
+            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], hp.G_base, G, expand, domain_factor, left_coors)
         else: 
-            seq_out[:,window+i:window+i+out_win,:], left_grains[:,window+i:window+i+out_win,:] \
-            = merge_grain(frac_new, dfrac_new, G_small, G, expand, domain_factor, left_coors)
+            seq_out[:,hp.window+i:hp.window+i+hp.out_win,:], left_grains[:,hp.window+i:hp.window+i+hp.out_win,:] \
+            = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
         
-        seq_dat = np.concatenate((seq_dat[:,out_win:,:], seq_out[:,window+i:window+i+out_win,:]),axis=1)
+        seq_dat = np.concatenate((seq_dat[:,hp.out_win:,:], seq_out[:,hp.window+i:hp.window+i+hp.out_win,:]),axis=1)
        
 
     frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
-    frac_out *= G_small/G
+    frac_out *= hp.G_base/G
     dy_out = dy_out*y_norm
     dy_out[:,0] = 0
     y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
@@ -532,24 +505,9 @@ def ensemble(seq_out, param_dat, inf_model_list):
         seq_i = copy.deepcopy(seq_out)
         param_i = copy.deepcopy(param_dat)
         all_id = inf_model_list[i]
-        frames_id = all_id//81
-        lr_id = (all_id%81)//27
-        layers_id = (all_id%27)//9
-        hd_id = (all_id%9)//3
-        owin_id = all_id%3
+        hp = hyperparam('test', all_id)
 
-        hidden_dim=hidden_dim_pool[hd_id]
-        layers = layers_pool[layers_id]
-
-        out_win = out_win_pool[owin_id]
-        out_win+=1
-        window=out_win
-        pred_frames= frames-window
-
-        LSTM_layer = (layers, layers)
-        LSTM_layer_ini = (layers, layers)
-
-        model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
+        model = ConvLSTM_seq(10, hp, True, device)
         model = model.double()
         if device=='cuda':
             model.cuda()
@@ -559,8 +517,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
         model.eval()  
 
 
-
-        ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+        ini_model = ConvLSTM_start(10, hp, True, device)
         ini_model = ini_model.double()
         if device=='cuda':
            ini_model.cuda()
@@ -570,7 +527,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
         ini_model.eval()
 
 
-        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, pred_frames, out_win, window)
+        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, hp)
 
  
     return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
@@ -594,7 +551,7 @@ if mode!='test':
         model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
         model.eval() 
 
-    ini_model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, window-1, kernel_size, True, device, dt)
+    ini_model = ConvLSTM_start(10, hp, True, device)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
@@ -603,7 +560,7 @@ if mode!='test':
     ini_model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
-    frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, pred_frames, out_win, window)
+    frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, hp)
 
 if mode=='test':
     inf_model_list = [42,24, 69,71]
@@ -644,7 +601,7 @@ area_out = 0.5*(area_out_f+area_out_r)
 
 dice = np.zeros((num_test,G))
 miss_rate_param = np.zeros(num_test)
-run_per_param = int(evolve_runs/num_batch_test)
+run_per_param = int(evolve_runs/batch_test)
 if run_per_param <1: run_per_param = 1
 
 if mode == 'test': valid_train = True
@@ -652,7 +609,7 @@ else: valid = False
 valid_train = True
 if valid_train:
   aseq_test = np.arange(G)+1
-  for batch_id in range(num_batch_test): 
+  for batch_id in range(batch_test): 
    fname = testsets[batch_id] 
    f = h5py.File(fname, 'r')
  
@@ -663,9 +620,9 @@ if valid_train:
    anis = float(e_list[batch_id])  
    for plot_idx in range( run_per_param ):  # in test dataset
 
-     data_id = plot_idx*num_batch_test+batch_id
+     data_id = plot_idx*batch_test+batch_id
      #print('seq', param_test[data_id,:])
-     pf_angles = angles_asse[(num_train_b+plot_idx)*(G+1):(num_train_b+plot_idx+1)*(G+1)]
+     pf_angles = angles_asse[plot_idx*(G+1):(plot_idx+1)*(G+1)]
      pf_angles[1:] = pf_angles[1:]*180/pi + 90     
      for dat_frames in [all_frames-1]:
          
@@ -703,13 +660,13 @@ print('for model ', all_id, 'the mean error', np.mean(u))
 ave_err = np.mean(u)
 
 if mode == 'test':
-  print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
-    'num_layers', layers, 'frames', frames, 'out win', out_win, 'err', ave_err)
+  print('all id', all_id, 'layer_size', hp.layer_size, 'learning_rate', hp.lr, \
+    'num_layers', hp.layers, 'frames', frames, 'out win', hp.out_win, 'err', ave_err)
 else:
-      print('all id', all_id, 'hidden_dim', hidden_dim, 'learning_rate', learning_rate, \
-    'num_layers', layers, 'frames', frames, 'out win', out_win, 'err', ave_err, 'time', -start+end)
+      print('all id', all_id, 'layer_size', hp.layer_size, 'learning_rate', hp.lr, \
+    'num_layers', hp.layers, 'frames', frames, 'out win', hp.out_win, 'err', ave_err, 'time', -start+end)
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,\
-  'seq_all':seq_all,'param_all':param_all,'hidden_dim':hidden_dim, 'learning_rate':learning_rate, 'num_layers':layers, 'frames':frames, \
+  'seq_all':seq_all,'param_all':param_all,'layer_size':hp.layer_size, 'learning_rate':hp.lr, 'num_layers':hp.layers, 'frames':frames, \
   'frac_true':frac_test,'y_true':y_test,'area_true':area_test})
 
 

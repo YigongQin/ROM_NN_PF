@@ -350,25 +350,27 @@ class ConvLSTM(nn.Module):
     
     
 class ConvLSTM_seq(nn.Module):
-    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device, dt):
+    def __init__(self,input_dim, hyper, bias, device):
         super(ConvLSTM_seq, self).__init__()
+  
         self.input_dim = input_dim  ## this input channel
-        self.hidden_dim = hidden_dim  ## this output_channel
-        self.num_layer = num_layer
-        self.w = w
-        self.out_win = out_win
-        #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_encoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[0], device)
-        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1], device)
-        self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
-        self.project_y = nn.Linear(hidden_dim*w, 1)
-        self.project_a = nn.Linear(hidden_dim*w, w)
-
-        self.kernel_size = kernel_size
+        self.hidden_dim = hyper.layer_size ## this output_channel
+        self.num_layer = hyper.layers
+        self.w = hyper.G_base
+        self.out_win = hyper.out_win
+        self.kernel_size = hyper.kernel_size
         self.bias = bias
         self.device = device
-        self.dt = dt
-        
+        self.dt = hyper.dt
+
+        ## networks
+        self.lstm_encoder = ConvLSTM(self.input_dim, self.hidden_dim, self.kernel_size, self.num_layer[0], self.device)
+        self.lstm_decoder = ConvLSTM(self.input_dim, self.hidden_dim, self.kernel_size, self.num_layer[1], self.device)
+
+        self.project = nn.Linear(self.hidden_dim*self.w, self.w)## make the output channel 1
+        self.project_y = nn.Linear(self.hidden_dim*self.w, 1)
+        self.project_a = nn.Linear(self.hidden_dim*self.w, self.w)
+
     def forward(self, input_seq, input_param, domain_factor):
         
 
@@ -436,23 +438,25 @@ class ConvLSTM_seq(nn.Module):
 
 
 class ConvLSTM_start(nn.Module):
-    def __init__(self,input_dim, hidden_dim, num_layer, w, out_win, kernel_size, bias, device, dt):
+    def __init__(self,input_dim, hyper, bias, device):
         super(ConvLSTM_start, self).__init__()
         self.input_dim = input_dim  ## this input channel
-        self.hidden_dim = hidden_dim  ## this output_channel
-        self.num_layer = num_layer
-        self.w = w
-        self.out_win = out_win
-        #self.lstm_encoder = nn.LSTM(input_len,hidden_dim,num_layer,batch_first=True)
-        self.lstm_decoder = ConvLSTM(input_dim, hidden_dim, kernel_size, num_layer[1], device)
-        self.project = nn.Linear(hidden_dim*w, w)## make the output channel 1
-        self.project_y = nn.Linear(hidden_dim*w, 1)
-        self.project_a = nn.Linear(hidden_dim*w, w)
-
-        self.kernel_size = kernel_size
+        self.hidden_dim = hyper.layer_size ## this output_channel
+        self.num_layer = hyper.layers
+        self.w = hyper.G_base
+        self.out_win = hyper.out_win - 1
+        self.kernel_size = hyper.kernel_size
         self.bias = bias
         self.device = device
-        self.dt = dt
+        self.dt = hyper.dt
+
+        ## networks
+        self.lstm_decoder = ConvLSTM(self.input_dim, self.hidden_dim, self.kernel_size, self.num_layer[1], self.device)
+        self.project = nn.Linear(self.hidden_dim*self.w, self.w)## make the output channel 1
+        self.project_y = nn.Linear(self.hidden_dim*self.w, 1)
+        self.project_a = nn.Linear(self.hidden_dim*self.w, self.w)
+
+
         
     def forward(self, input_seq, input_param, domain_factor):
         
