@@ -362,7 +362,7 @@ def data_setup(datasets, testsets, mode, hp, skip_check):
     data_para = [input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
                                                input_param[:train_sam,:], output_area[:train_sam,:]] 
 
-    param_list = [G_list, R_list, e_list, y_all]
+    param_list = [G_list, R_list, e_list, y_all[:,[0]]]
 
     if not mode=='test':
        train_loader = PrepareData( data_para[0], data_para[1], data_para[2], data_para[3] )
@@ -375,7 +375,7 @@ def data_setup(datasets, testsets, mode, hp, skip_check):
     test_loader = DataLoader(test_loader, batch_size = test_sam//8, shuffle=False)
 
 
-    return test_loader, seq_all, param_all, param_list
+    return seq_all, param_all, param_list
 
 
 

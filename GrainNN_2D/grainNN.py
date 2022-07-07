@@ -96,14 +96,14 @@ print('test dir: ', valid_dir,' data: ', batch_test)
 
 
 if mode == 'test':
-    test_loader, seq_all, param_all, param_list = data_setup(datasets, testsets, mode, hp, skip_check)
+    seq_all, param_all, param_list = data_setup(datasets, testsets, mode, hp, skip_check)
 else:
     train_loader, test_loader, seq_all, param_all, param_list = data_setup(datasets, testsets, mode, hp, skip_check)
 
 G_list = param_list[0]
 R_list = param_list[1] 
 e_list = param_list[2]
-y_all = param_list[3]
+y0 = param_list[3]
 # =====================================================================================
 
 
@@ -318,7 +318,7 @@ def network_inf(seq_out,param_dat, model, ini_model, hp):
     frac_out *= hp.G_base/G
     dy_out = dy_out*y_norm
     dy_out[:,0] = 0
-    y_out = np.cumsum(dy_out,axis=-1)+y_all[num_train:num_train+evolve_runs,[0]]
+    y_out = np.cumsum(dy_out,axis=-1)+y0[num_train:,:]
 
     area_out = darea_out*area_norm
     return frac_out, y_out, area_out
