@@ -69,6 +69,7 @@ print('physical parameters: N_G orientations, G, R, e_k with length ' , param_le
 print('\n')
 print('==========  architecture  ========')
 print('type -- s2s LSTM')
+input_dim = 10
 print('input window', hp.window,'output window', hp.out_win)
 print('epochs: ', hp.epoch, 'learning rate: ', hp.lr)
 print('hidden dim', hp.layer_size, 'number of layers', hp.layers)
@@ -368,8 +369,8 @@ def train(model, num_epochs, train_loader, test_loader):
     return model 
 
 
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(10, hp, True, device)
-if mode=='ini': model = ConvLSTM_start(10, hp, True, device)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(input_dim, hp, True, device)
+if mode=='ini': model = ConvLSTM_start(input_dim, hp, True, device)
 
 model = model.double()
 if device=='cuda':
@@ -507,7 +508,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
 
-        model = ConvLSTM_seq(10, hp, True, device)
+        model = ConvLSTM_seq(input_dim, hp, True, device)
         model = model.double()
         if device=='cuda':
             model.cuda()
@@ -517,7 +518,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
         model.eval()  
 
 
-        ini_model = ConvLSTM_start(10, hp, True, device)
+        ini_model = ConvLSTM_start(input_dim, hp, True, device)
         ini_model = ini_model.double()
         if device=='cuda':
            ini_model.cuda()
@@ -551,7 +552,7 @@ if mode!='test':
         model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
         model.eval() 
 
-    ini_model = ConvLSTM_start(10, hp, True, device)
+    ini_model = ConvLSTM_start(input_dim, hp, True, device)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
