@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+
 from plot_funcs import plot_IO
 from torch.utils.data import Dataset, DataLoader
 import glob, os, re, sys, importlib, copy
@@ -26,7 +26,7 @@ from check_data_quality import check_data_quality
 from models import *
 import matplotlib.tri as tri
 from split_merge_reini import split_grain, merge_grain, assemb_seq, divide_seq
-from scipy.interpolate import griddata
+
 #torch.cuda.empty_cache()
 
 mode = sys.argv[1]
@@ -305,23 +305,7 @@ if mode=='ini':
 torch.manual_seed(35)
 
 
-def con_samlpe(a, b):
-    
-    return np.concatenate((a,b), axis=0)
 
-def augmentation(input_seq, output_seq, input_param, output_area):
-    
-    input_seq_re   = np.concatenate(( np.flip( input_seq [:,:,:-1],-1), input_seq[:,:,-1:]  ), axis = -1)
-    output_seq_re  = np.concatenate(( np.flip( output_seq[:,:,:-1],-1), output_seq[:,:,-1:]  ), axis = -1)
-    input_param_re = np.concatenate(( np.flip(input_param[:,:G], -1), np.flip(input_param[:,G:2*G], -1), input_param[:,2*G:]), axis = -1)   
-    output_area_re = np.flip( output_area[:,:],-1)
-    
-    return con_samlpe(input_seq, input_seq_re), con_samlpe(output_seq, output_seq_re),\
-           con_samlpe(input_param, input_param_re), con_samlpe(output_area, output_area_re)
-
-
-#data_para = augmentation( input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
-#                                           input_param[:train_sam,:], output_area[:train_sam,:] )
 data_para = [input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
                                            input_param[:train_sam,:], output_area[:train_sam,:]] 
 
@@ -410,9 +394,7 @@ def train(model, num_epochs, train_loader, test_loader):
 
     return model 
 
-#decoder = Decoder(input_len,output_len,hidden_dim, LSTM_layer)
-#model = LSTM(input_len, output_len, hidden_dim, LSTM_layer, out_win, decoder, device)
-#model = ConvLSTM_1step(3+param_len, hidden_dim, LSTM_layer, G, out_win, kernel_size, True, device)
+
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(10, hidden_dim, LSTM_layer, G_small, out_win, kernel_size, True, device, dt)
 if mode=='ini': model = ConvLSTM_start(10, hidden_dim, LSTM_layer_ini, G_small, out_win, kernel_size, True, device, dt)
 
@@ -445,22 +427,8 @@ if model_exist==False:
   plt.savefig('mul_batch_loss.png')
 
 if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat',{'train':train_list,'test':test_list})
-## plot to check if the construction is reasonable
-evolve_runs = num_test #num_test
-#frac_out = np.zeros((evolve_runs,frames,G)) ## final output
-#dfrac_out = np.zeros((evolve_runs,frames,G)) ## final output
-#dy_out = np.zeros((evolve_runs,frames))
-#darea_out = np.zeros((evolve_runs,frames,G))
-left_grains = np.zeros((evolve_runs,frames,G))
-
-seq_out = np.zeros((evolve_runs,frames,3*G+1))
 
 
-
-
-param_dat = param_all[num_train:,:]
-
-seq_out[:,0,:] = seq_all[num_train:,0,:]
 #left_grains[:,0,:] = np.cumsum(frac_out[:,0,:], axis=-1) - frac_out[:,0,:]
 
 def network_inf(seq_out,param_dat, model, ini_model, pred_frames, out_win, window):
@@ -604,9 +572,17 @@ def ensemble(seq_out, param_dat, inf_model_list):
 
         frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, pred_frames, out_win, window)
 
-  #  return frac_out/Nmodel, y_out/Nmodel, area_out/Nmodel  
+ 
     return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
 
+
+evolve_runs = num_test #num_test
+
+seq_out = np.zeros((evolve_runs,frames,3*G+1))
+left_grains = np.zeros((evolve_runs,frames,G))
+
+seq_out[:,0,:] = seq_all[num_train:,0,:]
+param_dat = param_all[num_train:,:]
 
 if mode!='test':
 
