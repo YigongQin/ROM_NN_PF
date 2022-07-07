@@ -386,7 +386,7 @@ if plot_flag==True:
    # pf_angles[1:] = (param_dat0[data_id,G:2*G]+1)*45
     p_len = np.asarray(np.round(frac_out[data_id,:,:]*nx),dtype=int)
     left_grains = np.asarray(np.round(left_domain[data_id]*nx_all),dtype=int)
-    pf_angles = np.concatenate((np.zeros((len(data_id),1),dtype=int),(param_dat0[data_id,G:2*G]+1)*45), axis=-1)
+    pf_angles = np.concatenate((np.zeros((len(data_id),1),dtype=int),90-(param_dat0[data_id,G:2*G]+1)*45), axis=-1)
     plot_synthetic(float(sys.argv[1]),float(sys.argv[2]),float(sys.argv[3]),G,x,y,aseq_test,y_out[data_id,:], p_len, plot_id, train_frames, \
     pf_angles, area_out[data_id,train_frames-1,:], left_grains,nx)
 
