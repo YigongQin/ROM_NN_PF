@@ -118,13 +118,13 @@ def train(model, num_epochs, train_loader, test_loader):
     torch.manual_seed(seed_num)
     print('torch seed', seed_num)
     
-    #torch.manual_seed(42)
+
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=hp.lr) 
                                  #weight_decay=1e-5) # <--
-    #scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[10, 20, 30, 40, 50], gamma=0.5, last_epoch=-1)
+
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
- #   optimizer = AdaBound(model.parameters(),lr=learning_rate,final_lr=0.1)
+
 
     train_loss = 0
     count = 0
@@ -147,18 +147,17 @@ def train(model, num_epochs, train_loader, test_loader):
     test_list.append(float(test_loss))  
 
     for epoch in range(num_epochs):
-      #if epoch < 100:
-      # optimizer = torch.optim.Adam(model.parameters(),
-      #                               lr=learning_rate)
+
+
       if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       train_loss = 0
       count = 0
       for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
          count += I_train.shape[0]
-         #print(I_train.shape[0])
+    
          recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
-        # loss = criterion(model(I_train, P_train), O_train)
-         loss = criterion(recon, O_train) #+ 0.01*hp.out_win/hp.dt*criterion(area_train, A_train)
+       
+         loss = criterion(recon, O_train) 
 
          optimizer.zero_grad()
          loss.backward()
@@ -170,12 +169,11 @@ def train(model, num_epochs, train_loader, test_loader):
       test_loss = 0
       count = 0
       for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
-        #print(I_test.shape[0])
+
         count += I_test.shape[0]
         pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
-        #test_loss = criterion(model(I_test, P_test), O_test)
-        #print(criterion(pred, O_test) , hp.out_win/hp.dt*criterion(area_test, A_test))
-        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*hp.out_win/hp.dt*criterion(area_test, A_test)
+
+        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) 
  
       test_loss/=count
       print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(epoch+1, float(train_loss), float(test_loss)))
