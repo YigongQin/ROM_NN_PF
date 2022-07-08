@@ -99,7 +99,9 @@ print('physical parameters: N_G orientations, e_k, G, R')
 print('\n')
 
 
-
+seed_num = 35
+torch.manual_seed(seed_num)
+print('torch seed', seed_num)
 
 if mode == 'test':
     [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
@@ -136,11 +138,6 @@ print('actual num_train',num_train)
 # =====================================================================================
 
 def train(model, num_epochs, train_loader, test_loader):
-
-    seed_num = 35
-    torch.manual_seed(seed_num)
-    print('torch seed', seed_num)
-    
 
     criterion = nn.MSELoss() # mean square error loss
     optimizer = torch.optim.Adam(model.parameters(),lr=hp.lr) 
