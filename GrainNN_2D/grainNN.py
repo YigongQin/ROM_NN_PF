@@ -51,6 +51,17 @@ print('\n')
 
 
 
+print('************ setup model ***********')
+print('==========  architecture  ========')
+print('type -- s2s LSTM')
+
+print('input window', hp.window,'; output window', hp.out_win)
+print('epochs: ', hp.epoch, '; learning rate: ', hp.lr)
+print('input feature dimension: ', hp.feature_dim)
+print('hidden dim (layer size): ', hp.layer_size, '; number of layers', hp.layers)
+print('convolution kernel size: ', hp.kernel_size)
+print('\n')
+
 
 hp = hyperparam(mode, all_id)
 frames = hp.frames
@@ -67,18 +78,6 @@ pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_g
 print('total number of trained parameters ', pytorch_total_params)
 
 
-print('************ setup model ***********')
-print('==========  architecture  ========')
-print('type -- s2s LSTM')
-
-print('input window', hp.window,'output window', hp.out_win)
-print('epochs: ', hp.epoch, 'learning rate: ', hp.lr)
-print('input feature dimension', hp.feature_dim)
-print('hidden dim', hp.layer_size, 'number of layers', hp.layers)
-print('convolution kernel size', hp.kernel_size)
-print('\n')
-
-
 print('************ setup data ***********')
 datasets = sorted(glob.glob(data_dir))
 testsets = sorted(glob.glob(valid_dir))
@@ -92,11 +91,11 @@ num_test = batch_size*batch_test
 
 
 print('==========  data information  =========')
-print('dataset dir: ',data_dir,' batches: ', batch_train)
-print('test dir: ', valid_dir,' batches: ', batch_test)
+print('dataset dir: ',data_dir,'; batches: ', batch_train)
+print('test dir: ', valid_dir,'; batches: ', batch_test)
 print('number of train, test runs', num_train, num_test)
 print('trust the data, skip check: ', skip_check)
-print('data frames: ', hp.all_frames, 'GrainNN frames: ', frames, 'ratio: ', gap)
+print('data frames: ', hp.all_frames, '; GrainNN frames: ', frames, '; ratio: ', gap)
 print('1d grid size (number of grains): ', G)
 print('physical parameters: N_G orientations, e_k, G, R')
 print('\n')

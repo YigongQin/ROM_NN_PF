@@ -217,7 +217,11 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
 
   sam_per_run = frames - hp.window - (hp.out_win-1)
   all_samp = num_runs*sam_per_run
-  print('total number of sequences', all_samp, 'for mode: ', mode) 
+
+  if valid == True:
+     print('total number of validation sequences', all_samp, 'for mode: ', mode) 
+  else:
+     print('total number of training sequences', all_samp, 'for mode: ', mode)  
 
   input_seq = np.zeros((all_samp, hp.window, input_dim, G))
   output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
