@@ -350,16 +350,16 @@ class ConvLSTM(nn.Module):
     
     
 class ConvLSTM_seq(nn.Module):
-    def __init__(self,input_dim, hyper, bias, device):
+    def __init__(self, hyper, device):
         super(ConvLSTM_seq, self).__init__()
   
-        self.input_dim = input_dim  ## this input channel
+        self.input_dim = hyper.feature_dim  ## this input channel
         self.hidden_dim = hyper.layer_size ## this output_channel
         self.num_layer = hyper.layers
         self.w = hyper.G_base
         self.out_win = hyper.out_win
         self.kernel_size = hyper.kernel_size
-        self.bias = bias
+        self.bias = hyper.bias
         self.device = device
         self.dt = hyper.dt
 
@@ -438,15 +438,15 @@ class ConvLSTM_seq(nn.Module):
 
 
 class ConvLSTM_start(nn.Module):
-    def __init__(self,input_dim, hyper, bias, device):
+    def __init__(self, hyper,device):
         super(ConvLSTM_start, self).__init__()
-        self.input_dim = input_dim  ## this input channel
+        self.input_dim = hyper.feature_dim  ## this input channel
         self.hidden_dim = hyper.layer_size ## this output_channel
         self.num_layer = hyper.layers
         self.w = hyper.G_base
         self.out_win = hyper.out_win - 1
         self.kernel_size = hyper.kernel_size
-        self.bias = bias
+        self.bias = hyper.bias
         self.device = device
         self.dt = hyper.dt
 
