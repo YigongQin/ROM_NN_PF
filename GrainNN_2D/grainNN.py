@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from plot_funcs import plot_IO
 
 import glob, sys,  copy
-from input_data import data_setup, device, todevice, tohost
+from input_data import assemb_data, device, todevice, tohost
 from models import ConvLSTM_start, ConvLSTM_seq, y_norm, area_norm
 from split_merge_reini import split_grain, merge_grain
 from parameters import hyperparam, data_dir, valid_dir, model_dir
@@ -55,7 +55,7 @@ print('\n')
 hp = hyperparam(mode, all_id)
 frames = hp.frames
 G = hp.G
-input_dim = np.sum(np.array(hp.features))
+input_dim = sum(hp.features)
 gap = int((hp.all_frames-1)/(frames-1))
 
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(input_dim, hp, True, device)
@@ -91,19 +91,46 @@ batch_test = len(testsets)
 num_train = batch_size*batch_train
 num_test = batch_size*batch_test
 
-print('dataset dir: ',data_dir,' data: ', batch_train)
-print('test dir: ', valid_dir,' data: ', batch_test)
+
+print('==========  data information  =========')
+print('dataset dir: ',data_dir,' batches: ', batch_train)
+print('test dir: ', valid_dir,' batches: ', batch_test)
+print('number of train, test runs', num_train, num_test)
+print('trust the data, skip check: ', skip_check)
+print('data frames: ', hp.all_frames, 'GrainNN frames: ', frames, 'ratio: ', gap)
+print('1d grid size (number of grains): ', G)
+print('physical parameters: N_G orientations, e_k, G, R')
+print('\n')
+
+
 
 
 if mode == 'test':
-    seq_all, param_all, param_list = data_setup(datasets, testsets, mode, hp, skip_check)
+    [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
 else:
-    train_loader, test_loader, seq_all, param_all, param_list = data_setup(datasets, testsets, mode, hp, skip_check)
+    test_loader, [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
+    train_loader, _ = assemb_data(num_train, batch_train, datasets, hp, mode, valid=False)
 
-G_list = param_list[0]
-R_list = param_list[1] 
-e_list = param_list[2]
-y0 = param_list[3]
+
+
+
+'''
+if skip_check == False:
+ weird_sim = check_data_quality(frac_train, param_train, y_train, G, frames)
+else: weird_sim=[]
+print('nan', np.where(np.isnan(frac_train)))
+weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
+print('throw away simulations',weird_sim)
+#### delete the data in the actual training fractions and parameters
+#if len(weird_sim)>0:
+# frac_train = np.delete(frac_train,weird_sim,0)
+# param_train = np.delete(param_train,weird_sim,0)
+#num_train -= len(weird_sim) 
+print('actual num_train',num_train)
+'''
+
+
+
 # =====================================================================================
 
 
@@ -128,17 +155,17 @@ def train(model, num_epochs, train_loader, test_loader):
 
     train_loss = 0
     count = 0
-    for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
+    for  ix, (I_train, O_train) in enumerate(train_loader):   
         count += I_train.shape[0]
-        recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
+        recon, seq = model(I_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
         train_loss += I_train.shape[0]*float(criterion(recon, O_train)) #+ 0.01*hp.out_win/hp.dt*criterion(area_train, A_train)
     train_loss/=count
 
     test_loss = 0
     count = 0
-    for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):      
+    for  ix, (I_test, O_test) in enumerate(test_loader):      
         count += I_test.shape[0]
-        pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
+        pred, seq = model(I_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
         test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*hp.out_win/hp.dt*criterion(area_test, A_test)
     test_loss/=count
 
@@ -152,10 +179,10 @@ def train(model, num_epochs, train_loader, test_loader):
       if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
       train_loss = 0
       count = 0
-      for  ix, (I_train, O_train, P_train, A_train) in enumerate(train_loader):   
+      for  ix, (I_train, O_train) in enumerate(train_loader):   
          count += I_train.shape[0]
     
-         recon, area_train = model(I_train, P_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
+         recon, seq = model(I_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
        
          loss = criterion(recon, O_train) 
 
@@ -168,10 +195,10 @@ def train(model, num_epochs, train_loader, test_loader):
       train_loss/=count
       test_loss = 0
       count = 0
-      for  ix, (I_test, O_test, P_test, A_test) in enumerate(test_loader):
+      for  ix, (I_test, O_test) in enumerate(test_loader):
 
         count += I_test.shape[0]
-        pred, area_test = model(I_test, P_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
+        pred, seq = model(I_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
 
         test_loss += I_test.shape[0]*float(criterion(pred, O_test)) 
  
@@ -229,7 +256,7 @@ if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat
 
 
 
-def network_inf(seq_out,param_dat, model, ini_model, hp):
+def network_inf(seq_out, model, ini_model, hp):
     if noPDE == False:
         seq_dat = seq_test[:evolve_runs,:hp.window,:]
 
@@ -241,32 +268,29 @@ def network_inf(seq_out,param_dat, model, ini_model, hp):
     else: 
 
 
-        seq_1 = seq_out[:,[0],:]   ## this can be generated randomly
-        seq_1[:,:,-1]=0
-        seq_1[:,:,G:2*G]=0
+        seq_1 = seq_out[:,[0],:,:]   ## this can be generated randomly
         print('sample', seq_1[0,0,:])
+        breakpoint()
 
-        param_dat_s, seq_1_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_1, hp.G_base, G)
-
-        param_dat_s[:,-1] = hp.dt
+        seq_1_s, expand, domain_factor, left_coors = split_grain(seq_1, hp.G_base, G)
+        seq_1_s[:,:,-1,:] = hp.dt
+        seq_1_s[:,:,2,:] /= hp.Cl
         domain_factor = hp.Cl*domain_factor
-        seq_1_s[:,:,2*hp.G_base:3*hp.G_base] /= hp.Cl
 
-        output_model = ini_model(todevice(seq_1_s), todevice(param_dat_s), todevice(domain_factor) )
+        output_model = ini_model(todevice(seq_1_s), todevice(domain_factor) )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
-
         dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
         #frac_out[:,1:hp.window,:], dy_out[:,1:hp.window], darea_out[:,1:hp.window,:], left_grains[:,1:hp.window,:] \
-        seq_out[:,1:hp.window,:], left_grains[:,1:hp.window,:] \
+        seq_out[:,1:hp.window,:,:], left_grains[:,1:hp.window,:] \
             = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
 
-        seq_dat = seq_out[:,:hp.window,:]
-        seq_dat_s = np.concatenate((seq_1_s,np.concatenate((frac_new, dfrac_new), axis = -1)),axis=1)
+        seq_dat = seq_out[:,:hp.window,:,:]
+
         if mode != 'ini':
-          seq_dat[:,0,-1] = seq_dat[:,1,-1]
-          seq_dat[:,0,G:2*G] = seq_dat[:,1,G:2*G] 
+              seq_dat[:,0,1,:] = seq_dat[:,1,1,:]
+              seq_dat[:,0,3,:] = seq_dat[:,1,3,:] 
 
 
 
@@ -283,7 +307,7 @@ def network_inf(seq_out,param_dat, model, ini_model, hp):
             time_i = int(1/hp.dt)-(hp.window+hp.out_win-1)
         ## you may resplit the grains here
 
-        param_dat_s, seq_dat_s, expand, domain_factor, left_coors = split_grain(param_dat, seq_dat, hp.G_base, G)
+        seq_dat_s, expand, domain_factor, left_coors = split_grain( seq_dat, hp.G_base, G)
 
         param_dat_s[:,-1] = (time_i+hp.window)*hp.dt ## the first output time
         print('nondim time', (time_i+hp.window)*hp.dt)
@@ -291,7 +315,7 @@ def network_inf(seq_out,param_dat, model, ini_model, hp):
         domain_factor = hp.Cl*domain_factor
         seq_dat_s[:,:,2*hp.G_base:3*hp.G_base] /= hp.Cl
 
-        output_model = model(todevice(seq_dat_s), todevice(param_dat_s), todevice(domain_factor)  )
+        output_model = model(todevice(seq_dat_s), todevice(domain_factor)  )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
 
@@ -317,7 +341,7 @@ def network_inf(seq_out,param_dat, model, ini_model, hp):
     return frac_out, y_out, area_out
 
 
-def ensemble(seq_out, param_dat, inf_model_list):
+def ensemble(seq_out, inf_model_list):
 
     Nmodel = len(inf_model_list)
 
@@ -328,7 +352,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
     for i in range(Nmodel):
 
         seq_i = copy.deepcopy(seq_out)
-        param_i = copy.deepcopy(param_dat)
+      #  param_i = copy.deepcopy(param_dat)
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
 
@@ -352,7 +376,7 @@ def ensemble(seq_out, param_dat, inf_model_list):
         ini_model.eval()
 
 
-        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, param_i, model, ini_model, hp)
+        frac_out[i,:,:,:], y_out[i,:,:], area_out[i,:,:,:] = network_inf(seq_i, model, ini_model, hp)
 
  
     return np.mean(frac_out,axis=0), np.mean(y_out,axis=0), np.mean(area_out,axis=0)
@@ -361,11 +385,11 @@ def ensemble(seq_out, param_dat, inf_model_list):
 
 evolve_runs = num_test #num_test
 
-seq_out = np.zeros((evolve_runs,frames,3*G+1))
+seq_out = np.zeros((evolve_runs,frames,input_dim,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
-seq_out[:,0,:] = seq_all[num_train:,0,:]
-param_dat = param_all[num_train:,:]
+seq_out[:,0,:,:] = input_[:,0,:,:]
+#param_dat = param_all[num_train:,:]
 
 if mode!='test':
 
@@ -386,12 +410,12 @@ if mode!='test':
     ini_model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
     ini_model.eval()
 
-    frac_out, y_out, area_out = network_inf(seq_out, param_dat, model, ini_model, hp)
+    frac_out, y_out, area_out = network_inf(seq_out,  model, ini_model, hp)
 
 if mode=='test':
     inf_model_list = [42,24, 69,71]
     nn_start = time.time()
-    frac_out, y_out, area_out = ensemble(seq_out, param_dat, inf_model_list)
+    frac_out, y_out, area_out = ensemble(seq_out, inf_model_list)
     nn_end = time.time()
     print('===network inference time %f seconds =====', nn_end-nn_start)
 

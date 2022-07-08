@@ -1,10 +1,10 @@
 import numpy as np
-from utils import todevice, tohost, assemb_seq, divide_seq 
+
 from torch.utils.data import Dataset, DataLoader
 import h5py
 import re
 from math import pi
-from models import ConvLSTM_start, ConvLSTM_seq, frac_norm, y_norm, area_norm
+from models import frac_norm, y_norm, area_norm
 import torch
 
 
@@ -123,40 +123,35 @@ def check_data_quality(frac_all,param_all,y_all,G,frames):
 
 class PrepareData(Dataset):
 
-     def __init__(self, input_, output_, param, area):
+     def __init__(self, input_, output_):
           if not torch.is_tensor(input_):
               self.input_ = todevice(input_)
           if not torch.is_tensor(output_):
               self.output_ = todevice(output_)
-          if not torch.is_tensor(param):
-              self.param = todevice(param)
-          if not torch.is_tensor(area):
-              self.area = todevice(area)
+
      def __len__(self):
          #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
-         return self.input_[idx,:,:], self.output_[idx,:,:], self.param[idx,:], self.area[idx,:]
+         return self.input_[idx,:,:,:], self.output_[idx,:,:]
          
 
 
 
-def get_data(num_runs, num_batch, datasets, hp, param_len):
+def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
   G = hp.G
   frames = hp.frames
   all_frames = hp.all_frames
   gap = int((all_frames-1)/(frames-1))
 
-  size = hp.features
+  input_dim = sum(hp.features)
+  input_ = np.zeros((num_runs,frames,input_dim,G))
 
-  frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
-  param_all = np.zeros((num_runs,param_len))
-  y_all = np.zeros((num_runs,frames))
-  area_all = np.zeros((num_runs,frames,G))
+
   G_list = []
   R_list = []
   e_list = []
-
+  y0 = np.zeros((num_runs))
 
   for batch_id in range(num_batch):
     fname =datasets[batch_id]; #print(fname)
@@ -182,15 +177,85 @@ def get_data(num_runs, num_batch, datasets, hp, param_len):
       frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]
       area = (area_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]  # grains coalese, include frames
       #if run<1: print(frac) 
-      frac_all[run*num_batch+batch_id,:,:] = frac*G/hp.G_base
-      y_all[run*num_batch+batch_id,:] = tip_y 
-      area_all[run*num_batch+batch_id,:,:] = area
-      param_all[run*num_batch+batch_id,:G] = Color
-      param_all[run*num_batch+batch_id,G] = 2*float(number_list[5])
-      param_all[run*num_batch+batch_id,G+1] = 1 - np.log10(float(number_list[6]))/np.log10(100) 
-      param_all[run*num_batch+batch_id,G+2] = float(number_list[7])
+      # 'feat_list':['w','dw','s','y','w0','alpha','G','R','e_k','t']
+      bid = run*num_batch+batch_id
 
-  return frac_all, param_all, y_all, area_all, G_list, R_list, e_list
+      y0[bid] = tip_y[0]
+
+      frac = frac*G/hp.G_base
+      area = area/area_norm
+      
+      dfrac = np.diff(frac, axis=0)/frac_norm   ## frac norm is fixed in the code
+      dy  = np.diff(tip_y, axis=0)/y_norm 
+
+    
+      dfrac = np.concatenate((dfrac[[0],:]*0, dfrac), axis=0) ##extrapolate dfrac at t=0
+      dy    = np.concatenate(([dy[0]*0], dy), axis=0)
+
+      input_[bid,:,0,:] = frac
+      input_[bid,:,1,:] = dfrac
+      input_[bid,:,2,:] = area 
+      input_[bid,:,3,:] = dy[:,np.newaxis] 
+      input_[bid,:,4,:] = frac[0,:][np.newaxis,:]
+      input_[bid,:,5,:] = Color[np.newaxis,:] 
+      input_[bid,:,6,:] = 2*float(number_list[5])
+      input_[bid,:,7,:] = 1 - np.log10(float(number_list[6]))/np.log10(100) 
+      input_[bid,:,8,:] = float(number_list[7])
+     # input_[bid,:,9,:] = np.arange(0, frames*hp.dt, hp.dt)[:,np.newaxis]
+
+  ## form pieces of traning samples
+
+  param_list = [G_list, R_list, e_list, y0, input_]
+
+  if mode == 'test': return param_list
+
+
+  if mode != 'ini':
+          input_[:,0,1,:] = input_[:,1,1,:]
+          input_[:,0,3,:] = input_[:,1,3,:] 
+
+
+  sam_per_run = frames - hp.window - (hp.out_win-1)
+  all_samp = num_runs*sam_per_run
+  print('total number of sequences', all_samp, 'for mode: ', mode) 
+
+  input_seq = np.zeros((all_samp, hp.window, input_dim, G))
+  output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
+
+  sample = 0
+  for run in range(num_runs):
+        lstm_snapshot = input_[run,:,:,:]
+ 
+        #end_frame = hp.S+hp.window
+            
+        for t in range(hp.window, sam_per_run+hp.window):
+            
+            input_seq[sample,:,:,:] = lstm_snapshot[t-hp.window:t,:,:]   
+            input_seq[sample,:,-1,:] = t*hp.dt
+            output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+hp.out_win,1,:], \
+                                                     lstm_snapshot[t:t+hp.out_win,2,:], \
+                                                     lstm_snapshot[t:t+hp.out_win,3,[0]]), axis=-1)    
+          #  input_param[sample,:] = param_all[run,:]  # except the last one, other parameters are independent on time
+          #  input_param[sample,-1] = t*hp.dt 
+            sample = sample + 1
+
+
+  assert np.all(np.absolute(input_seq[:,-4:])>1e-6)
+
+    #if mode=='ini': 
+      #  input_seq[:,:,G:2*G] = 0
+      #  input_seq[:,:,-1] = 0  
+      #  input_param[:,:G] = input_seq[:,0,:G]       
+  
+  data_loader = PrepareData( input_seq, output_seq )
+
+       
+  if valid==True:
+       data_loader = DataLoader(data_loader, batch_size = all_samp//8, shuffle=False)
+  else:
+       data_loader = DataLoader(data_loader, batch_size = 64, shuffle=True)
+
+  return data_loader, param_list
 
 
 
@@ -202,182 +267,109 @@ def get_data(num_runs, num_batch, datasets, hp, param_len):
 ## =======load data and parameters from the every simulation======
 
 
-def data_setup(datasets, testsets, mode, hp, skip_check):
-
-    batch_size = 1
-    batch_train = len(datasets)
-    batch_test = len(testsets)
-    num_train = batch_size*batch_train
-    num_test = batch_size*batch_test
-
-    G = hp.G
-    frames = hp.frames
-    all_frames = hp.all_frames
-    gap = int((all_frames-1)/(frames-1))
-
-
-    print('==========  data information  =========')
-
-    print('(input data) train, test', num_train, num_test)
-    print('trust the data, skip check: ', skip_check)
-    print('data frames: ', all_frames, 'GrainNN frames: ', frames, 'ratio: ', gap)
-    print('1d grid size (number of grains): ', G)
-    param_len = G + 4
-    print('physical parameters: N_G orientations, G, R, e_k with length ' , param_len)
-    print('\n')
-
-
-    filename = datasets[0]
-    #filename = filebase+str(2)+ '_rank0.h5'
-    f = h5py.File(filename, 'r')
-    x = np.asarray(f['x_coordinates'])
-    y = np.asarray(f['y_coordinates'])
-    xmin = x[1]; xmax = x[-2]
-    ymin = y[1]; ymax = y[-2]
-    print('xmin',xmin,'xmax',xmax,'ymin',ymin,'ymax',ymax)
-    dx = x[1]-x[0]
-    fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
-    print('nx,ny', nx,ny)
+#def data_setup(datasets, testsets, mode, hp, skip_check):
 
 
 
-    frac_train, param_train, y_train, area_train, G_list, R_list, e_list = get_data(num_train, batch_train, datasets, hp, param_len)
 
-    frac_test, param_test, y_test, area_test, _ , _ , _= get_data(num_test, batch_test, testsets, hp, param_len)
-    #print(tip_y_asse[frames::gap])
-    # trained dataset need to be randomly selected:
+'''
+filename = datasets[0]
+#filename = filebase+str(2)+ '_rank0.h5'
+f = h5py.File(filename, 'r')
+x = np.asarray(f['x_coordinates'])
+y = np.asarray(f['y_coordinates'])
+xmin = x[1]; xmax = x[-2]
+ymin = y[1]; ymax = y[-2]
+print('xmin',xmin,'xmax',xmax,'ymin',ymin,'ymax',ymax)
+dx = x[1]-x[0]
+fnx = len(x); fny = len(y); nx = fnx-2; ny = fny-2;
+print('nx,ny', nx,ny)
+'''
 
-    if skip_check == False:
-     weird_sim = check_data_quality(frac_train, param_train, y_train, G, frames)
-    else: weird_sim=[]
-    ### divide train and validation
+
+   # seq_train, out_train, _ = get_data(num_train, batch_train, datasets, hp, mode)
+
+    
+   # if skip_check == False:
+   #  weird_sim = check_data_quality(frac_train, param_train, y_train, G, frames)
+   # else: weird_sim=[]
 
 
 
-    print('nan', np.where(np.isnan(frac_train)))
-    weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
-    print('throw away simulations',weird_sim)
+   # print('nan', np.where(np.isnan(frac_train)))
+   # weird_sim = np.array(weird_sim)[np.array(weird_sim)<num_train]
+   # print('throw away simulations',weird_sim)
     #### delete the data in the actual training fractions and parameters
     #if len(weird_sim)>0:
     # frac_train = np.delete(frac_train,weird_sim,0)
     # param_train = np.delete(param_train,weird_sim,0)
     #num_train -= len(weird_sim) 
 
-    assert num_train==frac_train.shape[0]==param_train.shape[0]
-    assert num_test==frac_test.shape[0]==param_test.shape[0]
-    assert param_train.shape[1]==param_len
-    num_all = num_train + num_test
+   # assert num_train==frac_train.shape[0]==param_train.shape[0]
+   # assert num_test==frac_test.shape[0]==param_test.shape[0]
+  #  assert param_train.shape[1]==param_len
+   # num_all = num_train + num_test
 
-    print('actual num_train',num_train)
+   # print('actual num_train',num_train)
+
+   # seq_test, out_test, [G_list, R_list, e_list, y0] = get_data(num_test, batch_test, testsets, hp, mode)
 
 
     # stack information
-    frac_all = np.concatenate( (frac_train, frac_test), axis=0)
-    param_all = np.concatenate( (param_train, param_test), axis=0)
+  #  frac_all = np.concatenate( (frac_train, frac_test), axis=0)
+   # param_all = np.concatenate( (param_train, param_test), axis=0)
 
 
-    y_all  = np.concatenate( (y_train, y_test), axis=0)
-    dy_all  = np.diff(y_all, axis=1) 
-    if mode == 'ini':
-        dy_all = np.concatenate((dy_all[:,[0]]*0,dy_all),axis=-1)  ##extrapolate dy at t=0
-    else: dy_all = np.concatenate((dy_all[:,[0]],dy_all),axis=-1)
-    dy_all = dy_all/y_norm
+   # y_all  = np.concatenate( (y_train, y_test), axis=0)
 
-    ## add area 
 
-    area_all  = np.concatenate( (area_train, area_test), axis=0)
-    darea_all = area_all/area_norm   ## frac norm is fixed in the code
-    #darea_all = np.concatenate((darea_all[:,[0],:],darea_all),axis=1) ##extrapolate dfrac at t=0
-    area_coeff = y_norm*fnx/dx/area_norm
+
+  #  area_all  = np.concatenate( (area_train, area_test), axis=0)
+  #  darea_all = area_all/area_norm   ## frac norm is fixed in the code
     ## subtract the initial part of the sequence, so we can focus on the change
 
-    frac_ini = frac_all[:,0,:]
-
-    dfrac_all = np.diff(frac_all, axis=1)/frac_norm   ## frac norm is fixed in the code
-    if mode == 'ini':
-        dfrac_all = np.concatenate((dfrac_all[:,[0],:]*0,dfrac_all),axis=1) ##extrapolate dfrac at t=0
-    else: dfrac_all = np.concatenate((dfrac_all[:,[0],:],dfrac_all),axis=1) 
-    ## scale the frac according to the time frame 
-
-    #frac_all *= scaler_lstm[np.newaxis,:,np.newaxis]
-
-    seq_all = assemb_seq( frac_all, dfrac_all, darea_all, dy_all )
-    param_all = np.concatenate( (frac_ini, param_all), axis=1)
-    param_len = param_all.shape[1]
-    assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
-    assert param_all.shape[1] == (2*G+4)
-    assert seq_all.shape[2] == (3*G+1)
+   # frac_ini = frac_all[:,0,:]
 
 
-    # Shape the inputs and outputs
-
-    num_all_traj = int(1*num_train)
-    all_samp = num_all*hp.S 
-
-    input_seq = np.zeros((all_samp, hp.window, 3*G+1))
-    input_param = np.zeros((all_samp, param_len))
-    output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
-    output_area = np.zeros((all_samp, G))
-    assert input_param.shape[1]==param_all.shape[1]
-
-    ###### input_seq last dim seq: frac, y #######
-    ###### input_param last dim seq: ini, phase_field, ek, G, time #######
 
 
-    train_sam=num_train*hp.S 
-    test_sam=num_test*hp.S
-    print('train samples', train_sam)
+   # seq_all = assemb_seq( frac_all, dfrac_all, darea_all, dy_all )
+   # param_all = np.concatenate( (frac_ini, param_all), axis=1)
+   # param_len = param_all.shape[1]
+   # assert frac_all.shape[0] == param_all.shape[0] == y_all.shape[0] == num_all
+   # assert param_all.shape[1] == (2*G+4)
+   # assert seq_all.shape[2] == (3*G+1)
+
+
+
+   # all_samp = num_all*hp.S 
+
+   # input_seq = np.zeros((all_samp, hp.window, 3*G+1))
+   # input_param = np.zeros((all_samp, param_len))
+   # output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
+
+  #  assert input_param.shape[1]==param_all.shape[1]
+
+
+   # train_sam=num_train*hp.S 
+   # test_sam=num_test*hp.S
+
+    #print('total number of sequences', train_sam)
 
     # Setting up inputs and outputs
     # input t-hp.window to t-1
     # output t to t+win_out-1
-    sample = 0
-    for run in range(num_all):
-        lstm_snapshot = seq_all[run,:,:]
-        if run < num_all_traj:
-            end_frame = hp.S+hp.window
-        else: end_frame = hp.S+hp.window
-            
-        for t in range(hp.window, end_frame):
-            
-            input_seq[sample,:,:] = lstm_snapshot[t-hp.window:t,:]        
-            output_seq[sample,:,:] = lstm_snapshot[t:t+hp.out_win,G:]
-            #output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+hp.out_win,G:2*G],lstm_snapshot[t:t+hp.out_win,-1:]),axis=-1)        
-            input_param[sample,:-1] = param_all[run,:-1]  # except the last one, other parameters are independent on time
-            input_param[sample,-1] = t*hp.dt 
-            output_area[sample,:] = np.sum(area_all[run,t-1:t+hp.out_win-1,:],axis=0)
-            
-            sample = sample + 1
 
-    assert sample==input_seq.shape[0]==train_sam+test_sam
-    assert np.all(np.absolute(input_param[:,G:])>1e-6)
-
-    if mode=='ini': 
-        input_seq[:,:,G:2*G] = 0
-        input_seq[:,:,-1] = 0  
-        input_param[:,:G] = input_seq[:,0,:G]  
     #sio.savemat('input_trunc.mat',{'input_seq':input_seq,'input_param':input_param})
 
 
 
 
-    data_para = [input_seq[:train_sam,:,:], output_seq[:train_sam,:,:], \
-                                               input_param[:train_sam,:], output_area[:train_sam,:]] 
 
-    param_list = [G_list, R_list, e_list, y_all[:,[0]]]
-
-    if not mode=='test':
-       train_loader = PrepareData( data_para[0], data_para[1], data_para[2], data_para[3] )
-       train_loader = DataLoader(train_loader, batch_size = 64, shuffle=True)
-
-       return train_loader, test_loader, seq_all, param_all, param_list
-
-    test_loader  = PrepareData(input_seq[train_sam:,:,:], output_seq[train_sam:,:,:], input_param[train_sam:,:], output_area[train_sam:,:])
-
-    test_loader = DataLoader(test_loader, batch_size = test_sam//8, shuffle=False)
+   # param_list = [G_list, R_list, e_list, y_all[:,[0]]]
 
 
-    return seq_all, param_all, param_list
+
 
 
 
