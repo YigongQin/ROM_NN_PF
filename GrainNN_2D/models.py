@@ -371,16 +371,16 @@ class ConvLSTM_seq(nn.Module):
         self.project_y = nn.Linear(self.hidden_dim*self.w, 1)
         self.project_a = nn.Linear(self.hidden_dim*self.w, self.w)
 
-    def forward(self, input_seq, input_param, domain_factor):
+    def forward(self, input_seq, domain_factor):
         
 
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        b, t, _  = input_seq.size()
+        b, t, c, w  = input_seq.size()
         
         output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
-             
+        '''     
         frac_ini = input_param[:, :self.w]
         
         yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
@@ -396,7 +396,7 @@ class ConvLSTM_seq(nn.Module):
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
                                param.expand(-1, t, -1, self.w)], dim=2) 
-
+        '''
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
@@ -458,16 +458,16 @@ class ConvLSTM_start(nn.Module):
 
 
         
-    def forward(self, input_seq, input_param, domain_factor):
+    def forward(self, input_seq, domain_factor):
         
 
         ## step 1 remap the input to the channel with gridDdim G
         ## b,t, input_len -> b,t,c,w 
-        b, t, _  = input_seq.size()
+        b, t, c, w = input_seq.size()
         
         output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
-             
+        '''     
         frac_ini = input_param[:, :self.w]
         
         yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
@@ -483,7 +483,7 @@ class ConvLSTM_start(nn.Module):
                                ini.expand(-1, t, -1, -1), \
                                pf.expand(-1, t, -1, -1), \
                                param.expand(-1, t, -1, self.w)], dim=2) 
-
+        '''
         seq_1 = input_seq[:,-1,:,:]    # the last frame
         
 

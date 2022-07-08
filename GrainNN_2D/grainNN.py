@@ -22,7 +22,7 @@ from input_data import assemb_data, device, todevice, tohost
 from models import ConvLSTM_start, ConvLSTM_seq, y_norm, area_norm
 from split_merge_reini import split_grain, merge_grain
 from parameters import hyperparam, data_dir, valid_dir, model_dir
-from utils import   divide_seq 
+from utils import   divide_seq, divide_feat 
 
 #torch.cuda.empty_cache()
 
@@ -254,8 +254,6 @@ if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat
 
 
 
-
-
 def network_inf(seq_out, model, ini_model, hp):
     if noPDE == False:
         seq_dat = seq_test[:evolve_runs,:hp.window,:]
@@ -269,21 +267,21 @@ def network_inf(seq_out, model, ini_model, hp):
 
 
         seq_1 = seq_out[:,[0],:,:]   ## this can be generated randomly
-        print('sample', seq_1[0,0,:])
-        breakpoint()
+        print('sample', seq_1[0,0,:,:])
+      
 
         seq_1_s, expand, domain_factor, left_coors = split_grain(seq_1, hp.G_base, G)
+        
         seq_1_s[:,:,-1,:] = hp.dt
         seq_1_s[:,:,2,:] /= hp.Cl
         domain_factor = hp.Cl*domain_factor
-
         output_model = ini_model(todevice(seq_1_s), todevice(domain_factor) )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
         dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
-        #frac_out[:,1:hp.window,:], dy_out[:,1:hp.window], darea_out[:,1:hp.window,:], left_grains[:,1:hp.window,:] \
-        seq_out[:,1:hp.window,:,:], left_grains[:,1:hp.window,:] \
+
+        seq_out[:,1:hp.window,:4,:], left_grains[:,1:hp.window,:] \
             = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
 
         seq_dat = seq_out[:,:hp.window,:,:]
@@ -294,7 +292,6 @@ def network_inf(seq_out, model, ini_model, hp):
 
 
 
-    ## write initial windowed data to out arrays
 
     #print('the sub simulations', expand)
     alone = hp.pred_frames%hp.out_win
@@ -305,39 +302,37 @@ def network_inf(seq_out, model, ini_model, hp):
         time_i = i
         if hp.dt*(time_i+hp.window+hp.out_win-1)>1: 
             time_i = int(1/hp.dt)-(hp.window+hp.out_win-1)
-        ## you may resplit the grains here
+      
 
         seq_dat_s, expand, domain_factor, left_coors = split_grain( seq_dat, hp.G_base, G)
 
-        param_dat_s[:,-1] = (time_i+hp.window)*hp.dt ## the first output time
-        print('nondim time', (time_i+hp.window)*hp.dt)
-
+        seq_dat_s[:,:,-1,:] = (time_i+hp.window)*hp.dt ## the first output time
+        print('nondim time: ', (time_i+hp.window)*hp.dt)
+        seq_dat_s[:,:,2,:] /= hp.Cl
         domain_factor = hp.Cl*domain_factor
-        seq_dat_s[:,:,2*hp.G_base:3*hp.G_base] /= hp.Cl
-
         output_model = model(todevice(seq_dat_s), todevice(domain_factor)  )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
-
         dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
         if i>=pack and mode!='ini':
-            seq_out[:,-alone:,:], left_grains[:,-alone:,:] \
+            seq_out[:,-alone:,:4,:], left_grains[:,-alone:,:] \
             = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], hp.G_base, G, expand, domain_factor, left_coors)
         else: 
-            seq_out[:,hp.window+i:hp.window+i+hp.out_win,:], left_grains[:,hp.window+i:hp.window+i+hp.out_win,:] \
+            seq_out[:,hp.window+i:hp.window+i+hp.out_win,:4,:], left_grains[:,hp.window+i:hp.window+i+hp.out_win,:] \
             = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
         
-        seq_dat = np.concatenate((seq_dat[:,hp.out_win:,:], seq_out[:,hp.window+i:hp.window+i+hp.out_win,:]),axis=1)
+        seq_dat = np.concatenate((seq_dat[:,hp.out_win:,:,:], seq_out[:,hp.window+i:hp.window+i+hp.out_win,:,:]),axis=1)
        
 
-    frac_out, dfrac_out, darea_out, dy_out = divide_seq(seq_out, G)
+    frac_out, dfrac_out, area_out, dy_out = divide_feat(seq_out)
     frac_out *= hp.G_base/G
     dy_out = dy_out*y_norm
     dy_out[:,0] = 0
-    y_out = np.cumsum(dy_out,axis=-1)+y0[num_train:,:]
+    y_out = np.cumsum(dy_out,axis=-1)+y0[:,np.newaxis]
 
-    area_out = darea_out*area_norm
+
+    area_out = area_out*area_norm
     return frac_out, y_out, area_out
 
 
@@ -389,7 +384,7 @@ seq_out = np.zeros((evolve_runs,frames,input_dim,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
 seq_out[:,0,:,:] = input_[:,0,:,:]
-#param_dat = param_all[num_train:,:]
+seq_out[:,:,4:,:] = input_[:,:,4:,:]
 
 if mode!='test':
 
@@ -413,7 +408,7 @@ if mode!='test':
     frac_out, y_out, area_out = network_inf(seq_out,  model, ini_model, hp)
 
 if mode=='test':
-    inf_model_list = [42,24, 69,71]
+    inf_model_list = hp.model_list
     nn_start = time.time()
     frac_out, y_out, area_out = ensemble(seq_out, inf_model_list)
     nn_end = time.time()
@@ -541,7 +536,7 @@ else:
       print('all id', all_id, 'layer_size', hp.layer_size, 'learning_rate', hp.lr, \
     'num_layers', hp.layers, 'frames', frames, 'out win', hp.out_win, 'err', ave_err, 'time', -start+end)
 sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,\
-  'seq_all':seq_all,'param_all':param_all,'layer_size':hp.layer_size, 'learning_rate':hp.lr, 'num_layers':hp.layers, 'frames':frames}) #, \
+  'input':input_,'layer_size':hp.layer_size, 'learning_rate':hp.lr, 'num_layers':hp.layers, 'frames':frames}) #, \
   #'frac_true':frac_test,'y_true':y_test,'area_true':area_test})
 
 

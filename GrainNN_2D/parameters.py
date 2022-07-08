@@ -20,7 +20,7 @@ def hyperparam(mode, all_id):
 	Ct = 1   
 	Cl = 1   
 	all_frames = 600*Cl + 1
-	G = 32
+	G = 8
 
 	'''
     hyperparameter grid
@@ -56,16 +56,17 @@ def hyperparam(mode, all_id):
 	  pred_frames = out_win
 
 
-	sam_per_run = frames - window - (out_win-1)
+	
 	dt = Ct*1.0/(frames-1)
 
 	LSTM_layer = (layers, layers)
 	LSTM_layer_ini = (layers, layers)
 
 
-	param_dict = {'all_frames':all_frames, 'frames':frames, 'window':window, 'out_win':out_win, 'pred_frames':pred_frames, 'S':sam_per_run, 'dt':dt, \
-	             'layers':LSTM_layer, 'layer_size':hidden_dim, 'kernel_size':(3,), 'lr':learning_rate, 'epoch':60, \
-	             'Ct':Ct, 'Cl':Cl, 'G_base':8, 'G':G}
+	param_dict = {'all_frames':all_frames, 'frames':frames, 'window':window, 'out_win':out_win, 'pred_frames':pred_frames, 'dt':dt, \
+	             'layers':LSTM_layer, 'layer_size':hidden_dim, 'kernel_size':(3,), 'lr':learning_rate, 'epoch':60, 'model_list':[42,24, 69,71], \
+	             'Ct':Ct, 'Cl':Cl, 'G_base':8, 'G':G, \
+	             'features':[3,4,2,1], 'feat_list':['w','dw','s','y','w0','alpha','G','R','e_k','t']}
 
 
 	return Param(param_dict)
@@ -76,6 +77,7 @@ def hyperparam(mode, all_id):
 
 model_dir = './fecr_model/'
 data_dir = './plot_dat/ML_PF32_train0_test1_grains32_frames600_anis0.080_G02.400_Rmax1.520_seed6933304_rank0_grainsize2.500_Mt102000.h5'
+data_dir = '../../testing/*.h5'
 valid_dir = data_dir
 
 

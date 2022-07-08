@@ -7,7 +7,7 @@ Created on Thu Jul 15 20:41:18 2021
 """
 
 import numpy as np
-
+from utils import assemb_feat
 
 def assemb_seq(frac, dfrac, area, y):
 
@@ -101,7 +101,7 @@ def map_grain_fix(frac_layer, G, G_all):
 
         return args
 
-def split_grain(param_dat, seq_dat, G, G_all):
+def split_grain(seq_dat, G, G_all):
     
     
     '''
@@ -111,19 +111,20 @@ def split_grain(param_dat, seq_dat, G, G_all):
 
     size_b = seq_dat.shape[0]
     size_t = seq_dat.shape[1]
-    size_v = seq_dat.shape[2]  # should be 3*G_all+1
+    size_c = seq_dat.shape[2] 
+     # should be 3*G_all+1
 
-    size_p = param_dat.shape[1] # should be 2G_all+4
+  #  size_p = param_dat.shape[1] # should be 2G_all+4
 
 
   #  Gi = np.arange(G)
-    Pi = np.arange(size_p-2*G_all)
+  #  Pi = np.arange(size_p-2*G_all)
 
-    new_size_v = size_v - 3*G_all + 3*G
-    new_size_p = size_p - 2*G_all + 2*G
+  #  new_size_v = size_v - 3*G_all + 3*G
+ #   new_size_p = size_p - 2*G_all + 2*G
     
     if G==G_all: 
-        return param_dat, seq_dat, [np.arange(G)], np.ones((size_b,1)), np.zeros((size_b,1))
+        return seq_dat, [np.arange(G)], np.ones((size_b,1)), np.zeros((size_b,1))
          
         
     elif G_all>G:
@@ -228,7 +229,9 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
 
 
     if G==G_all: 
-        return np.concatenate((frac, dseq), axis=-1), np.cumsum(frac, axis=-1) - frac
+        output = np.zeros((size_b,size_t, 4, G))
+        assemb_feat(dseq, frac, G, output)
+        return output, np.cumsum(frac, axis=-1) - frac
           
         
     elif G_all>G:
