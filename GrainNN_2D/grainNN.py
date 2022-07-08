@@ -63,7 +63,7 @@ print('epochs: ', hp.epoch, '; learning rate: ', hp.lr)
 print('input feature dimension: ', hp.feature_dim)
 print('hidden dim (layer size): ', hp.layer_size, '; number of layers', hp.layers)
 print('convolution kernel size: ', hp.kernel_size)
-print('\n')
+
 
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(hp, device)
 if mode=='ini': model = ConvLSTM_start(hp, device)
@@ -73,6 +73,7 @@ if device=='cuda':
   model.cuda()
 pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print('total number of trained parameters ', pytorch_total_params)
+print('\n')
 
 
 print('************ setup data ***********')
