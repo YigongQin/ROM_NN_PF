@@ -266,7 +266,7 @@ def network_inf(seq_out, model, ini_model, hp):
 
 
         seq_1 = seq_out[:,[0],:,:]   ## this can be generated randomly
-        print('sample', seq_1[0,0,:,:])
+        #print('sample', seq_1[0,0,:,:])
       
 
         seq_1_s, expand, domain_factor, left_coors = split_grain(seq_1, hp.G_base, G)
@@ -344,7 +344,7 @@ def ensemble(seq_out, inf_model_list):
     area_out = np.zeros((Nmodel,evolve_runs,frames,G)) ## final output
     y_out = np.zeros((Nmodel,evolve_runs,frames))
     for i in range(Nmodel):
-
+        print('\n')
         seq_i = copy.deepcopy(seq_out)
       #  param_i = copy.deepcopy(param_dat)
         all_id = inf_model_list[i]
@@ -355,7 +355,7 @@ def ensemble(seq_out, inf_model_list):
         if device=='cuda':
             model.cuda()
         pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print('total number of trained parameters ', pytorch_total_params)
+        print('model', inf_model_list[i], 'total number of trained parameters ', pytorch_total_params)
         model.load_state_dict(torch.load(model_dir+'/lstmmodel'+str(all_id)))
         model.eval()  
 
@@ -365,7 +365,7 @@ def ensemble(seq_out, inf_model_list):
         if device=='cuda':
            ini_model.cuda()
         init_total_params = sum(p.numel() for p in ini_model.parameters() if p.requires_grad)
-        print('total number of trained parameters for initialize model', init_total_params)
+        print('model', inf_model_list[i], 'total number of trained parameters for initialize model', init_total_params)
         ini_model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
         ini_model.eval()
 
