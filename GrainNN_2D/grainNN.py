@@ -49,7 +49,10 @@ print('plot GrainNN verus PDE pointwise error: ', plot_flag)
 print('\n')
 
 
-
+hp = hyperparam(mode, all_id)
+frames = hp.frames
+G = hp.G
+gap = int((hp.all_frames-1)/(frames-1))
 
 print('************ setup model ***********')
 print('==========  architecture  ========')
@@ -61,12 +64,6 @@ print('input feature dimension: ', hp.feature_dim)
 print('hidden dim (layer size): ', hp.layer_size, '; number of layers', hp.layers)
 print('convolution kernel size: ', hp.kernel_size)
 print('\n')
-
-
-hp = hyperparam(mode, all_id)
-frames = hp.frames
-G = hp.G
-gap = int((hp.all_frames-1)/(frames-1))
 
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(hp, device)
 if mode=='ini': model = ConvLSTM_start(hp, device)
