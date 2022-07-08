@@ -144,7 +144,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
   all_frames = hp.all_frames
   gap = int((all_frames-1)/(frames-1))
 
-  input_dim = sum(hp.features)
+  input_dim = hp.feature_dim
   input_ = np.zeros((num_runs,frames,input_dim,G))
 
 

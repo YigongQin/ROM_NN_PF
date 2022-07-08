@@ -55,11 +55,10 @@ print('\n')
 hp = hyperparam(mode, all_id)
 frames = hp.frames
 G = hp.G
-input_dim = sum(hp.features)
 gap = int((hp.all_frames-1)/(frames-1))
 
-if mode=='train' or mode == 'test': model = ConvLSTM_seq(input_dim, hp, True, device)
-if mode=='ini': model = ConvLSTM_start(input_dim, hp, True, device)
+if mode=='train' or mode == 'test': model = ConvLSTM_seq(hp, device)
+if mode=='ini': model = ConvLSTM_start(hp, device)
 
 model = model.double()
 if device=='cuda':
@@ -74,7 +73,7 @@ print('type -- s2s LSTM')
 
 print('input window', hp.window,'output window', hp.out_win)
 print('epochs: ', hp.epoch, 'learning rate: ', hp.lr)
-print('input feature dimension', input_dim)
+print('input feature dimension', hp.feature_dim)
 print('hidden dim', hp.layer_size, 'number of layers', hp.layers)
 print('convolution kernel size', hp.kernel_size)
 print('\n')
@@ -351,7 +350,7 @@ def ensemble(seq_out, inf_model_list):
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
 
-        model = ConvLSTM_seq(input_dim, hp, True, device)
+        model = ConvLSTM_seq(hp, device)
         model = model.double()
         if device=='cuda':
             model.cuda()
@@ -361,7 +360,7 @@ def ensemble(seq_out, inf_model_list):
         model.eval()  
 
 
-        ini_model = ConvLSTM_start(input_dim, hp, True, device)
+        ini_model = ConvLSTM_start(hp, device)
         ini_model = ini_model.double()
         if device=='cuda':
            ini_model.cuda()
@@ -380,7 +379,7 @@ def ensemble(seq_out, inf_model_list):
 
 evolve_runs = num_test #num_test
 
-seq_out = np.zeros((evolve_runs,frames,input_dim,G))
+seq_out = np.zeros((evolve_runs,frames,hp.feature_dim,G))
 left_grains = np.zeros((evolve_runs,frames,G))
 
 seq_out[:,0,:,:] = input_[:,0,:,:]
@@ -396,7 +395,7 @@ if mode!='test':
         model.load_state_dict(torch.load(model_dir+'/ini_lstmmodel'+str(all_id)))
         model.eval() 
 
-    ini_model = ConvLSTM_start(input_dim, hp, True, device)
+    ini_model = ConvLSTM_start(hp, device)
     ini_model = ini_model.double()
     if device=='cuda':
        ini_model.cuda()
