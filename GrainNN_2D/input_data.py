@@ -240,7 +240,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
             sample = sample + 1
 
 
-  assert np.all(np.absolute(input_seq[:,-4:])>1e-6)
+  assert np.all(np.absolute(input_seq[:,:,-4:,:])>1e-6)
 
     #if mode=='ini': 
       #  input_seq[:,:,G:2*G] = 0
