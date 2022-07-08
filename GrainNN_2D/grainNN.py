@@ -55,7 +55,7 @@ print('\n')
 hp = hyperparam(mode, all_id)
 frames = hp.frames
 G = hp.G
-input_dim = 10
+input_dim = np.sum(np.array(hp.features))
 gap = int((hp.all_frames-1)/(frames-1))
 
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(input_dim, hp, True, device)

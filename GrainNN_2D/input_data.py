@@ -146,6 +146,9 @@ def get_data(num_runs, num_batch, datasets, hp, param_len):
   frames = hp.frames
   all_frames = hp.all_frames
   gap = int((all_frames-1)/(frames-1))
+
+  size = hp.features
+
   frac_all = np.zeros((num_runs,frames,G)) #run*frames*vec_len
   param_all = np.zeros((num_runs,param_len))
   y_all = np.zeros((num_runs,frames))
@@ -173,8 +176,7 @@ def get_data(num_runs, num_batch, datasets, hp, param_len):
     for run in range(1):
       aseq = aseq_asse[run*(G+1):(run+1)*(G+1)]  # 1 to 10
       tip_y = tip_y_asse[run*all_frames:(run+1)*all_frames][::gap]
-  #    Color = (aseq-3)/2        # normalize C to [-1,1]
-      #Color = (aseq-5.5)/4.5
+
       Color = - ( 2*(aseq[1:] + pi/2)/(pi/2) - 1 )
       #print('angle sequence', Color)
       frac = (frac_asse[run*G*all_frames:(run+1)*G*all_frames]).reshape((all_frames,G))[::gap,:]
