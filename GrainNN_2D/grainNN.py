@@ -64,6 +64,9 @@ print('input feature dimension: ', hp.feature_dim)
 print('hidden dim (layer size): ', hp.layer_size, '; number of layers', hp.layers)
 print('convolution kernel size: ', hp.kernel_size)
 
+seed_num = 35
+torch.manual_seed(seed_num)
+print('torch seed', seed_num)
 
 if mode=='train' or mode == 'test': model = ConvLSTM_seq(hp, device)
 if mode=='ini': model = ConvLSTM_start(hp, device)
@@ -99,9 +102,7 @@ print('physical parameters: N_G orientations, e_k, G, R')
 print('\n')
 
 
-seed_num = 35
-torch.manual_seed(seed_num)
-print('torch seed', seed_num)
+
 
 if mode == 'test':
     [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
