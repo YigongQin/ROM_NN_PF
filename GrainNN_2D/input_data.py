@@ -214,8 +214,11 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
           input_[:,0,1,:] = input_[:,1,1,:]
           input_[:,0,3,:] = input_[:,1,3,:] 
 
-
-  sam_per_run = frames - hp.window - (hp.out_win-1)
+  if mode == 'ini':
+    out_win = hp.out_win -1
+  else: 
+    out_win = hp.out_win
+  sam_per_run = frames - hp.window - (out_win-1)
   all_samp = num_runs*sam_per_run
 
   if valid == True:
@@ -224,7 +227,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
      print('total number of training sequences', all_samp, 'for mode: ', mode)  
 
   input_seq = np.zeros((all_samp, hp.window, input_dim, G))
-  output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
+  output_seq = np.zeros((all_samp, out_win, 2*G+1))
 
   sample = 0
   for run in range(num_runs):
@@ -236,9 +239,9 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
             
             input_seq[sample,:,:,:] = lstm_snapshot[t-hp.window:t,:,:]   
             input_seq[sample,:,-1,:] = t*hp.dt
-            output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+hp.out_win,1,:], \
-                                                     lstm_snapshot[t:t+hp.out_win,2,:], \
-                                                     lstm_snapshot[t:t+hp.out_win,3,[0]]), axis=-1)    
+            output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,1,:], \
+                                                     lstm_snapshot[t:t+out_win,2,:], \
+                                                     lstm_snapshot[t:t+out_win,3,[0]]), axis=-1)    
           #  input_param[sample,:] = param_all[run,:]  # except the last one, other parameters are independent on time
           #  input_param[sample,-1] = t*hp.dt 
             sample = sample + 1
@@ -350,7 +353,7 @@ print('nx,ny', nx,ny)
 
    # input_seq = np.zeros((all_samp, hp.window, 3*G+1))
    # input_param = np.zeros((all_samp, param_len))
-   # output_seq = np.zeros((all_samp, hp.out_win, 2*G+1))
+   # output_seq = np.zeros((all_samp, out_win, 2*G+1))
 
   #  assert input_param.shape[1]==param_all.shape[1]
 

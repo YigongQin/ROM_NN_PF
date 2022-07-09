@@ -29,7 +29,7 @@ def hyperparam(mode, all_id):
 	learning_rate_pool=[25e-4, 50e-4, 100e-4]
 	layers_pool=[3,4,5]
 	hidden_dim_pool = [16, 24, 32]
-	out_win_pool = [3, 4, 5] 
+	out_win_pool = [4, 5, 6] 
 
 	frames_id = all_id//81
 	lr_id = (all_id%81)//27
@@ -46,14 +46,13 @@ def hyperparam(mode, all_id):
 
 
 	if mode=='train' or mode=='test':
-	  out_win += 1
 	  window = out_win
 	  pred_frames = frames-window
 
 	if mode=='ini':
 	  learning_rate *= 2
 	  window = 1
-	  pred_frames = out_win
+	  pred_frames = out_win - 1
 
 
 	
