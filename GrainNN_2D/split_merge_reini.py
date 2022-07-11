@@ -124,7 +124,7 @@ def split_grain(seq_dat, hp):
  #   new_size_p = size_p - 2*G_all + 2*G
     
     if hp.G==hp.G_base: 
-        return seq_dat, [np.arange(hp.G)], hp.Cl*np.ones((size_b,1)), np.zeros((size_b,1))
+        return seq_dat, [np.arange(hp.G)], hp.Cl*np.ones((size_b,1))
          
         
     elif G_all>G:
@@ -199,12 +199,12 @@ def split_grain(seq_dat, hp):
 
 
 
-        return new_param, new_seq, grain_arg_list, domain_factor, np.zeros((new_seq.shape[0],1))
+        return new_seq, grain_arg_list, domain_factor
             
     else: raise ValueError("number of grain is wrong")
 
 
-def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors):
+def merge_grain(frac, dseq, hp, grain_arg_list, domain_factor):
     
     
     '''
@@ -221,17 +221,17 @@ def merge_grain(frac, dseq, G, G_all, grain_arg_list, domain_factor, left_coors)
     #assert size_b%expand == 0
     new_size_b = len(grain_arg_list)  ## number of real simulation 
 
-    BC_l = G//2+1
+    BC_l = hp.G//2+1
 
-    new_size_v = size_v +  G_all - G
+    new_size_v = size_v +  hp.G - hp.G_base
     
 
 
 
-    if G==G_all: 
-        output = np.zeros((size_b,size_t, 4, G))
-        assemb_feat(dseq, frac, G, output)
-        return output, np.cumsum(frac, axis=-1) - frac
+    if hp. G==hp.G_base: 
+        output = np.zeros((size_b,size_t, 4, hp.G))
+        assemb_feat(dseq, frac, hp.G, output)
+        return output
           
         
     elif G_all>G:

@@ -183,7 +183,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       y0[bid] = tip_y[0]
 
       frac = frac*G/hp.G_base
-      area = area/area_norm
+      area = area/area_norm/hp.Cl
       
       dfrac = np.diff(frac, axis=0)/frac_norm   ## frac norm is fixed in the code
       dy  = np.diff(tip_y, axis=0)/y_norm 

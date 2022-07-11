@@ -18,8 +18,8 @@ def hyperparam(mode, all_id):
 	'''
 
 	Ct = 1   
-	Cl = 1   
-	all_frames = 600*Cl + 1
+	Cl = 2   
+	all_frames = 600*Ct + 1
 	G = 8
 
 	'''
@@ -76,7 +76,7 @@ def hyperparam(mode, all_id):
 
 model_dir = './fecr_model/'
 data_dir = './plot_dat/ML_PF32_train0_test1_grains32_frames600_anis0.080_G02.400_Rmax1.520_seed6933304_rank0_grainsize2.500_Mt102000.h5'
-data_dir = '../../testing/*.h5'
+data_dir = '../../double_size/*.h5'
 valid_dir = data_dir
 
 
