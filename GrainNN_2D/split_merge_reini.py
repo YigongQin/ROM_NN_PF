@@ -101,7 +101,7 @@ def map_grain_fix(frac_layer, G, G_all):
 
         return args
 
-def split_grain(seq_dat, G, G_all):
+def split_grain(seq_dat, hp):
     
     
     '''
@@ -123,8 +123,8 @@ def split_grain(seq_dat, G, G_all):
   #  new_size_v = size_v - 3*G_all + 3*G
  #   new_size_p = size_p - 2*G_all + 2*G
     
-    if G==G_all: 
-        return seq_dat, [np.arange(G)], np.ones((size_b,1)), np.zeros((size_b,1))
+    if hp.G==hp.G_base: 
+        return seq_dat, [np.arange(hp.G)], hp.Cl*np.ones((size_b,1)), np.zeros((size_b,1))
          
         
     elif G_all>G:

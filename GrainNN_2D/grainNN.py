@@ -256,7 +256,7 @@ def network_inf(seq_out, model, ini_model, hp):
         dy_out[:,:hp.window] = seq_dat[:,:,-1]
         darea_out[:,:hp.window,:] = seq_dat[:,:,2*G:3*G]
 
-        param_dat, seq_dat, expand, left_coors = split_grain(param_dat, seq_dat, hp.G_base, G)
+        param_dat, seq_dat, grainid_list, left_coors = split_grain(param_dat, seq_dat, hp.G_base, G)
     else: 
 
 
@@ -264,19 +264,19 @@ def network_inf(seq_out, model, ini_model, hp):
         #print('sample', seq_1[0,0,:,:])
       
 
-        seq_1_s, expand, domain_factor, left_coors = split_grain(seq_1, hp.G_base, G)
+        seq_1_s, grainid_list, Cl_list, left_coors = split_grain(seq_1, hp)
         
         seq_1_s[:,:,-1,:] = hp.dt
         seq_1_s[:,:,2,:] /= hp.Cl
-        domain_factor = hp.Cl*domain_factor
-        output_model = ini_model(todevice(seq_1_s), todevice(domain_factor) )
+      #  Cl_list = hp.Cl*Cl_list
+        output_model = ini_model(todevice(seq_1_s), todevice(Cl_list) )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
         dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
 
         seq_out[:,1:hp.window,:4,:], left_grains[:,1:hp.window,:] \
-            = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
+            = merge_grain(frac_new, dfrac_new, hp.G_base, G, grainid_list, Cl_list, left_coors)
 
         seq_dat = seq_out[:,:hp.window,:,:]
 
@@ -287,7 +287,7 @@ def network_inf(seq_out, model, ini_model, hp):
 
 
 
-    #print('the sub simulations', expand)
+    #print('the sub simulations', grainid_list)
     alone = hp.pred_frames%hp.out_win
     pack = hp.pred_frames-alone
 
@@ -298,23 +298,23 @@ def network_inf(seq_out, model, ini_model, hp):
             time_i = int(1/hp.dt)-(hp.window+hp.out_win-1)
       
 
-        seq_dat_s, expand, domain_factor, left_coors = split_grain( seq_dat, hp.G_base, G)
+        seq_dat_s, grainid_list, Cl_list, left_coors = split_grain( seq_dat, hp)
 
         seq_dat_s[:,:,-1,:] = (time_i+hp.window)*hp.dt ## the first output time
         print('nondim time: ', (time_i+hp.window)*hp.dt)
         seq_dat_s[:,:,2,:] /= hp.Cl
-        domain_factor = hp.Cl*domain_factor
-        output_model = model(todevice(seq_dat_s), todevice(domain_factor)  )
+       # Cl_list = hp.Cl*Cl_list
+        output_model = model(todevice(seq_dat_s), todevice(Cl_list)  )
         dfrac_new = tohost( output_model[0] ) 
         frac_new = tohost(output_model[1])
         dfrac_new[:,:,hp.G_base:2*hp.G_base] *= hp.Cl
 
         if i>=pack and mode!='ini':
             seq_out[:,-alone:,:4,:], left_grains[:,-alone:,:] \
-            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], hp.G_base, G, expand, domain_factor, left_coors)
+            = merge_grain(frac_new[:,:alone,:], dfrac_new[:,:alone,:], hp.G_base, G, grainid_list, Cl_list, left_coors)
         else: 
             seq_out[:,hp.window+i:hp.window+i+hp.out_win,:4,:], left_grains[:,hp.window+i:hp.window+i+hp.out_win,:] \
-            = merge_grain(frac_new, dfrac_new, hp.G_base, G, expand, domain_factor, left_coors)
+            = merge_grain(frac_new, dfrac_new, hp.G_base, G, grainid_list, Cl_list, left_coors)
         
         seq_dat = np.concatenate((seq_dat[:,hp.out_win:,:,:], seq_out[:,hp.window+i:hp.window+i+hp.out_win,:,:]),axis=1)
        
