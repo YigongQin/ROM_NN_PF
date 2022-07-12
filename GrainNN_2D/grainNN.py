@@ -105,9 +105,9 @@ print('\n')
 
 
 if mode == 'test':
-    [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
+    [G_list, R_list, e_list, Cl_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
 else:
-    test_loader, [G_list, R_list, e_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
+    test_loader, [G_list, R_list, e_list, Cl_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
     train_loader, _ = assemb_data(num_train, batch_train, datasets, hp, mode, valid=False)
 
 
@@ -339,7 +339,7 @@ def ensemble(seq_out, inf_model_list):
       #  param_i = copy.deepcopy(param_dat)
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
-
+        hp.Cl = np.asarray(Cl_list)
         model = ConvLSTM_seq(hp, device)
         model = model.double()
         if device=='cuda':

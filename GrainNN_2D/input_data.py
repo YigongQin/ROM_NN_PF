@@ -167,7 +167,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
     e_list.append(number_list[5])
     G_list.append(number_list[6])
     R_list.append(number_list[7])
-    Cl_list.append(number_list[10])
+    Cl_list.append(float(number_list[10])/2.5)
     #print(number_list[5],number_list[6],number_list[7]) 
     # compile all the datasets interleave
     for run in range(1):
@@ -206,9 +206,9 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
      # input_[bid,:,9,:] = np.arange(0, frames*hp.dt, hp.dt)[:,np.newaxis]
 
   ## form pieces of traning samples
-  hp.Cl = np.asarray(Cl_list)
 
-  param_list = [G_list, R_list, e_list, y0, input_]
+
+  param_list = [G_list, R_list, e_list, Cl_list, y0, input_]
 
   if mode == 'test': return param_list
 
