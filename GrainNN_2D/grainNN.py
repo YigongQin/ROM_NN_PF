@@ -105,9 +105,9 @@ print('\n')
 
 
 if mode == 'test':
-    [G_list, R_list, e_list, Cl_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
+    [G_list, R_list, e_list, Cl0, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
 else:
-    test_loader, [G_list, R_list, e_list, Cl_list, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
+    test_loader, [G_list, R_list, e_list, Cl0, y0, input_] = assemb_data(num_test, batch_test, testsets, hp, mode, valid=True)
     train_loader, _ = assemb_data(num_train, batch_train, datasets, hp, mode, valid=False)
 
 
@@ -321,7 +321,7 @@ def network_inf(seq_out, model, ini_model, hp):
     y_out = np.cumsum(dy_out,axis=-1)+y0[:,np.newaxis]
 
 
-    area_out = area_out*area_norm*hp.Cl
+    area_out = area_out*area_norm*hp.Cl[:,np.newaxis,np.newaxis]
     return frac_out, y_out, area_out
 
 
@@ -339,7 +339,7 @@ def ensemble(seq_out, inf_model_list):
       #  param_i = copy.deepcopy(param_dat)
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
-        hp.Cl = np.asarray(Cl_list)
+        hp.Cl = np.asarray(Cl0)
         model = ConvLSTM_seq(hp, device)
         model = model.double()
         if device=='cuda':
