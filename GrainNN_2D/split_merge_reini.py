@@ -9,19 +9,7 @@ Created on Thu Jul 15 20:41:18 2021
 import numpy as np
 from utils import assemb_feat
 
-def assemb_seq(frac, dfrac, area, y):
 
-    if frac.ndim==3:
-       return np.concatenate((frac, dfrac, area, y[:,:,np.newaxis]), axis=-1)
-    if frac.ndim==2: ## batch size = 1
-       return np.concatenate((frac, dfrac, area, y[:,np.newaxis]), axis=-1)
-
-def divide_seq(seq, G):
-
-    if seq.ndim==3:
-       return seq[:,:,:G], seq[:,:,G:2*G], seq[:,:,2*G:3*G], seq[:,:,-1]
-    if seq.ndim==2:
-       return seq[:,:G], seq[:,G:2*G], seq[:,2*G:3*G], seq[:,-1]
 
 def list_subtract(family, child):
 
@@ -235,7 +223,7 @@ def merge_grain(frac, dseq, hp, grain_arg_list, Cl_list):
             for i in range(expand):
 
                 subruns = increment + i
-                print(Cl_list)
+              
                 Cl = Cl_list[subruns,[0],np.newaxis]
             
                 if i==0:
