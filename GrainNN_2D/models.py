@@ -380,28 +380,11 @@ class ConvLSTM_seq(nn.Module):
         
         output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
-        '''     
-        frac_ini = input_param[:, :self.w]
-        
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
-        ini      = frac_ini                       .view(b,1,1,self.w) 
-        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
-        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
-        
-        ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
-        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,2*self.w:3*self.w].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, self.w), \
-                               ini.expand(-1, t, -1, -1), \
-                               pf.expand(-1, t, -1, -1), \
-                               param.expand(-1, t, -1, self.w)], dim=2) 
-        '''
+
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
         
-        #frac_old = frac_ini + seq_1[:,0,:]/ scale( seq_1[:,-1,:] - self.dt, self.dt ) # fraction at t-1
         
         for i in range(self.out_win):
             
@@ -414,13 +397,8 @@ class ConvLSTM_seq(nn.Module):
             frac = F.relu(dfrac+seq_1[:,0,:])         # frac_ini here is necessary to keep
             frac = F.normalize(frac, p=1, dim=-1)  # [b,w] normalize the fractions
             
-            #active = ((frac>1e-6)*1.0).double()
             dfrac = (frac - seq_1[:,0,:])/frac_norm 
-            ## at this moment, frac is the actual fraction which can be used to calculate area
-            #area_sum += 0.5*( dy.expand(-1,self.w)  )*( frac + frac_old )
-            #frac_old = frac
-            
-            #frac = scale(seq_1[:,-1,:],self.dt)*( frac - frac_ini )      # [b,w] scale the output with time t    
+ 
             
             output_seq[:,i, :self.w] = dfrac
             output_seq[:,i, self.w:2*self.w] = F.relu(darea)
@@ -467,23 +445,7 @@ class ConvLSTM_start(nn.Module):
         
         output_seq = torch.zeros(b, self.out_win, 2*self.w+1, dtype=torch.float64).to(self.device)
         frac_seq = torch.zeros(b, self.out_win, self.w,   dtype=torch.float64).to(self.device)
-        '''     
-        frac_ini = input_param[:, :self.w]
-        
-        yt       = input_seq[:, :, -1:]           .view(b,t,1,1)      
-        ini      = frac_ini                       .view(b,1,1,self.w) 
-        pf       = input_param[:, self.w:2*self.w].view(b,1,1,self.w) 
-        param    = input_param[:, 2*self.w:]      .view(b,1,-1,1)     
-        
-        ## CHANNEL ORDER (7): FRAC(T), Y(T), INI, PF, P1, P2, T
-        input_seq = torch.cat([input_seq[:,:,:self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,self.w:2*self.w].unsqueeze(dim=-2), \
-                               input_seq[:,:,2*self.w:3*self.w].unsqueeze(dim=-2), \
-                               yt.expand(-1,-1, -1, self.w), \
-                               ini.expand(-1, t, -1, -1), \
-                               pf.expand(-1, t, -1, -1), \
-                               param.expand(-1, t, -1, self.w)], dim=2) 
-        '''
+
         seq_1 = input_seq[:,-1,:,:]    # the last frame
         
 
