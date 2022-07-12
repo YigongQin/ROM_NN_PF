@@ -105,146 +105,112 @@ def split_grain(seq_dat, hp):
     
     
     '''
-    Assume G and G_all here are all even numbers 
-    G = N_w +2, N_w is the no. grains one grain can affect
+
     '''
 
     size_b = seq_dat.shape[0]
     size_t = seq_dat.shape[1]
     size_c = seq_dat.shape[2] 
-     # should be 3*G_all+1
 
-  #  size_p = param_dat.shape[1] # should be 2G_all+4
-
-
-  #  Gi = np.arange(G)
-  #  Pi = np.arange(size_p-2*G_all)
-
-  #  new_size_v = size_v - 3*G_all + 3*G
- #   new_size_p = size_p - 2*G_all + 2*G
     
     if hp.G==hp.G_base: 
         return seq_dat, [np.arange(hp.G)], hp.Cl[:,np.newaxis]
          
         
-    elif G_all>G:
+    elif hp.G>hp.G_base:
 
 
         grain_arg_list = []  ## a list of variable-size array [num_subruns, G]
 
         for run in range(size_b):
 
-          frac_layer = np.mean(seq_dat[run,:,:G_all], axis=0)  ## use the last time step to resplit
+            frac_layer = np.mean(seq_dat[run,:,0,:], axis=0)  ## use the last time step to resplit
 
-          args = map_grain(frac_layer, G, G_all)
+            args = map_grain(frac_layer, hp.G_base, hp.G)
 
-          grain_arg_list.append(args)
+            grain_arg_list.append(args)
 
-          for i in range(args.shape[0]):  ## every i is a subsimulation
+            seq_1b = np.zeros((args.shape[0],size_t,size_c,hp.G_base))
+            df_1b = np.zeros((args.shape[0],hp.G_base))
+
+            for i in range(args.shape[0]):  ## every i is a subsimulation
             
-            grain_id = args[i,:]
+                grain_id = args[i,:]
 
             ## ============== scaling region ============= ##
 
             #print(seq_dat[run,:,list(grain_id)].shape)
-            df = np.sum( seq_dat[run][:,grain_id], axis = -1 ).max()[np.newaxis]  ## not sure what to do with it, just 1d with one number
+                df = np.sum( seq_dat[run][:,0,grain_id], axis = -1 ).max()[np.newaxis]  ## not sure what to do with it, just 1d with one number
+                df_1b[i,:] = df 
 
-            df_loc = df#*(G_all/G)  ##should be close enough to 1
+                for ch in range(size_c):
 
-            param_sliced = param_dat[run][grain_id]/df_loc  ## initial
-           # print(param_sliced, param_dat[run,grain_id], df)
-            frac_sliced =  seq_dat[run][:,grain_id]/df_loc[:,np.newaxis]  ## frac
-           # print(frac_sliced, seq_dat[run][:,grain_id], df)
-            dfrac_sliced = seq_dat[run][:,grain_id+G_all]/df_loc[:,np.newaxis]  # dfrac
-
-            darea_sliced = seq_dat[run][:,grain_id+2*G_all]/ df_loc[:,np.newaxis] 
-            
-            if i>(args.shape[0]-1)//2: 
-                frac_sliced[:,0] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
-                dfrac_sliced[:,0] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )
-                param_sliced[0] += 1 - np.sum( param_sliced, axis = -1 )
-            else: 
-                frac_sliced[:,-1] += np.ones(size_t) - np.sum( frac_sliced, axis = -1 )
-                dfrac_sliced[:,-1] += np.zeros(size_t) - np.sum( dfrac_sliced, axis = -1 )     
-                param_sliced[-1] += 1 - np.sum( param_sliced, axis = -1 )           
-       #     if i>(expand-1)//2: left_coors[:,i] = G_all/G*(1- np.cumsum(seq_dat[:,0,:], axis=-1)[:,G+2*i-1]) 
-       #     elif i>0: left_coors[:,i] = G_all/G*np.cumsum(seq_dat[:,0,:], axis=-1)[:,2*i-1]
-        #    else: pass
-  
-            assert np.linalg.norm( np.sum(param_sliced,axis=-1) - 1 ) <1e-5
-            assert np.linalg.norm( np.sum(frac_sliced,axis=-1) - np.ones(size_t) ) <1e-5
-            assert np.linalg.norm( np.sum(dfrac_sliced,axis=-1) - np.zeros(size_t) ) <1e-5
+                    slice = seq_dat[run][:,ch,grain_id]
 
 
-           ## ============== scaling region ============= ##
 
-           # new_param[i*size_b:(i+1)*size_b,:G] = param_sliced
-            slice_param = np.concatenate(( grain_id+G_all, Pi+2*G_all ))
+                    if ch in [0,1,2,4]:
+                        slice /= df[:,np.newaxis]
 
+                        modf_id = 0 if i>(args.shape[0]-1)//2 else -1
 
-            seq_1 = assemb_seq( frac_sliced, dfrac_sliced, darea_sliced, seq_dat[run][:,-1])
-            param_1 = np.concatenate(( param_sliced, param_dat[run,slice_param]), axis = -1)
+                        if ch==1:
+                            slice[:,modf_id] += -np.sum(slice, axis=-1)
+                            assert np.linalg.norm( np.sum(slice, axis=-1) ) < 1e-5
 
-            if run==0 and i==0:
+                        else:
+                            slice[:,modf_id] += 1-np.sum(slice, axis=-1)
+                            assert np.linalg.norm( np.sum(slice, axis=-1) -1) < 1e-5
 
-                new_seq = seq_1[np.newaxis,:,:]
-                new_param = param_1[np.newaxis,:]
-                domain_factor = df_loc[np.newaxis,:]
+                    seq_1b[i,:,ch,:] = slice 
+
+            if run==0 :
+
+                new_seq = seq_1b
+                Cl = df_1b
 
             else:
-   
-                new_seq = np.concatenate((new_seq, seq_1[np.newaxis,:,:]), axis=0)
-                new_param = np.concatenate((new_param, param_1[np.newaxis,:]), axis=0)
-                domain_factor = np.concatenate((domain_factor, df_loc[np.newaxis,:]), axis=0)
+
+                new_seq = np.concatenate((new_seq, seq_1b), axis=0)
+                Cl = np.concatenate((Cl, df_1b), axis=0)
 
 
 
-        return new_seq, grain_arg_list, domain_factor
+        return new_seq, grain_arg_list, Cl
             
     else: raise ValueError("number of grain is wrong")
 
 
-def merge_grain(frac, dseq, hp, grain_arg_list, domain_factor):
+def merge_grain(frac, dseq, hp, grain_arg_list, Cl_list):
     
     
     '''
-    Assume G and G_all here are all even numbers 
-    G = N_w +2, N_w is the no. grains one grain can affect
+    update the first four features of seq
     '''
 
     size_b = frac.shape[0]
     size_t = frac.shape[1]
-    size_v = frac.shape[2]
 
 
 
-    #assert size_b%expand == 0
-    new_size_b = len(grain_arg_list)  ## number of real simulation 
-
-    BC_l = hp.G//2+1
-
-    new_size_v = size_v +  hp.G - hp.G_base
-    
-
-
-
-    if hp. G==hp.G_base: 
+    if hp.G==hp.G_base: 
         output = np.zeros((size_b,size_t, 4, hp.G))
         assemb_feat(dseq, frac, hp.G, output)
         return output
           
         
-    elif G_all>G:
+    elif hp.G>hp.G_base:
 
         increment = 0
-        dfrac = dseq[:,:,:G]
-        area = dseq[:,:,G:2*G]
+        dfrac = dseq[:,:,:hp.G_base]
+        area = dseq[:,:,hp.G_base:2*hp.G_base]
         y = dseq[:,:,-1]
         
-        new_frac = np.zeros((new_size_b, size_t, new_size_v))
-        new_dfrac = np.zeros((new_size_b, size_t, new_size_v))
-        new_area = np.zeros((new_size_b, size_t, new_size_v))
-        new_y = np.zeros((new_size_b, size_t))
+        new_size_b = len(grain_arg_list)  ## number of real simulation 
+
+        BC_l = hp.G_base//2+1
+
+        output = np.zeros((new_size_b, size_t, 4, hp.G))
         std_y = np.zeros((new_size_b, size_t))
 
         for run in range(new_size_b):
@@ -258,50 +224,47 @@ def merge_grain(frac, dseq, hp, grain_arg_list, domain_factor):
 
             y_null = y[increment:increment+expand,:]
 
-            new_y[run,:] = np.mean(y_null, axis = 0)
+            output[run,:,-1,:] = np.mean(y_null, axis = 0)[:,np.newaxis]
 
             std_y[run,:] = np.std(y_null, axis = 0)
            # new_y = np.min(y_null, axis = 0)
 
             ## =========== the y part =================
 
-
-
             ## add the two middle grains to the data
             for i in range(expand):
 
                 subruns = increment + i
+                print(Cl_list)
+                Cl = Cl_list[subruns,[0],np.newaxis]
             
                 if i==0:
-                    new_frac[run][:,args[i,:BC_l]]  = frac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
-                    new_dfrac[run][:,args[i,:BC_l]]  = dfrac[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
-                    new_area[run][:,args[i,:BC_l]]  = area[subruns, :,:BC_l]*domain_factor[subruns,:,np.newaxis]
-     
-                if i==expand-1:
-                    new_frac[run][:,args[i,-BC_l:]] = frac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
-                    new_dfrac[run][:,args[i,-BC_l:]] = dfrac[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis]
-                    new_area[run][:,args[i,-BC_l:]] = area[subruns,:,-BC_l:]*domain_factor[subruns,:,np.newaxis] 
-      
-                if i>0 and i<expand-1:
-                    new_frac[run][:,args[i,G//2-1:G//2+1]] = frac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
-                    new_dfrac[run][:,args[i,G//2-1:G//2+1]] = dfrac[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis]
-                    new_area[run][:,args[i,G//2-1:G//2+1]] = area[subruns,:,G//2-1:G//2+1]*domain_factor[subruns,:,np.newaxis] 
+                    real_loc = np.arange(BC_l)
+                elif i==expand-1:
+                    real_loc = np.arange(hp.G_base-BC_l, hp.G_base)
+                else:
+                    real_loc = np.array([hp.G_base//2-1, hp.G_base//2])
+                real_glob = args[i,real_loc]
+
+                output[run,:,0, real_glob] = frac[subruns,:,real_loc]*Cl
+                output[run,:,1, real_glob] = dfrac[subruns,:,real_loc]*Cl
+                output[run,:,2, real_glob] = area[subruns,:,real_loc]*Cl
 
             increment += expand
 
 
-        new_frac /= G/G_all*np.sum(new_frac, axis=-1)[:,:,np.newaxis] 
-        #new_frac *= G/G_all
-       # left_coors_grains *= G/G_all
-        ## evaluation (a) sum frac, (b) std of y
-        diff_1 = np.absolute( np.sum(new_frac,axis=-1)/G_all*G - np.ones_like(new_y)  )
-        max_1 = np.max( diff_1 ); mean_1 = np.mean( diff_1)
+
+        ## ============= normalization step =============
+
+
+        output[:,:,0,:] /= hp.G_base/hp.G*np.sum(output[:,:,0,:], axis=-1)[:,:,np.newaxis] 
+
+
         max_y = np.max( std_y )
 
-        print('evaluate split-merge grain strategy', max_1, mean_1, max_y)
-        new_seq = assemb_seq( new_frac, new_dfrac, new_area, new_y)
-      #  assert left_coors_grains.shape[2]==new_frac.shape[2]
-        return new_seq, np.zeros((new_size_b, size_t, G_all))
+        print('the standard deviation of y interface', max_y)
+
+        return output
             
     else: raise ValueError("number of grain is wrong")    
 
