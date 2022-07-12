@@ -124,7 +124,7 @@ def split_grain(seq_dat, hp):
  #   new_size_p = size_p - 2*G_all + 2*G
     
     if hp.G==hp.G_base: 
-        return seq_dat, [np.arange(hp.G)], hp.Cl*np.ones((size_b,1))
+        return seq_dat, [np.arange(hp.G)], hp.Cl[:,np.newaxis]
          
         
     elif G_all>G:

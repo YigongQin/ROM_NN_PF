@@ -523,7 +523,7 @@ if mode == 'test':
 else:
       print('all id', all_id, 'layer_size', hp.layer_size, 'learning_rate', hp.lr, \
     'num_layers', hp.layers, 'frames', frames, 'out win', hp.out_win, 'err', ave_err, 'time', -start+end)
-sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,'Cl':hp.Cl,\
+sio.savemat('2D_train'+str(num_train)+'_test'+str(num_test)+'_mode_'+mode+'_id_'+str(all_id)+'err'+str('%1.3f'%ave_err)+'.mat',{'frac_out':frac_out,'y_out':y_out,'area_out':area_out,'e':x,'G':y,'R':z,'err':u,'dice':dice,'Cl':Cl0,\
   'input':input_,'layer_size':hp.layer_size, 'learning_rate':hp.lr, 'num_layers':hp.layers, 'frames':frames}) #, \
   #'frac_true':frac_test,'y_true':y_test,'area_true':area_test})
 
