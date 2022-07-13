@@ -63,13 +63,13 @@ def subplot_rountine(fig, ax, cs, idx):
          cs.set_clim(vmin, vmax)
       return
 
-@njit(parallel=True, nopython=True)
+@njit(parallel=True)
 def reconstruction(field, temp_piece, y_range, area, G):
     y_f = y_range[-1]
     y_0 = y_range[0]
     ylen = len(y_range)
     
-    for k in range(100):
+    for k in range(1):
       for g in prange(G):
         for j in prange(ylen):
               
@@ -114,7 +114,7 @@ def plot_IO(anis,G0,Rmax,G,x,y,aseq,pf_angles,alpha_true,tip_y,frac,area, final,
 
 #=========================start fill the final field=================
     start = time.time()
-    for k in range(100):
+    for k in range(1):
       for g in range(G):
         fint = interp1d(ntip_y[:final], piece_len[g,:final],kind='linear')
         new_f = fint(y_range)
