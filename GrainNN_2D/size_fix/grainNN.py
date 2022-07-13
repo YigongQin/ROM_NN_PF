@@ -349,13 +349,14 @@ def ensemble(seq_out, inf_model_list):
         all_id = inf_model_list[i]
         hp = hyperparam('test', all_id)
         hp.Cl = np.asarray(Cl0)
-        model = ConvLSTM_seq(hp, device)
+        pretrain_model = ConvLSTM_seq(hp, device)
+        model = correct_Cl(hp, device, pretrain_model)
         model = model.double()
         if device=='cuda':
             model.cuda()
         pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
         print('model', inf_model_list[i], 'total number of trained parameters ', pytorch_total_params)
-        model.load_state_dict(torch.load(model_dir+'/lstmmodel'+str(all_id)))
+        model.load_state_dict(torch.load('./clmodel'+str(all_id)))
         model.eval()  
 
 
