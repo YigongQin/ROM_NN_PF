@@ -33,7 +33,7 @@ all_id = int(sys.argv[2])-1
 model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
-plot_flag = True
+plot_flag = False
 skip_check = False
 
 
