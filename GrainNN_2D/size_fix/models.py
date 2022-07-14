@@ -530,7 +530,7 @@ class correct_Cl(nn.Module):
             cl_out, _ = self.cl_decoder(seq_1.unsqueeze(dim=1), None)
             cl_out_last = cl_out[-1][:,-1,:,:].view(b, self.cl_hidden_dim*self.w)
 
-           # Cl = Cl*(1+0.1*self.project_cl(cl_out_last))
+            Cl = Cl*(1+0.1*self.project_cl(cl_out_last))
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
             darea = (self.project_a(last_time))    # [b,1]
