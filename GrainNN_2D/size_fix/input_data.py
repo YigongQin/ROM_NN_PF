@@ -233,6 +233,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
 
   input_seq = np.zeros((all_samp, hp.window, input_dim, G))
   output_seq = np.zeros((all_samp, out_win, 2*G+1))
+  input_Cl = np.zeros((all_samp, 1))
 
   sample = 0
   for run in range(num_runs):
@@ -246,7 +247,8 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
             input_seq[sample,:,-1,:] = t*hp.dt
             output_seq[sample,:,:] = np.concatenate((lstm_snapshot[t:t+out_win,1,:], \
                                                      lstm_snapshot[t:t+out_win,2,:], \
-                                                     lstm_snapshot[t:t+out_win,3,[0]]), axis=-1)    
+                                                     lstm_snapshot[t:t+out_win,3,[0]]), axis=-1)  
+            input_Cl[sample,:] = Cl_list[run] 
           #  input_param[sample,:] = param_all[run,:]  # except the last one, other parameters are independent on time
           #  input_param[sample,-1] = t*hp.dt 
             sample = sample + 1
@@ -259,7 +261,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       #  input_seq[:,:,-1] = 0  
       #  input_param[:,:G] = input_seq[:,0,:G]       
   
-  data_loader = PrepareData( input_seq, output_seq, np.asarray(Cl_list)[:, np.newaxis] )
+  data_loader = PrepareData( input_seq, output_seq, input_Cl )
 
        
   if valid==True:
