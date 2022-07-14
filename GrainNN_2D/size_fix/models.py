@@ -493,6 +493,7 @@ class correct_Cl(nn.Module):
         self.device = device
         self.dt = hyper.dt
         self.cl_hidden_dim = hyper.cl_layer_size
+        self.cl_num_layer = hyper.cl_layers
 
         ## pretrained networks
         self.lstm_encoder = trained_N.lstm_encoder
@@ -502,8 +503,8 @@ class correct_Cl(nn.Module):
         self.project_a = trained_N.project_a
 
         ## needs to train
-        self.cl_encoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.num_layer[0], self.device)
-        self.cl_decoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.num_layer[1], self.device)
+        self.cl_encoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.cl_num_layer[0], self.device)
+        self.cl_decoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.cl_num_layer[1], self.device)
         self.project_cl = nn.Linear(self.cl_hidden_dim*self.w, self.w)
 
 

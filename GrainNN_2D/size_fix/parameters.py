@@ -26,7 +26,7 @@ def hyperparam(mode, all_id):
     hyperparameter grid
 	'''
 	frames_pool=[20,24,30]
-	learning_rate_pool=[25e-3, 50e-3, 100e-3]
+	learning_rate_pool=[25e-4, 50e-4, 100e-4]
 	layers_pool=[3,4,5]
 	hidden_dim_pool = [16, 24, 32]
 	out_win_pool = [4, 5, 6] 
@@ -60,13 +60,14 @@ def hyperparam(mode, all_id):
 
 	LSTM_layer = (layers, layers)
 	LSTM_layer_ini = (layers, layers)
+	cl_layers = 2
 
 
 	param_dict = {'all_frames':all_frames, 'frames':frames, 'window':window, 'out_win':out_win, 'pred_frames':pred_frames, 'dt':dt, \
-	             'layers':LSTM_layer, 'layer_size':hidden_dim, 'kernel_size':(3,), 'lr':learning_rate, 'epoch':60, 'bias':True, 'model_list':[42,24, 69,71], \
+	             'layers':LSTM_layer, 'layer_size':hidden_dim, 'kernel_size':(3,), 'lr':learning_rate, 'epoch':20, 'bias':True, 'model_list':[42], \
 	             'Ct':Ct, 'Cl':Cl, 'G_base':8, 'G':G, \
 	             'feature_dim':10, 'feat_list':['w','dw','s','y','w0','alpha','G','R','e_k','t'], \
-	             'cl_layer_size':10}
+	             'cl_layer_size':8, 'cl_layers':(cl_layers, cl_layers)}
 
 
 	return Param(param_dict)
