@@ -369,7 +369,8 @@ def ensemble(seq_out, inf_model_list):
         
        # for model_id, (name, param) in enumerate(model.named_parameters()):
        #        print(name, model_id)
-               
+        if device == 'cuda':
+            model.cuda()        
  
         model_id = 0
         for p1, p2 in zip(model.parameters(), checkmodel.parameters()):
