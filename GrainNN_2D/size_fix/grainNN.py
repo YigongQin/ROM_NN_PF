@@ -30,7 +30,7 @@ mode = sys.argv[1]
 all_id = int(sys.argv[2])-1
 
 
-model_exist = True
+model_exist = False
 if mode == 'test': model_exist = True
 noPDE = True
 plot_flag = True
@@ -72,6 +72,9 @@ if mode=='train' or mode == 'test':
     pretrain_model = ConvLSTM_seq(hp, device)
     pretrain_model.load_state_dict(torch.load(model_dir+'/lstmmodel'+str(all_id)))
     pretrain_model.eval()  
+    #for param in pretrain_model.parameters():
+    #    if param.requires_grad == True:
+    #       param.requires_grad = False
     model = correct_Cl(hp, device, pretrain_model)
 #if mode=='ini': model = ConvLSTM_start(hp, device)
 
@@ -150,7 +153,7 @@ def train(model, num_epochs, train_loader, test_loader):
 
     criterion = nn.MSELoss() # mean square error loss
 
-    optimizer = torch.optim.Adam(trainable_param,lr=hp.lr) 
+    optimizer = torch.optim.Adam(trainable_param, lr=hp.lr) 
                                  #weight_decay=1e-5) # <--
 
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.5, last_epoch=-1)
@@ -179,7 +182,7 @@ def train(model, num_epochs, train_loader, test_loader):
     for epoch in range(num_epochs):
 
 
-      if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(model.parameters(), lr=0.02)
+      if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(trainable_param, lr=0.02)
       train_loss = 0
       count = 0
       for  ix, (I_train, O_train) in enumerate(train_loader):   
@@ -359,6 +362,22 @@ def ensemble(seq_out, inf_model_list):
         model.load_state_dict(torch.load('./clmodel'+str(all_id)))
         model.eval()  
 
+        checkmodel = ConvLSTM_seq(hp, device)
+        checkmodel.load_state_dict(torch.load(model_dir+'/lstmmodel'+str(all_id)))
+        checkmodel.eval()
+
+        
+       # for model_id, (name, param) in enumerate(model.named_parameters()):
+       #        print(name, model_id)
+               
+ 
+        model_id = 0
+        for p1, p2 in zip(model.parameters(), checkmodel.parameters()):
+            if p1.data.ne(p2.data).sum() > 0:
+                print('model different in para:', '; with err: ',torch.sum(p1-p2))
+            #else:
+              #  print('successfully transfered', model_id)
+            model_id+=1
 
         ini_model = ConvLSTM_start(hp, device)
         ini_model = ini_model.double()
