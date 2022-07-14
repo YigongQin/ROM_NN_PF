@@ -502,6 +502,7 @@ class correct_Cl(nn.Module):
         self.project_a = trained_N.project_a
 
         ## needs to train
+        self.cl_encoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.num_layer[0], self.device)
         self.cl_decoder = ConvLSTM(self.input_dim, self.cl_hidden_dim, self.kernel_size, self.num_layer[1], self.device)
         self.project_cl = nn.Linear(self.cl_hidden_dim*self.w, self.w)
 
@@ -520,6 +521,7 @@ class correct_Cl(nn.Module):
         seq_1 = input_seq[:,-1,:,:]    # the last frame
 
         encode_out, hidden_state = self.lstm_encoder(input_seq, None)  # output range [-1,1], None means stateless LSTM
+        encode_out, cl_hidden_state = self.cl_encoder(input_seq, None)
         
         
         for i in range(self.out_win):
@@ -527,10 +529,10 @@ class correct_Cl(nn.Module):
             encode_out, hidden_state = self.lstm_decoder(seq_1.unsqueeze(dim=1),hidden_state)
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
 
-            cl_out, _ = self.cl_decoder(seq_1.unsqueeze(dim=1), None)
+            cl_out, cl_hidden_state = self.cl_decoder(seq_1.unsqueeze(dim=1), cl_hidden_state)
             cl_out_last = cl_out[-1][:,-1,:,:].view(b, self.cl_hidden_dim*self.w)
 
-            Cl = Cl*(1+0.1*self.project_cl(cl_out_last))
+            Cl = Cl*(1 + self.project_cl(cl_out_last))
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
             darea = (self.project_a(last_time))    # [b,1]
