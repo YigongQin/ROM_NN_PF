@@ -161,18 +161,18 @@ def train(model, num_epochs, train_loader, test_loader):
 
     train_loss = 0
     count = 0
-    for  ix, (I_train, O_train) in enumerate(train_loader):   
+    for  ix, (I_train, O_train, C_train) in enumerate(train_loader):   
         count += I_train.shape[0]
-        recon, seq = model(I_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
-        train_loss += I_train.shape[0]*float(criterion(recon, O_train)) #+ 0.01*hp.out_win/hp.dt*criterion(area_train, A_train)
+        recon, seq = model(I_train, C_train )
+        train_loss += I_train.shape[0]*float(criterion(recon, O_train)) 
     train_loss/=count
 
     test_loss = 0
     count = 0
-    for  ix, (I_test, O_test) in enumerate(test_loader):      
+    for  ix, (I_test, O_test, C_test) in enumerate(test_loader):      
         count += I_test.shape[0]
-        pred, seq = model(I_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
-        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) #+ 0.01*hp.out_win/hp.dt*criterion(area_test, A_test)
+        pred, seq = model(I_test, C_test )
+        test_loss += I_test.shape[0]*float(criterion(pred, O_test)) 
     test_loss/=count
 
     print('Epoch:{}, Train loss:{:.6f}, valid loss:{:.6f}'.format(0, float(train_loss), float(test_loss)))
@@ -185,10 +185,10 @@ def train(model, num_epochs, train_loader, test_loader):
       if mode=='train' and epoch==num_epochs-10: optimizer = torch.optim.SGD(trainable_param, lr=0.02)
       train_loss = 0
       count = 0
-      for  ix, (I_train, O_train) in enumerate(train_loader):   
+      for  ix, (I_train, O_train, C_train) in enumerate(train_loader):   
          count += I_train.shape[0]
     
-         recon, seq = model(I_train, torch.ones((I_train.shape[0], 1), dtype=torch.float64).to(device) )
+         recon, seq = model(I_train, C_train )
        
          loss = criterion(recon, O_train) 
 
@@ -201,10 +201,10 @@ def train(model, num_epochs, train_loader, test_loader):
       train_loss/=count
       test_loss = 0
       count = 0
-      for  ix, (I_test, O_test) in enumerate(test_loader):
+      for  ix, (I_test, O_test, C_test) in enumerate(test_loader):
 
         count += I_test.shape[0]
-        pred, seq = model(I_test, torch.ones((I_test.shape[0], 1), dtype=torch.float64).to(device))
+        pred, seq = model(I_test, C_test)
 
         test_loss += I_test.shape[0]*float(criterion(pred, O_test)) 
  

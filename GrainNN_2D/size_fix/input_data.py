@@ -123,17 +123,19 @@ def check_data_quality(frac_all,param_all,y_all,G,frames):
 
 class PrepareData(Dataset):
 
-     def __init__(self, input_, output_):
+     def __init__(self, input_, output_, Cl):
           if not torch.is_tensor(input_):
               self.input_ = todevice(input_)
           if not torch.is_tensor(output_):
               self.output_ = todevice(output_)
+          if not torch.is_tensor(Cl):
+              self.Cl = todevice(Cl)
 
      def __len__(self):
          #print('len of the dataset',len(self.output_[:,0]))
          return len(self.output_[:,0])
      def __getitem__(self, idx):
-         return self.input_[idx,:,:,:], self.output_[idx,:,:]
+         return self.input_[idx,:,:,:], self.output_[idx,:,:], self.Cl[idx,:]
          
 
 
@@ -257,7 +259,7 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       #  input_seq[:,:,-1] = 0  
       #  input_param[:,:G] = input_seq[:,0,:G]       
   
-  data_loader = PrepareData( input_seq, output_seq )
+  data_loader = PrepareData( input_seq, output_seq, np.asarray(Cl_list)[:, np.newaxis] )
 
        
   if valid==True:
