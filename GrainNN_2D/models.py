@@ -452,10 +452,8 @@ class ConvLSTM_start(nn.Module):
         
         
         for i in range(self.out_win):
-            if i ==0 :
-                encode_out, hidden_state = self.lstm_decoder(seq_1.unsqueeze(dim=1), None)
-            else:
-                encode_out, hidden_state = self.lstm_decoder(seq_1.unsqueeze(dim=1), hidden_state)
+            
+            encode_out, hidden_state = self.lstm_decoder(seq_1.unsqueeze(dim=1), None)
             last_time = encode_out[-1][:,-1,:,:].view(b, self.hidden_dim*self.w)
             
             dy = F.relu(self.project_y(last_time))    # [b,1]
