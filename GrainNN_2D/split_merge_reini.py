@@ -146,7 +146,7 @@ def split_grain(seq_dat, hp):
                             slice[:,modf_id] += -np.sum(slice, axis=-1)
                             assert np.linalg.norm( np.sum(slice, axis=-1) ) < 1e-5
 
-                        else:
+                        if ch in [0,4]:
                             slice[:,modf_id] += 1-np.sum(slice, axis=-1)
                             assert np.linalg.norm( np.sum(slice, axis=-1) -1) < 1e-5
 
