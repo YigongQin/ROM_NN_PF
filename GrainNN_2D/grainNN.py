@@ -250,13 +250,7 @@ if mode!='test' and model_exist==False: sio.savemat('loss_curve_mode'+mode+'.mat
 
 def network_inf(seq_out, model, ini_model, hp):
     if noPDE == False:
-        seq_dat = seq_test[:evolve_runs,:hp.window,:]
-
-        frac_out[:,:hp.window,:] = seq_dat[:,:,:G]
-        dy_out[:,:hp.window] = seq_dat[:,:,-1]
-        darea_out[:,:hp.window,:] = seq_dat[:,:,2*G:3*G]
-
-        param_dat, seq_dat, grainid_list= split_grain(param_dat, seq_dat, hp.G_base, G)
+        seq_dat = seq_out[:,:hp.window,:,:]
     else: 
 
 
@@ -278,7 +272,7 @@ def network_inf(seq_out, model, ini_model, hp):
 
         seq_dat = seq_out[:,:hp.window,:,:]
 
-        if mode != 'ini':
+    if mode != 'ini':
               seq_dat[:,0,1,:] = seq_dat[:,1,1,:]
               seq_dat[:,0,3,:] = seq_dat[:,1,3,:] 
 
