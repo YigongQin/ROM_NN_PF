@@ -199,6 +199,8 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
 
       Gx = np.linspace(2, float(number_list[6]), frames)
       Rx = np.linspace(0.2, float(number_list[7]), frames)
+      Gx[:-1] = 0.5*(Gx[1:]+Gx[:-1])
+      Rx[:-1] = 0.5*(Rx[1:]+Rx[:-1])
       input_[bid,:,0,:] = frac
       input_[bid,:,1,:] = dfrac
       input_[bid,:,2,:] = area 
