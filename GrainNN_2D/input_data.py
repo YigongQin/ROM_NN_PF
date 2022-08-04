@@ -197,6 +197,8 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       dfrac = np.concatenate((dfrac[[0],:]*0, dfrac), axis=0) ##extrapolate dfrac at t=0
       dy    = np.concatenate(([dy[0]*0], dy), axis=0)
 
+      Gx = np.linspace(2, float(number_list[6]), frames)
+      Rx = np.linspace(0.2, float(number_list[7]), frames)
       input_[bid,:,0,:] = frac
       input_[bid,:,1,:] = dfrac
       input_[bid,:,2,:] = area 
@@ -204,8 +206,8 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       input_[bid,:,4,:] = frac[0,:][np.newaxis,:]
       input_[bid,:,5,:] = Color[np.newaxis,:] 
       input_[bid,:,6,:] = 2*float(number_list[5])
-      input_[bid,:,7,:] = 1 - np.log10(float(number_list[6]))/np.log10(100) 
-      input_[bid,:,8,:] = float(number_list[7])
+      input_[bid,:,7,:] = 1 - np.log10(Gx)[:,np.newaxis]/np.log10(100) 
+      input_[bid,:,8,:] = Rx[:,np.newaxis]
      # input_[bid,:,9,:] = np.arange(0, frames*hp.dt, hp.dt)[:,np.newaxis]
 
   ## form pieces of traning samples
