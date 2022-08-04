@@ -157,8 +157,9 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
   y0 = np.zeros((num_runs))
 
   for batch_id in range(num_batch):
-    fname =datasets[batch_id]; #print(fname)
-    f = h5py.File(str(fname), 'r') 
+   fname =datasets[batch_id]; #print(fname)
+   # f = h5py.File(str(fname), 'r')
+   with h5py.File(str(fname)) as f:
     #aseq_asse = np.asarray(f['sequence'])
     aseq_asse = np.asarray(f['angles'])
     frac_asse = np.asarray(f['fractions'])
