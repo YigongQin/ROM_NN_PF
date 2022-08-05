@@ -197,8 +197,8 @@ def assemb_data(num_runs, num_batch, datasets, hp, mode, valid):
       dfrac = np.concatenate((dfrac[[0],:]*0, dfrac), axis=0) ##extrapolate dfrac at t=0
       dy    = np.concatenate(([dy[0]*0], dy), axis=0)
 
-      Gx = np.linspace(2, float(number_list[6]), frames)
-      Rx = np.linspace(0.2, float(number_list[7]), frames)
+      Gx = np.linspace(float(number_list[6]), float(number_list[6]), frames)
+      Rx = np.linspace(float(number_list[7]), float(number_list[7]), frames)
       Gx[:-1] = 0.5*(Gx[1:]+Gx[:-1])
       Rx[:-1] = 0.5*(Rx[1:]+Rx[:-1])
       input_[bid,:,0,:] = frac
