@@ -8,12 +8,15 @@ training
 cd GrainNN_2D
 python3 grainNN.py train 
 ```
+
+testing
+
 ```
 cd GrainNN_2D
 python3 grainNN.py test 
 ```
 
-testing
+
 
 # Example 
 
