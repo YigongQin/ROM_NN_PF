@@ -2,6 +2,18 @@
 
 A transformer-embedded seq2seq LSTM for grain microstructure evolution
 
+# Usage
+training
+```
+cd GrainNN_2D
+python3 grainNN.py train 
+```
+```
+cd GrainNN_2D
+python3 grainNN.py test 
+```
+
+testing
 
 # Example 
 
