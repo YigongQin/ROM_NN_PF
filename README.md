@@ -2,6 +2,12 @@
 
 A transformer-embedded seq2seq LSTM for grain microstructure evolution
 
+# Build
+
+```
+pip install -r requirements.txt
+```
+
 # Usage
 training
 ```
