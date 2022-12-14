@@ -2,6 +2,22 @@
 
 A transformer-embedded seq2seq LSTM for grain microstructure evolution
 
+## Cite
+
+If you are using the codes in this repository, please cite the following paper
+```
+@article{qin2023grainnn,
+  title={GrainNN: A neighbor-aware long short-term memory network for predicting microstructure evolution during polycrystalline grain formation},
+  author={Qin, Yigong and DeWitt, Stephen and Radhakrishnan, Balasubramaniam and Biros, George},
+  journal={Computational Materials Science},
+  volume={218},
+  pages={111927},
+  year={2023},
+  publisher={Elsevier}
+}
+```
+
+
 ## Build
 
 ```
